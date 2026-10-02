@@ -10,9 +10,10 @@
 //! as in [`Ts3Plugin`](crate::Ts3Plugin): audio callbacks on TeamSpeak's audio threads, the rest
 //! on its main thread.
 //!
-//! **Invariants:** the signatures match `src/plugin.h` of the SDK at API 26 argument for argument;
-//! no shell panics (the glue turns every failure into a return value), and with `panic = "abort"`
-//! nothing can unwind into TeamSpeak.
+//! **Invariants:** the signatures match the SDK export prototypes at API 26, as the original keeps
+//! them in `reference/tfar_1_0/ts/src/plugin.h`, argument for argument; no shell panics (the glue
+//! turns every failure into a return value), and with `panic = "abort"` nothing can unwind into
+//! TeamSpeak.
 
 /// Expands to every `ts3plugin_*` export for the plugin `static` given.
 ///

@@ -67,6 +67,7 @@ here (`thiserror`, `tracing`, `parking_lot`, `crossbeam-channel`, `arc-swap`, `r
 | `hrtf`, `rustfft`, `realfft` | `tfar_hrtf` |
 | `hound` | `tfar_playback_mixer` |
 | `ts3plugin-sys` | `tfar_ts3_host`, `tfar_ts3_mock` |
+| `libc` | `tfar_ts3_host`, `tfar_ts3_mock` (malloc and free for memory that crosses the TeamSpeak boundary) |
 | `postcard` | the game_link crates |
 | `libloading` | `tfar_ts3_mock`, `tfar_extension_probe` |
 | `tracy-client` | the two plugin apps, behind the `tracy` feature |
@@ -80,7 +81,8 @@ here (`thiserror`, `tracing`, `parking_lot`, `crossbeam-channel`, `arc-swap`, `r
   - `tfar_ts3_host` (TeamSpeak C ABI);
   - `tfar_arma_extension_abi` (Arma C ABI and Win32 calls);
   - the 4 apps (export glue only);
-  - `tfar_ts3_mock` (loads plugins and fakes the function table).
+  - `tfar_ts3_mock` (loads plugins and fakes the function table);
+  - `tfar_extension_probe` (loads the extension DLL and calls `RVExtension` through raw pointers).
 - Every `unsafe` block carries a `// SAFETY:` comment directly above it
   (`clippy::undocumented_unsafe_blocks` is denied).
 - `unsafe_op_in_unsafe_fn` is denied, so an `unsafe fn` body still needs explicit blocks.
@@ -133,7 +135,7 @@ and a missing tool to "not run" (exit 2).
 | `markdown-placement` | `.md` files only under documentation, as a README.md anywhere, or as the root CLAUDE.md, AGENTS.md and README.md; `reference/` ignored | The tree walk fails |
 | `link-check` | Repository-root links (targets starting with a slash) and backticked repository paths exist; no parent-relative links | The tree walk fails |
 | `editorconfig` | Final newline, LF, no trailing whitespace outside `.md`, indent rules, on tracked text files outside `reference/` | `git ls-files` fails |
-| `language-bans` | No `.py`, `.sh`, `.bash`, Makefile, `.js` or `.ts` outside `reference/`; C/C++ sources only in the oracle and shim folders of `tfar_golden_vectors` | The tree walk fails |
+| `language-bans` | No `.py`, `.sh`, `.bash`, Makefile, `.js` or `.ts` outside `reference/`; C/C++ sources only in the oracle and shim folders of `tfar_golden_vectors`; `.h` reference headers, never compiled, also in `crates/teamspeak/tfar_ts3_host/sdk_headers/` | The tree walk fails |
 | `reference-untouched` | sha256 of every file under `reference/` (except its README, the manifest itself and the 1.0 tree's `.git` folder) matches the reference manifest; reports added, removed and changed files | The manifest is missing or unreadable |
 
 `cargo xtask verify all` runs every repository gate and exits with the worst status.

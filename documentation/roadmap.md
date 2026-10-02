@@ -18,12 +18,12 @@ The program records that drive each milestone (agent rosters, budgets, gates, pr
 The repository, the read-only reference trees, the conventions, every crate as a compiling skeleton
 and the gate tooling, so every later milestone starts from a green workspace.
 
-- [ ] git init.
-- [ ] Move the trees to `reference/`, write the reference manifest (MANIFEST.sha256), add the
+- [x] git init.
+- [x] Move the trees to `reference/`, write the reference manifest (MANIFEST.sha256), add the
       reference README.
-- [ ] Root config, CLAUDE.md and AGENTS.md, the whole documentation tree.
-- [ ] All 38 crates as compiling skeletons.
-- [ ] `xtask` with `verify`, `ci`, `new-crate`, `reference-manifest`, and `dist` (skeleton).
+- [x] Root config, CLAUDE.md and AGENTS.md, the whole documentation tree.
+- [x] All 38 crates as compiling skeletons.
+- [x] `xtask` with `verify`, `ci`, `new-crate`, `reference-manifest`, and `dist` (skeleton).
 
 **Acceptance:** `cargo xtask ci ci-local` passes; both extension stubs cross-compile to Windows
 DLLs; both plugin stubs build as `.so` files; `cargo xtask verify reference-untouched` holds.
@@ -32,12 +32,12 @@ DLLs; both plugin stubs build as `.so` files; `cargo xtask verify reference-unto
 
 The tier-0 and tier-1 building blocks every other crate stands on.
 
-- [ ] `tfar_geometry`: glam-based vectors and Arma angles, with correct normalisation (F-009).
-- [ ] `tfar_arma_values`: getline-exact field split, Arma arrays, frequency lists, radio subtypes
+- [x] `tfar_geometry`: glam-based vectors and Arma angles, with correct normalisation (F-009).
+- [x] `tfar_arma_values`: getline-exact field split, Arma arrays, frequency lists, radio subtypes
       matched by name (F-010).
-- [ ] `tfar_sample_buffer`: interleaved i16 buffers with saturating gain (F-004) and a bounds-safe
+- [x] `tfar_sample_buffer`: interleaved i16 buffers with saturating gain (F-004) and a bounds-safe
       stereo view (F-006).
-- [ ] The tracing setup shared by all crates.
+- [x] The tracing setup shared by all crates.
 
 **Acceptance:** the unit tests pass.
 
@@ -45,9 +45,9 @@ The tier-0 and tier-1 building blocks every other crate stands on.
 
 A safe Rust layer over the TeamSpeak 3 plugin SDK, and a mock host that can load our plugins.
 
-- [ ] `ts3plugin-sys` 0.5 adopted. Its layout is verified against the official
+- [x] `ts3plugin-sys` 0.5 adopted. Its layout is verified against the official
       TeamSpeak plugin SDK (GitHub teamspeak/ts3client-pluginsdk) API 26 headers with `size_of`/`offset_of` tests.
-- [ ] `tfar_ts3_host`: safe wrapper, export macro, logging, config paths from TS (F-018).
+- [x] `tfar_ts3_host`: safe wrapper, export macro, logging, config paths from TS (F-018).
 - [ ] `tfar_ts3_settings_db`.
 - [ ] `tfar_ts3_mock`.
 - [ ] The plugin stubs export their metadata.
@@ -60,9 +60,9 @@ TeamSpeak.
 The localhost TCP link that replaces the named pipe (0.9) and the shared memory (1.0), as specified
 in the [game link protocol](/documentation/architecture/game_link_protocol.md).
 
-- [ ] `tfar_game_link_protocol`, `tfar_game_link_server` (FIFO async, F-007),
+- [x] `tfar_game_link_protocol`, `tfar_game_link_server` (FIFO async, F-007),
       `tfar_game_link_client`.
-- [ ] `tfar_arma_extension_abi`: the `RVExtension` export and the focus query.
+- [x] `tfar_arma_extension_abi`: the `RVExtension` export and the focus query.
 - [ ] Both extension apps with real transport.
 - [ ] `tfar_extension_probe`.
 

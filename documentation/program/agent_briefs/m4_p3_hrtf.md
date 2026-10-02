@@ -13,7 +13,7 @@ rules) and `/documentation/architecture/audio_pipeline.md`.
 ## Steps
 1. **HRIR data.**
    - Download one IRCAM sphere `.bin` built by `mrDIMAS/hrir_sphere_builder` (GitHub; the `hrtf_base/IRCAM/` folder). Pick the subject the `hrtf` crate's own examples or tests use (check its repo/docs), else `IRC_1002_C.bin`.
-   - Store it under `assets/hrir/` with `assets/hrir/CREDITS.md`, which states:
+   - Store it under `assets/hrir/` with assets/hrir/CREDITS.md, which states:
      - the source URL and commit;
      - the IRCAM LISTEN database credit ("LISTEN HRTF database, IRCAM, http://recherche.ircam.fr/equipes/salles/listen/") and its terms of use;
      - the SHA-256 of the file.

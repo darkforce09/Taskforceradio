@@ -208,3 +208,45 @@ crates the map names (`cargo xtask verify dependency-firewalls`). A new need get
 entry, before its crate is added.
 
 **Supersedes:** none.
+
+### 2026-10-02 — The library map gains libc for TeamSpeak memory and libloading for the probe (D18)
+
+**Context:** The plugin hands TeamSpeak its `infoData` text, and TeamSpeak hands it back to
+`ts3plugin_freeMemory` as a bare pointer, so `tfar_ts3_host` allocates it with the C runtime's
+`malloc` and releases it with `free`, which needs no size. The mock TeamSpeak host plays the other
+side: it hands the plugin `malloc`ed strings and lists that the plugin returns through `freeMemory`.
+The library map of the entry "Use libraries, don't reinvent the wheel (D18)" names no crate for that.
+The extension probe loads the extension DLL under wine and calls `RVExtension` through its export
+address, the same need the mock TeamSpeak host has for plugins.
+
+**Decision:** Two rows join the library map:
+
+| Need | Crate (version) | Used in | We still write |
+|---|---|---|---|
+| C allocator for memory that crosses the TeamSpeak boundary | `libc` 0.2.190 (no default features) | `tfar_ts3_host`, `tfar_ts3_mock` | the copy into the `malloc` block |
+| Loading the extension DLL | `libloading` 0.9.0 | `tfar_extension_probe` | the `RVExtension` call and its checks |
+
+**Consequences:** `libc` is firewalled to `tfar_ts3_host` and `tfar_ts3_mock`, and `libloading` to
+`tfar_ts3_mock` and `tfar_extension_probe` (`cargo xtask verify dependency-firewalls`);
+`tfar_extension_probe` joins the unsafe allow-list for its raw-pointer calls
+(`cargo xtask verify unsafe-allowlist`).
+
+**Supersedes:** none.
+
+### 2026-10-02 — dist names the plugins task_force_radio_linux_amd64.so and TFAR_linux_amd64.so
+
+**Context:** TeamSpeak derives a plugin's name from its file name, and the original receivers accept
+plugin commands only from senders whose name starts with `task_force_radio` (0.9.12,
+`reference/tfar_0_9_12/ts/src/plugin.cpp:3116`) or `TFAR` (1.0). The names in the entry "dist builds
+into target/dist and nothing installs (D13)", `libtfar_plugin_<v>_linux_amd64.so`, match neither, so
+Windows players running the originals would ignore our plugin commands and the reverse.
+
+**Decision:** `cargo xtask dist` names the 0.9 plugin `task_force_radio_linux_amd64.so` and the 1.0
+plugin `TFAR_linux_amd64.so`. The extension keeps `task_force_radio_pipe_x64.dll`, and everything else
+in D13 holds.
+
+**Consequences:** The two Rust plugins have distinct file names, so both can sit in one TeamSpeak
+plugins folder. `tools/xtask/src/commands/dist.rs` holds the names and the install runbook names the
+files.
+
+**Supersedes:** the artifact names in 2026-10-02 — dist builds into target/dist and nothing installs (D13).

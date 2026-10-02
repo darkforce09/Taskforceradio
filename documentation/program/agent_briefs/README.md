@@ -9,11 +9,25 @@ one brief per agent slice.
 
 ```text
 documentation/program/agent_briefs/
-├── m0_a1_standards.md             M0 A1: standards, templates, CLAUDE.md, decisions, glossary
-├── m0_a2_program_records.md       M0 A2: program records, roadmap, architecture, runbooks
-├── m0_a3_workspace_skeletons.md   M0 A3: root configuration and all 38 crate skeletons
-├── m0_a4_xtask_gates.md           M0 A4: the xtask tool, every gate, ci, dist, scaffolding
-└── shared_brief.md                rules, environment facts, crate edges and report format for every agent
+├── m0_a1_standards.md                    M0 A1: standards, templates, CLAUDE.md, decisions, glossary
+├── m0_a2_program_records.md              M0 A2: program records, roadmap, architecture, runbooks
+├── m0_a3_workspace_skeletons.md          M0 A3: root configuration and all 38 crate skeletons
+├── m0_a4_xtask_gates.md                  M0 A4: the xtask tool, every gate, ci, dist, scaffolding
+├── m0_c0_gate_cleanup.md                 M0 C0: gate cleanup and the M0 close records
+├── m1_b1_geometry_arma_values.md         M1 B1: tfar_geometry and tfar_arma_values
+├── m1_b2_sample_buffer.md                M1 B2: tfar_sample_buffer
+├── m2_h1_ts3_host.md                     M2 H1: tfar_ts3_host, the TeamSpeak plugin layer
+├── m2_h2_mock_settings_db.md             M2 H2 + H3: tfar_ts3_mock and tfar_ts3_settings_db
+├── m3_l1_protocol_server.md              M3 L1: tfar_game_link_protocol and tfar_game_link_server
+├── m3_l2_extension_abi_client.md         M3 L2: tfar_arma_extension_abi and tfar_game_link_client
+├── m3_l3_apps_probe.md                   M3 L3: both extension apps, plugin stubs with the link, the probe
+├── m4_p1_p2_filters_dynamics.md          M4 P1 + P2: tfar_dsp_filters and tfar_dynamics
+├── m4_p3_hrtf.md                         M4 P3: tfar_hrtf with the IRCAM sphere
+├── m4_p4_p5_spatial_playback.md          M4 P4 + P5: tfar_spatial_audio and tfar_playback_mixer
+├── m5_s1_s2_services_debug_window.md     M5 S1 + S2: tfar_web_requests and tfar_debug_window
+├── m6_v1_commands_0_9.md                 M6 V1: tfar_game_commands_0_9 and tfar_plugin_commands_0_9
+├── m7_w1_commands_settings_1_0.md        M7 W1: tfar_plugin_settings_1_0, the 1.0 game and plugin commands
+└── shared_brief.md                       rules, environment facts, crate edges and report format for every agent
 ```
 
 ## How it works

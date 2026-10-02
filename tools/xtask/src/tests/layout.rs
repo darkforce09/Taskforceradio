@@ -115,3 +115,31 @@ fn every_firewalled_crate_appears_once() {
     names.dedup();
     assert_eq!(names.len(), count);
 }
+
+#[test]
+fn header_only_folders_admit_only_dot_h() {
+    assert!(c_file_allowed(
+        "crates/teamspeak/tfar_ts3_host/sdk_headers/ts3_functions.h",
+        "h"
+    ));
+    assert!(!c_file_allowed(
+        "crates/teamspeak/tfar_ts3_host/sdk_headers/shim.c",
+        "c"
+    ));
+    assert!(c_file_allowed(
+        "tools/tfar_golden_vectors/oracle/a.cpp",
+        "cpp"
+    ));
+    assert!(!c_file_allowed(
+        "crates/teamspeak/tfar_ts3_host/src/a.h",
+        "h"
+    ));
+}
+
+#[test]
+fn the_ffi_crates_and_the_probe_may_lift_unsafe() {
+    for name in ["tfar_ts3_host", "tfar_ts3_mock", "tfar_extension_probe"] {
+        assert!(UNSAFE_ALLOWED.contains(&name), "{name}");
+    }
+    assert!(!UNSAFE_ALLOWED.contains(&"tfar_geometry"));
+}

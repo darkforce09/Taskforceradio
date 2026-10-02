@@ -64,3 +64,38 @@ fn files_under_reference_are_ignored() {
         Vec::<String>::new()
     );
 }
+
+#[test]
+fn the_sdk_header_folder_admits_headers_only() {
+    let fixture = FixtureTree::sample_workspace();
+    fixture.write(
+        "crates/teamspeak/tfar_ts3_host/sdk_headers/ts3_functions.h",
+        "struct TS3Functions;\n",
+    );
+    assert_eq!(
+        described(&check(&fixture.repository()).unwrap()),
+        Vec::<String>::new()
+    );
+    fixture.write(
+        "crates/teamspeak/tfar_ts3_host/sdk_headers/shim.c",
+        "int d;\n",
+    );
+    fixture.write(
+        "crates/teamspeak/tfar_ts3_host/sdk_headers/shim.hpp",
+        "int e;\n",
+    );
+    let found = described(&check(&fixture.repository()).unwrap());
+    assert_eq!(found.len(), 2, "{found:?}");
+    assert!(
+        found
+            .iter()
+            .any(|line| line.contains("sdk_headers/shim.c:1: C and C++ sources live only")),
+        "{found:?}"
+    );
+    assert!(
+        found
+            .iter()
+            .any(|line| line.contains("sdk_headers/shim.hpp:1: C and C++ sources live only")),
+        "{found:?}"
+    );
+}

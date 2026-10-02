@@ -14,7 +14,8 @@ holds it; the rest are held in review.
 - C and C++ appear only in tools/tfar_golden_vectors: its oracle/ folder (the vendored FAudio
   `F3DAudio.c`) and its shim/ folder, compiled with `cc` from a build script, plus the original DSPFilters,
   SimpleComp and clunk sources compiled straight from `reference/` (decision D9). Product code never
-  links them.
+  links them. The one other place a C file may sit is `crates/teamspeak/tfar_ts3_host/sdk_headers/`,
+  and only as `.h`: the TeamSpeak SDK headers, read as text by the layout tests and never compiled.
 - Repository chores are `cargo xtask` commands; a one-off investigation is a test or an xtask command,
   never a script.
 
@@ -53,6 +54,7 @@ holds it; the rest are held in review.
   |---|---|
   | `windows-sys` | `tfar_arma_extension_abi` |
   | `ts3plugin-sys` | `tfar_ts3_host`, `tfar_ts3_mock` |
+  | `libc` | `tfar_ts3_host`, `tfar_ts3_mock` |
   | `rusqlite` | `tfar_ts3_settings_db` |
   | `ureq` | `tfar_web_requests` |
   | `egui`, `eframe` | `tfar_debug_window` |
@@ -127,7 +129,7 @@ All of it is checked by `cargo xtask verify crate-anatomy`; `cargo xtask new-cra
 ## Unsafe code and FFI
 
 - `unsafe_code` is denied workspace-wide. Only `tfar_ts3_host`, `tfar_arma_extension_abi`, the four apps
-  (their export glue) and `tfar_ts3_mock` may state `#![allow(unsafe_code)]` at the crate root, with a
+  (their export glue), `tfar_ts3_mock` and `tfar_extension_probe` may state `#![allow(unsafe_code)]` at the crate root, with a
   reason comment on the line above (`cargo xtask verify unsafe-allowlist`). Everything else uses their safe wrappers.
 - Every `unsafe` block has a `// SAFETY:` comment directly above it saying which invariant makes it sound
   (`undocumented_unsafe_blocks`, `cargo xtask verify unsafe-allowlist`); every `unsafe fn` has a

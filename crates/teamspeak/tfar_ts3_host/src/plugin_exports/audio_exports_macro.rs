@@ -3,7 +3,7 @@
 //!
 //! **Role:** the `onEditPostProcessVoiceDataEvent`, `onEditMixedPlaybackVoiceDataEvent`,
 //! `onEditCapturedVoiceDataEvent` and `onCustom3dRolloffCalculationClientEvent` exports, with the
-//! argument lists of `src/plugin.h` at API 26.
+//! argument lists of `reference/tfar_1_0/ts/src/plugin.h` at API 26.
 //!
 //! **Position:** expanded only by [`ts3_plugin!`](crate::ts3_plugin); hidden from the docs.
 //!

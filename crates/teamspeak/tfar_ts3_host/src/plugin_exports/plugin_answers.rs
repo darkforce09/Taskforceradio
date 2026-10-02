@@ -9,8 +9,9 @@
 //!
 //! **Signals and state:** plain values; no state.
 //!
-//! **Invariants:** `to_raw` gives the value `src/plugin.h` documents; [`InfoItem::from_raw`] maps
-//! the `enum PluginItemType` values `src/tests/sdk_layout.rs` checks against the header.
+//! **Invariants:** `to_raw` gives the value the SDK export prototypes document (kept by the
+//! original in `reference/tfar_1_0/ts/src/plugin.h`); [`InfoItem::from_raw`] maps the
+//! `enum PluginItemType` values `src/tests/sdk_layout.rs` checks against the header.
 
 use crate::{ChannelId, ClientId};
 

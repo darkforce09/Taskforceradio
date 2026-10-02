@@ -58,9 +58,9 @@ The detail is in the [standards](/documentation/standards/README.md).
     `panic`, `indexing_slicing`, `todo`, `unimplemented` and `dbg_macro` are denied, so no panic path
     exists outside tests. Gate: `cargo clippy --workspace --all-targets -- -D warnings`.
 12. **`unsafe` only in allow-listed FFI crates.** `tfar_ts3_host`, `tfar_arma_extension_abi`, the four
-    apps (export glue) and `tfar_ts3_mock` may hold `#![allow(unsafe_code)]`, with a reason; every
-    `unsafe` block has a `// SAFETY:` comment right above it. Gate: `cargo xtask verify unsafe-allowlist`
-    and the `undocumented_unsafe_blocks` lint.
+    apps (export glue), `tfar_ts3_mock` and `tfar_extension_probe` may hold `#![allow(unsafe_code)]`,
+    with a reason; every `unsafe` block has a `// SAFETY:` comment right above it. Gate:
+    `cargo xtask verify unsafe-allowlist` and the `undocumented_unsafe_blocks` lint.
 13. **Docs move with code.** The comments, the README.md of every folder whose contents, surface or
     boundaries change, and the documents whose behaviour changes land in the same commit as the code.
     Gate: `cargo xtask verify readme-coverage`, `readme-sections`, `status-lines`, `markdown-placement`

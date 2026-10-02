@@ -12,9 +12,9 @@ fresh session reads Current state and Handoff first, then the
 | Field | Value |
 |---|---|
 | Branch | `main` |
-| Current milestone | M0 — Workspace skeleton, reference archive, gates |
-| Last green commit | — (no gate runs before A4 builds the xtask tool; S0 baseline is de41c9b) |
-| Next action | Review the A1 and A2 reports and diffs, commit both slices, then launch A3 from its brief |
+| Current milestone | M0 — Workspace skeleton, reference archive, gates (closing); M1 done; M2, M3 and M4 slices running in parallel |
+| Last green commit | — (`cargo xtask verify all` failed at 2ff1886 on the gate debts C0 clears; C0's commit is the first candidate) |
+| Next action | Review the C0 report and commit it; then review and commit H2, L3, P1, P3 and P4 as each reports, and rerun `cargo xtask ci ci-local` |
 | Blocked on | nothing |
 
 Row format: `- [ ] <ID> (<budget>) <role> — status — commit — notes`. A status is `pending`,
@@ -26,16 +26,44 @@ Row format: `- [ ] <ID> (<budget>) <role> — status — commit — notes`. A st
 ### M0 Workspace skeleton
 
 - [x] S0 (orchestrator) git init, tree moves, toolchain and tools, specs and briefs — done — de41c9b — see the execution log
-- [ ] A1 (M) standards, templates, CLAUDE.md and AGENTS.md, decisions, glossary, reference README — running — — in parallel with A2
-- [ ] A2 (M) program records, roadmap, architecture, runbooks — done, awaiting review and the slice commit — — open findings OF-001 to OF-011
-- [ ] A3 (M) root config and all 38 crate skeletons — pending — — starts after A1's templates
-- [ ] A4 (L) xtask gates, `ci ci-local`, `dist`, `new-crate`, `reference-manifest` — pending — — starts after A3; budget per amendment A1
-- [ ] Close (orchestrator) full `ci-local`, Windows cross-build, commits per slice, handoff, memory note — pending — —
+- [x] A1 (M) standards, templates, CLAUDE.md and AGENTS.md, decisions, glossary, reference README — done — 5b2b918 — ran in parallel with A2
+- [x] A2 (M) program records, roadmap, architecture, runbooks — done — 9a71a5a — open findings OF-001 to OF-011
+- [x] A3 (M) root config and all 38 crate skeletons — done — 530eb13 — started in parallel with A1 (amendment A2)
+- [x] A4 (L) xtask gates, `ci ci-local`, `dist`, `new-crate`, `reference-manifest` — done — 3046373 — budget per amendment A1; see OF-012
+- [ ] C0 (M) gate cleanup and the M0 close records — running — — added by amendment A6; [brief](/documentation/program/agent_briefs/m0_c0_gate_cleanup.md)
+- [ ] Close (orchestrator) full `ci-local`, Windows cross-build, commits per slice, handoff, memory note — pending — — after C0 and the running slices
 
-### M1–M8
+### M1 Foundations
+
+- [x] B1 (M) `tfar_geometry` and `tfar_arma_values` — done — 45a584d — ran early (amendment A3)
+- [x] B2 (S) `tfar_sample_buffer` and the tracing rule — done — 86b4891 — ran early (amendment A3)
+
+### M2 TeamSpeak host
+
+- [x] H1 (L) `tfar_ts3_host` on `ts3plugin-sys`, layout tests against the API 26 headers — done — 2ff1886 — SDK headers kept in `crates/teamspeak/tfar_ts3_host/sdk_headers/`
+- [ ] H2 (L) `tfar_ts3_mock` and `tfar_ts3_settings_db` (H3 folded in) — running — — [brief](/documentation/program/agent_briefs/m2_h2_mock_settings_db.md)
+- [ ] H4 (S) metadata exports in both plugin stubs — running inside L3 — — the L3 brief covers the stubs' metadata
+- [ ] OC-ts (owner) both stubs load in the Flatpak TeamSpeak — pending — — no live tests for now (owner decision of 2026-10-02)
+
+### M3 Game link
+
+- [x] L1 (M) `tfar_game_link_protocol` and `tfar_game_link_server` — done — 37dc8e0 — ran before M2 completed (amendment A4)
+- [x] L2 (M) `tfar_arma_extension_abi` and `tfar_game_link_client` — done — 37dc8e0 — committed with L1
+- [ ] L3 (L) both extension apps, the stub plugins with the game link, `tfar_extension_probe` — running — — [brief](/documentation/program/agent_briefs/m3_l3_apps_probe.md)
+- [ ] OC-arma (owner) probe `PONG` under Proton's wine, then `TS_INFO\tPING` in Arma — pending — — no live tests for now
+
+### M4 Audio primitives
+
+- [ ] P1 (M) `tfar_dsp_filters` and `tfar_dynamics` (P2 folded in) — running — — [brief](/documentation/program/agent_briefs/m4_p1_p2_filters_dynamics.md)
+- [ ] P3 (L) `tfar_hrtf` with the IRCAM sphere — running — — HRIR download approved by the owner; [brief](/documentation/program/agent_briefs/m4_p3_hrtf.md)
+- [ ] P4 (M) `tfar_spatial_audio` and `tfar_playback_mixer` (P5 folded in) — running — — [brief](/documentation/program/agent_briefs/m4_p4_p5_spatial_playback.md)
+- [ ] G1 (L) `tfar_golden_vectors` and the golden tests against the crates — pending — — after P1–P5 (amendment A5)
+
+### M5–M8
 
 Rows are added when each milestone starts, from the proposed rosters in the
-[program plan](/documentation/program/program_plan.md#5-milestones-and-agents).
+[program plan](/documentation/program/program_plan.md#5-milestones-and-agents). Briefs for M5 S1, M6
+V1 and M7 W1 are written (d8dee88).
 
 ## Execution log
 
@@ -48,6 +76,15 @@ Rows are added when each milestone starts, from the proposed rosters in the
 | 2026-10-02 | S0 commit | `chore(workspace): s0 baseline with reference trees and program specs` — de41c9b | — |
 | 2026-10-02 | M0 launch | A1 and A2 launched in parallel from their briefs; A4's budget raised to L (amendment A1) | — |
 | 2026-10-02 | A2 report | Roadmap, program records (plan, catalogue, laws and gates, bug fixes, progress, folder READMEs), architecture (layout, game link protocol, audio pipeline) and runbooks written; 26 bug-fix entries (6 both, 12 1.0-only, 8 0.9-only) | target/agent-logs (A2) |
+| 2026-10-02 | A1, A2 commits | `docs(workspace): standards, templates, decisions and CLAUDE.md` — 5b2b918; `docs(program): roadmap, program plan, catalogue, laws and runbooks` — 9a71a5a | — |
+| 2026-10-02 | A3 commit | `chore(workspace): root config and 37 crate skeletons` — 530eb13 (xtask is the 38th crate, A4's) | target/agent-logs (A3) |
+| 2026-10-02 | B1, B2 commits | `feat(tfar-sample-buffer): …` — 86b4891; `feat(tfar-geometry): positions, directions and Arma value parsing` — 45a584d | target-m1-b1, target-m1-b2 |
+| 2026-10-02 | A4 commit | `build(xtask): verify gates, ci-local lane, dist, new-crate, manifest` — 3046373 | target-a4 |
+| 2026-10-02 | L1, L2 commit | `feat(tfar-game-link): protocol, plugin server and extension client` — 37dc8e0 | target-m3-l1, target-m3-l2 |
+| 2026-10-02 | Briefs | M1–M4 briefs — f451d8d; C0, H2, L3, P3 briefs and the build directory rule — c38c7c0; S1, V1, W1 briefs — d8dee88 | — |
+| 2026-10-02 | H1 commit | `feat(tfar-ts3-host): safe TeamSpeak layer over ts3plugin-sys` — 2ff1886 | target-m2-h1 |
+| 2026-10-02 | Launch | C0, H2, L3, P1, P3 and P4 launched in parallel, each building into its own `target-<agent id>` folder | — |
+| 2026-10-03 | C0 run | Gate debts cleared (language-bans, firewalls, link-check, readme-coverage, unsafe allow-list); `ci ci-local` stops at fmt on an L3 file, so each step was rerun alone | target/agent-logs/c0-*.log |
 
 ## Amendments
 
@@ -55,6 +92,28 @@ Rows are added when each milestone starts, from the proposed rosters in the
   gate set (16 repository gates, each with a perturbation test, plus `ci`, `dist`, `new-crate` and
   `reference-manifest`) needs L. The [A4 brief](/documentation/program/agent_briefs/m0_a4_xtask_gates.md)
   already says L.
+- **A2 (2026-10-02): A3 started in parallel with A1**, not after A1's templates; A3 followed the plan's
+  conventions directly.
+- **A3 (2026-10-02): M1–M3 slices ran early, in parallel with the end of M0.** B1, B2, L1, L2 and H1
+  ran before the M0 close; each built into its own target folder.
+- **A4 (2026-10-02): L1 and L2 ran before M2 completed.** The game link crates depend on no
+  TeamSpeak crate, so the plan's M2-then-M3 order did not bind them.
+- **A5 (2026-10-02): G1 moves after P1–P5.** G1 compares live oracle output against the finished
+  crates, so no fixtures pass between crates and P1–P5 need nothing from G1 first.
+- **A6 (2026-10-02): the C0 cleanup agent is added to M0** to clear the gate debts the parallel slices
+  left and to bring these records up to date. At launch: `tfar_extension_probe` joins the unsafe
+  allow-list (it calls `RVExtension` through raw pointers), C0 leaves the files of the running agents
+  and the root Cargo.toml alone, and C0 records the C0, H2, L3 and P3 briefs here.
+- **A7 (2026-10-02): slices are folded.** H2 also does H3 (`tfar_ts3_settings_db`), P1 also P2
+  (`tfar_dynamics`), P4 also P5 (`tfar_playback_mixer`), and L3 does H4 (the stubs' metadata exports).
+
+## Owner decisions
+
+- **2026-10-02: no live tests for now.** No Arma, Proton or TeamSpeak runs; OC-ts and OC-arma wait.
+- **2026-10-02: the TeamSpeak SDK headers stay** in `crates/teamspeak/tfar_ts3_host/sdk_headers/`
+  (the repository is private); `language-bans` admits `.h` files there only.
+- **2026-10-02: the HRIR download is approved** for P3.
+- **2026-10-02: no `ai guard` subcommand is needed** in xtask (OF-012).
 
 ## Open findings
 
@@ -69,15 +128,17 @@ slice that does it), NOTE (recorded, no change needed now) or CLOSE (resolved).
   bug_fixes.md groups them under "1.0 only" (F-007, F-008). The plan's "POS and FREQ without length
   checks" holds for 1.0; 0.9.12 checks the count but crashes on malformed numbers, so F-003 covers
   both forms. Reported by A2.
-- **OF-002 (FIX, M2 H4 and M8 R1): the installed plugin file name decides the TeamSpeak plugin name,
+- **OF-002 (CLOSE): the installed plugin file name decides the TeamSpeak plugin name,
   and the original receivers filter plugin commands by that name.** 0.9 accepts only senders whose
   name starts with `task_force_radio` (`reference/tfar_0_9_12/ts/src/plugin.cpp:3116`), 1.0 only
   `TFAR`. The dist names planned in the A4 brief (`libtfar_plugin_<v>_linux_amd64.so`) would give
   plugin names that neither original accepts, so Windows players would ignore our tangent and volume
   commands and the reverse. Verify in M2 with the mock and two clients; the likely fix is dist names
   `task_force_radio_linux_amd64.so` (0.9) and `TFAR_linux_amd64.so` (1.0), which also keeps the two
-  Rust plugins apart. The install runbook names the files generically until this settles. Reported by
-  A2.
+  Rust plugins apart. Reported by A2. Closed on 2026-10-02 with the decision "dist names
+  `task_force_radio_linux_amd64.so` / `TFAR_linux_amd64.so`", recorded in the
+  [workspace decisions](/documentation/decisions/workspace.md); `cargo xtask dist` and the install
+  runbook use those names.
 - **OF-003 (NOTE): "foundation depends on nothing" (plan §4) conflicts with the edge
   `tfar_arma_values` → `tfar_geometry` in the shared brief.** laws_and_gates.md reads the rule as
   "foundation depends only on foundation"; A4's `crate-tiers` must implement that reading. Reported
@@ -111,13 +172,43 @@ slice that does it), NOTE (recorded, no change needed now) or CLOSE (resolved).
   its out-of-game metadata beside the 1.0 one. Options for the owner: accept it (restart TeamSpeak
   between mods), or let a plugin return to dormant once its game-end handling has finished.
   Reported by A2.
+- **OF-012 (NOTE): a host hook runs `target/debug/xtask ai guard` before every tool call.** Our xtask
+  has no `ai guard` command, so once a build leaves the binary at that path every Bash and Read call
+  is blocked. A4 once replaced the built xtask binary with a stub to get past it. The rule since:
+  every agent builds into `CARGO_TARGET_DIR=<repo>/target-<agent id>` (the
+  [shared brief](/documentation/program/agent_briefs/shared_brief.md#build-directory-rule)), and
+  never stubs, renames or deletes files to pass a hook. The owner said no `ai guard` subcommand is
+  needed. Reported by A4 and the orchestrator.
+- **OF-013 (NOTE): `tfar_ts3_mock` depends on `libc`.** The mock plays TeamSpeak and hands the
+  plugin `malloc`ed memory that the plugin frees through `freeMemory`, so C0 widened the `libc`
+  firewall from `tfar_ts3_host` alone to `tfar_ts3_host` and `tfar_ts3_mock` (decision entry "The
+  library map gains libc for TeamSpeak memory and libloading for the probe (D18)"). Reported by C0.
+- **OF-014 (FIX, root config): `cargo deny check` fails on two new dependencies.** `webpki-roots`
+  1.0.9 (through `ureq`, `tfar_web_requests`) is `CDLA-Permissive-2.0`, missing from the licence
+  allow-list; `paste` 1.0.15 (through `sci-rs`, `tfar_dsp_filters`) is unmaintained,
+  RUSTSEC-2024-0436. Both need a deny.toml entry with a reason. Reported by C0.
+- **OF-015 (FIX, root config): `typos` fails on the TeamSpeak SDK spellings.** The `ts3plugin-sys`
+  field for `requestUnmuteClients`, whose name carries a transposed "request"
+  (`crates/teamspeak/tfar_ts3_host/src/ts3_functions/client_actions.rs:83`,
+  `crates/teamspeak/tfar_ts3_host/src/tests/sdk_layout.rs:91`,
+  `crates/teamspeak/tfar_ts3_host/src/ts3_functions/tests/ts3_calls.rs:308`), and the upstream
+  comments of `crates/teamspeak/tfar_ts3_host/sdk_headers/public_definitions.h` (three misspelt
+  words at lines 13, 164 and 414). typos.toml needs that field spelling as an accepted word and the
+  sdk_headers folder excluded. Reported by C0.
+- **OF-016 (NOTE): the M5 and M7 briefs use other agent ids than the plan's rosters.** The plan names
+  M5 W1 and W2 and M7 U1 to U8; the briefs are S1 (`m5_s1_s2_…`) and W1 (`m7_w1_…`). The briefs are
+  the ids in use. Reported by C0.
 
 ## Handoff
 
-M0 is in progress. S0 is committed (de41c9b). A1 (standards) and A2 (program records) ran in
-parallel; A2's records are written. The next session:
-1. Reviews the A1 and A2 diffs against their briefs, triages their findings here, and commits each
-   slice (`docs(program): …` for A2) with explicit paths.
-2. Decides OF-002 before A4 writes `dist`, or tells A4 to keep the brief's names until M2.
-3. Launches A3 from its brief, then A4, then runs the M0 close from the
-   [roadmap](/documentation/roadmap.md#m0--workspace-skeleton-reference-archive-gates).
+M0 is closing; M1 is done; M2, M3 and M4 run in parallel. Committed: S0, A1–A4, B1, B2, L1, L2, H1
+and the briefs (last commit d8dee88). C0 has cleared the gate debts of 2ff1886; H2, L3, P1, P3 and P4
+are running, and files of `tfar_game_commands_0_9` and `tfar_web_requests` are changing as well. The
+next session:
+1. Reviews the C0 diff and commits it with explicit paths.
+2. Reviews and commits each running slice as it reports, and fixes OF-014 and OF-015 in deny.toml and
+   typos.toml.
+3. Runs `cargo xtask ci ci-local` on a quiet tree; when it holds, records the first green commit
+   above and closes M0 from the [roadmap](/documentation/roadmap.md#m0--workspace-skeleton-reference-archive-gates)
+   (the Windows cross-build and the dist placeholders included).
+4. Launches G1 once P1–P5 are committed (amendment A5).

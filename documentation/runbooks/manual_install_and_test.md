@@ -32,10 +32,10 @@ and probe steps (4, 5, 7, 8) from M3, and a real game from M6 (0.9) and M7 (1.0)
    ```
 
    **Expected:** the dist folder under target holds a tfar_1_0 and a tfar_0_9 folder, each with the
-   plugin `.so` for Linux, `task_force_radio_pipe_x64.dll` for Windows, and a radio-sounds
-   folder. The plugin file names follow open finding OF-002 in
-   [progress](/documentation/program/progress.md) (the TeamSpeak plugin name comes from the file
-   name).
+   plugin `.so` for Linux (`task_force_radio_linux_amd64.so` in tfar_0_9, `TFAR_linux_amd64.so`
+   in tfar_1_0; TeamSpeak takes the plugin name from the file name, and the originals accept plugin
+   commands only from those names), `task_force_radio_pipe_x64.dll` for Windows, and a radio-sounds
+   folder.
 
 2. Close TeamSpeak, then remove the old Windows plugin files by hand.
 
@@ -124,7 +124,7 @@ clients, renames them to their game names, and carries SW, LR and DD radio traff
 | `Not connected to TeamSpeak` or `Pipe not opened from TS plugin` in step 7 | TeamSpeak is not running, the plugin is disabled, or the plugin cannot bind its port | Enable the plugin; check TeamSpeak's log for a port-in-use line (ports 47810 and 47820, see the [game link protocol](/documentation/architecture/game_link_protocol.md#ports)) |
 | `callExtension` returns an empty string at once | BattlEye blocked the DLL, or the original DLL is still loaded | Step 5; restart Arma after replacing the DLL |
 | The probe reports that it cannot load the DLL | The DLL was built for the wrong target, or a mingw runtime is missing | Rebuild with `cargo xtask dist`; the build links the C runtime statically |
-| Windows players do not hear our tangent sounds | The plugin file name does not give the TeamSpeak plugin name the originals accept | See OF-002 in [progress](/documentation/program/progress.md) |
+| Windows players do not hear our tangent sounds | The plugin file name does not give the TeamSpeak plugin name the originals accept | Keep the dist names `task_force_radio_linux_amd64.so` (0.9) and `TFAR_linux_amd64.so` (1.0); never rename the file |
 
 ## Related documentation
 

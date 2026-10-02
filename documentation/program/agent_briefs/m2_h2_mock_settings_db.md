@@ -31,7 +31,7 @@ A fake TeamSpeak client that loads a real plugin `.so` and drives it.
 - **Tests:**
   - fake-table slot coverage (every function TFAR uses has a fake);
   - string allocation and free;
-  - a self-built test plugin: put a tiny cdylib under `tools/tfar_ts3_mock/tests/fixture_plugin/` as its own workspace member? **No.** Instead, test the fakes directly through the table's function pointers. Loading real plugins is the apps' job, using `locate_cdylib`.
+  - a self-built test plugin: put a tiny cdylib under tools/tfar_ts3_mock/tests/fixture_plugin/ as its own workspace member? **No.** Instead, test the fakes directly through the table's function pointers. Loading real plugins is the apps' job, using `locate_cdylib`.
 - The crate root needs the four-point header (`src/main.rs` and `src/lib.rs`).
 
 ## `tfar_ts3_settings_db` (crates/teamspeak/tfar_ts3_settings_db)

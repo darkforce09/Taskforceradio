@@ -33,7 +33,7 @@ agents can open the originals.
 - **`.cargo/config.toml`:** `[alias] xtask = "run --package xtask --"`.
 - **xtask groups:** `verify` (file-length, no-python, no-node, no-shell, crate-tiers, crate-anatomy,
   readme-coverage, markdown-placement, link-check, …), `ci <task>` (static task table in
-  `tools/xtask/src/commands/ci/task_definitions.rs`, composite `ci-local`), `mk`, `refactor relocate`, etc.
+  tools/xtask/src/commands/ci/task_definitions.rs, composite `ci-local`), `mk`, `refactor relocate`, etc.
 - **Module header:** four-point `//!` contract: `**Role:**`, `**Position:**`, `**Signals & state:**`,
   `**Invariants:**`.
 - **Tests:** sibling files `#[cfg(test)] #[path = "tests/<file>.rs"] mod tests;`; inline `mod tests {}`
@@ -42,7 +42,7 @@ agents can open the originals.
   self-describing names; variants in subfolders; strict boundary layers; file size ceilings (500 production,
   1000 tests); in-code docs (present tense, no history or ticket ids, `///` on public items);
   docs ship in the same commit. `AGENTS.md` is a symlink to `CLAUDE.md`.
-- **Program records** (`documentation/restructure/` in Reforger):
+- **Program records** (documentation/restructure/ in Reforger):
   - `program_plan.md`: Context · Verified findings · Binding decisions (`| Id | Decision |`) · Execution model
     · Stages table (`| Stage | Agents and content | Extra gates, checkpoints |`, budgets S = 150k, M =
     250k, L = 350k, ∥ for parallel) · Shared brief essentials · Risks.
@@ -56,7 +56,7 @@ agents can open the originals.
     findings; not run or deviations).
   - Per-agent brief: "You are agent <ID>, <role>… Read the shared brief first"; Goal · Steps · Owned files ·
     Report additions; ends "Budget: M (250k tokens). Stop there and report done and not done."
-  - Orchestration method: `documentation/runbooks/sub_agent_orchestration.md` in Reforger.
+  - Orchestration method: documentation/runbooks/sub_agent_orchestration.md in Reforger.
 - **Documentation rules:** snake_case names; first line `**Status:** live | frozen record | archived` (code
   READMEs carry none); live docs ≤ 500 lines; repository-root links (`/documentation/...`); a backticked path
   must exist; ASCII diagrams in `text` blocks; decisions as `### YYYY-MM-DD — <decision>` with Context,
@@ -73,7 +73,7 @@ agents can open the originals.
   saying so." Half-steps (`M0.5`) for spikes; `## Open questions` table at the end.
 - **Per-dependency "why" comments** in every manifest; `default-features = false` preferred.
 - **Runbook** `documentation/runbooks/continue_in_claude_code.md` with a pasteable resume prompt.
-- **Gates** are Rust (`tools/repo_gates`): language-bans, file-length, module-headers, test-placement,
+- **Gates** are Rust (tools/repo_gates): language-bans, file-length, module-headers, test-placement,
   prose-rules, editorconfig, crate-layering, readme-coverage, readme-sections, markdown-placement,
   status-lines, link-check. Exit codes: 0 held, 1 violation, 2 could not run. Each gate has a test file.
 - **Law: Rust only** for repository tasks (no Python, shell, Makefiles, Node).

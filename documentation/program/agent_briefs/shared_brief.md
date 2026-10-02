@@ -47,10 +47,10 @@ Read this first. Then read your own prompt file in this folder.
 - Research: `/documentation/program/research/conventions_survey.md`, `library_survey.md`.
 - Convention originals to adapt (read, never copy blindly; replace every TBD-specific term):
   - `/run/media/system/Disk_2/Projects/TBD-Reforger/CLAUDE.md`, its `documentation/standards/` and
-    `documentation/restructure/` and `documentation/runbooks/sub_agent_orchestration.md`
+    documentation/restructure/ and documentation/runbooks/sub_agent_orchestration.md
   - `/run/media/system/Disk_2/Projects/TBD-subtitles/CLAUDE.md`, its `documentation/standards/` (incl.
     `templates/`), `documentation/roadmap.md`, `documentation/runbooks/continue_in_claude_code.md`,
-    `tools/repo_gates/`
+    tools/repo_gates/
   - Zed and rerun raw files in
     `/tmp/claude-1000/-run-media-system-Disk-2-Projects-Taskforceradio/19487e80-757a-431f-981a-ae1156f78b05/scratchpad/{zed,rerun}/`
 

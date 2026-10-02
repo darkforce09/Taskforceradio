@@ -215,6 +215,10 @@ pub(crate) const FIREWALLS: &[(&str, FirewallScope)] = &[
         "ts3plugin-sys",
         FirewallScope::Crates(&["tfar_ts3_host", "tfar_ts3_mock"]),
     ),
+    (
+        "libc",
+        FirewallScope::Crates(&["tfar_ts3_host", "tfar_ts3_mock"]),
+    ),
     ("postcard", FirewallScope::Category(GAME_LINK)),
     (
         "libloading",
@@ -243,6 +247,7 @@ pub(crate) const UNSAFE_ALLOWED: &[&str] = &[
     "tfar_extension_0_9",
     "tfar_extension_1_0",
     "tfar_ts3_mock",
+    "tfar_extension_probe",
 ];
 
 /// The feature any crate may declare.
@@ -280,8 +285,27 @@ pub(crate) const C_SOURCE_FOLDERS: &[&str] = &[
     "tools/tfar_golden_vectors/shim/",
 ];
 
+/// The folders that may hold C headers (`.h`) and nothing else of C or C++: reference headers
+/// that are read, never compiled.
+pub(crate) const C_HEADER_ONLY_FOLDERS: &[&str] = &["crates/teamspeak/tfar_ts3_host/sdk_headers/"];
+
+/// The one extension a header-only folder admits.
+pub(crate) const C_HEADER_EXTENSION: &str = "h";
+
 /// File extensions of C and C++ sources and headers.
 pub(crate) const C_SOURCE_EXTENSIONS: &[&str] = &["c", "h", "cc", "cpp", "cxx", "hh", "hpp", "hxx"];
+
+/// Whether a C or C++ file at `path` with this `extension` may exist: anything C or C++ in the
+/// golden-vector folders, `.h` alone in the header-only folders.
+pub(crate) fn c_file_allowed(path: &str, extension: &str) -> bool {
+    C_SOURCE_FOLDERS
+        .iter()
+        .any(|folder| path.starts_with(folder))
+        || (extension == C_HEADER_EXTENSION
+            && C_HEADER_ONLY_FOLDERS
+                .iter()
+                .any(|folder| path.starts_with(folder)))
+}
 
 /// File extensions banned outside `reference/`.
 pub(crate) const BANNED_EXTENSIONS: &[&str] = &["py", "sh", "bash", "js", "ts"];

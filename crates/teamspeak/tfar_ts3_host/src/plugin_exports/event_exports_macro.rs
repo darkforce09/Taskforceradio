@@ -2,7 +2,7 @@
 //! event TFAR handles, forwarding to `$crate::export_glue`.
 //!
 //! **Role:** the connection, channel, client, error and plugin-command exports, with the argument
-//! lists of `src/plugin.h` at API 26.
+//! lists of `reference/tfar_1_0/ts/src/plugin.h` at API 26.
 //!
 //! **Position:** expanded only by [`ts3_plugin!`](crate::ts3_plugin); hidden from the docs.
 //!

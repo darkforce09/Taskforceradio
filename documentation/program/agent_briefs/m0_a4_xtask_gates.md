@@ -29,7 +29,7 @@ Gates:
 | `markdown-placement` | `.md` files only under `documentation/`, as `README.md` anywhere, or as the root `CLAUDE.md`/`AGENTS.md`/`README.md`. `reference/` is ignored. |
 | `link-check` | Repository-root links `(/...)` and backticked paths that look like repository paths must exist. No `../` links. |
 | `editorconfig` | Final newline, LF, no trailing whitespace (except in `.md`), and indent rules on tracked text files outside `reference/`. |
-| `language-bans` | No `.py`, `.sh`, `.bash`, `Makefile`, `.js` or `.ts` outside `reference/`. C/C++ sources only under `tools/tfar_golden_vectors/oracle/` and `tools/tfar_golden_vectors/shim/`. |
+| `language-bans` | No `.py`, `.sh`, `.bash`, `Makefile`, `.js` or `.ts` outside `reference/`. C/C++ sources only under tools/tfar_golden_vectors/oracle/ and tools/tfar_golden_vectors/shim/. |
 | `reference-untouched` | Recompute sha256 for every file under `reference/` except `reference/README.md`, `reference/MANIFEST.sha256` and anything under `reference/tfar_1_0/.git/`, then compare to `reference/MANIFEST.sha256`. Report added, removed and changed files. |
 
 Other commands:
