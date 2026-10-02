@@ -16,6 +16,10 @@ tier = 1
 targets = "any"
 
 [dependencies]
+# The listener-frame vector maths of the direction conversion.
+glam = { workspace = true, features = ["std", "f64"] }
+# Binaural HRIR convolution over the sphere, resampled to 48 kHz at load.
+hrtf.workspace = true
 # Derives the crate's `Error`.
 thiserror.workspace = true
 # Positions, directions and distances.
