@@ -20,6 +20,16 @@ Read this first. Then read your own prompt file in this folder.
 9. **No silent deferrals.** Do the whole slice. If something truly can't be done, say exactly what and why.
 10. **Names need zero context.** Folder, file, module and symbol names are self-describing, snake_case.
 
+## Build directory rule
+- **Never build into the default `target/`.** Prefix every cargo command, including `cargo xtask`, with
+  `CARGO_TARGET_DIR=/run/media/system/Disk_2/Projects/Taskforceradio/target-<your agent id>` and
+  `CARGO_BUILD_JOBS=4`.
+- The reason: a host hook runs `target/debug/xtask ai guard` before every tool call, and our xtask has no such
+  command. If the binary exists there, every Bash and Read call is blocked.
+- `target-*` folders are gitignored. Logs still go to `target/agent-logs/`.
+- Never stub, rename or delete files to get past a hook. Report a block as a finding.
+- **No live tests.** There are no Arma, Proton or TeamSpeak runs, and nothing is copied into those folders.
+
 ## Environment facts (verified 2026-10-02)
 - Repo root: `/run/media/system/Disk_2/Projects/Taskforceradio` (git, branch `main`, no commits yet).
 - Toolchain 1.99.0 is pinned in `rust-toolchain.toml` with targets `x86_64-unknown-linux-gnu` and
