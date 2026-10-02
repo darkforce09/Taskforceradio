@@ -5,6 +5,6 @@
 mod tests;
 
 /// What `tfar_voice_pipeline_0_9` is for, in one sentence.
-pub const CRATE_ROLE: &str = "tfar_voice_pipeline_0_9: the 0.9.12 audio path for one voice \
-     frame: routes the speaker, applies the radio effect, the distance \
-     and stereo gains and the HRTF, and mixes radio sounds.";
+pub const CRATE_ROLE: &str = "tfar_voice_pipeline_0_9: the 0.9.12 stereo function per sender: \
+     the gates, the direct voice with its distance gain and direction, one compressor pass, every \
+     radio reception with its effect and loudspeaker stages, and the global volume.";

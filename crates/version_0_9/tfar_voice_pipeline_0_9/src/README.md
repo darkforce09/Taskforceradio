@@ -1,33 +1,58 @@
 # Voice pipeline for 0.9 source
 
-The source of `tfar_voice_pipeline_0_9`: the crate's role constant, its error type and its prelude.
-The crate's own code is not written yet.
+The source of `tfar_voice_pipeline_0_9`: the processor with the stereo function's gates, the voice
+chain it runs, the distance gain and the fixed gains, the scratch it works in, and the own-voice
+path for loudspeakers.
 
 ## Contents
 
 ```text
 crates/version_0_9/tfar_voice_pipeline_0_9/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── crate_role.rs       `CRATE_ROLE`: what the crate is for, in one sentence
+├── distance_gain.rs    `volume_from_distance` and `radio_volume_multiplier`
+├── error.rs            `Error`: the own-voice stream refusing a block
+├── lib.rs              the crate root: module header, `mod` lines and re-exports
+├── own_voice.rs        `process_own_voice_for_speakers`, `append_own_voice`, the stream name
+├── prelude.rs          the processor, its context and outcome types and the distance gain
+├── tests/              unit and scenario tests per module, and the shared test scene
+├── voice_chain/        the plan of a sender's frame and its render over the sender's sound state
+├── voice_context.rs    `VoiceFrameContext`, `OwnVoiceContext` and `VoiceOutcome`
+├── voice_gains.rs      the fixed gains of the stereo function and the HRTF makeup gain
+├── voice_processor.rs  `VoiceProcessor`: the gates and the plugin-enabled check
+└── voice_scratch.rs    `VoiceScratch`: the buffers reused from frame to frame
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`.
+```text
+plugin ── VoiceFrameContext, &mut ServerRadioData, &mut StereoBuffer ──▶ VoiceProcessor
+   voice_processor: gates ──▶ PassThrough | Silenced | run the chain
+   voice_chain: plan_sender (read-only) ──▶ SenderPlan + routes in VoiceScratch
+                render_frame (sender's ClientDsp) ──▶ Processed
+own_voice: captured frame ──▶ same chain as the local player ──▶ block ──▶ PlaybackMixer stream
+```
+
+`voice_processor.rs` holds the gates of the stereo function and the plugin-enabled check, and runs
+the chain in two steps so that the read-only plan and the mutable render never borrow the state
+together; the sender's nickname and the receptions travel between them in `VoiceScratch`.
+`distance_gain.rs` and `voice_gains.rs` hold the numbers the plan uses. `own_voice.rs` adds the
+captured-voice path to the processor. The tests share one synthetic scene
+(`tests/test_scene.rs`, compiled only for tests).
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
+- `VoiceProcessor`, `VoiceFrameContext`, `OwnVoiceContext`, `VoiceOutcome`, `VoiceScratch`,
+  `ScratchCapacities` and the scratch constants.
+- `append_own_voice`, `OWN_VOICE_STREAM_NAME`.
+- `volume_from_distance`, `radio_volume_multiplier` and the gain constants.
+- `Error`, `Result`, `CRATE_ROLE`, `prelude`.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
+- Depends on: `tfar_client_state_0_9`, `tfar_radio_routing_0_9`, `tfar_radio_effects_0_9`,
+  `tfar_dsp_filters` and `tfar_dynamics` (the filters and the compressor the sound state holds),
+  `tfar_hrtf`, `tfar_spatial_audio`, `tfar_sample_buffer`, `tfar_playback_mixer`, `thiserror`.
 - Used by: `tfar_plugin_0_9`.
-- Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests
-  live in `tests/` (`cargo xtask verify test-placement`).
+- Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); no
+  production file calls TeamSpeak, reads the clock or makes a sound object; tests live in `tests/` folders
+  (`cargo xtask verify test-placement`).

@@ -1,13 +1,14 @@
 //! The error type of `tfar_voice_pipeline_0_9`.
 
-/// Every failure `tfar_voice_pipeline_0_9` reports.
+/// Every failure `tfar_voice_pipeline_0_9` reports. Processing a frame never fails; only handing
+/// the local player's own voice to the playback mixer can.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// The operation asked for is not offered by this crate.
-    #[error("tfar_voice_pipeline_0_9 does not offer the operation `{operation}`")]
-    UnsupportedOperation {
-        /// The name of the operation that was asked for.
-        operation: &'static str,
+    /// The playback mixer refused the local player's own voice block.
+    #[error("the own-voice stream refused a block: {source}")]
+    OwnVoiceStream {
+        /// The playback mixer's error.
+        source: tfar_playback_mixer::Error,
     },
 }
 

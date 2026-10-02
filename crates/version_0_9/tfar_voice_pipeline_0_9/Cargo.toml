@@ -27,13 +27,13 @@ tfar_radio_effects_0_9.workspace = true
 tfar_dsp_filters.workspace = true
 # The compressor.
 tfar_dynamics.workspace = true
-# Binaural direction rendering.
+# Binaural direction rendering and the listener-relative direction.
 tfar_hrtf.workspace = true
-# The distance curve and cone gains.
+# The 0.9 simple ILD, the fallback panner.
 tfar_spatial_audio.workspace = true
-# The shared sample frame type and saturating gain.
+# The stereo buffer, saturating gain and mix.
 tfar_sample_buffer.workspace = true
-# Radio sound playback.
+# The own-voice stream of the playback mixer.
 tfar_playback_mixer.workspace = true
 
 [lints]
