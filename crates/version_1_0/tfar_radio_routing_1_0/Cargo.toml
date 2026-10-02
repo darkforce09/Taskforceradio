@@ -25,6 +25,8 @@ tfar_antennas_1_0.workspace = true
 tfar_plugin_settings_1_0.workspace = true
 # Positions, directions and distances.
 tfar_geometry.workspace = true
+# The Arma integer reader for `ID:<n>` serious channel names.
+tfar_arma_values.workspace = true
 
 [lints]
 workspace = true

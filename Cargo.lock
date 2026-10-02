@@ -2887,13 +2887,16 @@ dependencies = [
 name = "tfar_client_state_1_0"
 version = "0.1.0"
 dependencies = [
+ "tfar_arma_values",
  "tfar_dsp_filters",
  "tfar_dynamics",
  "tfar_game_commands_1_0",
  "tfar_geometry",
  "tfar_hrtf",
+ "tfar_plugin_commands_1_0",
  "tfar_plugin_settings_1_0",
  "tfar_radio_effects_1_0",
+ "tfar_sample_buffer",
  "thiserror 2.0.21",
 ]
 
@@ -3154,6 +3157,7 @@ name = "tfar_radio_routing_1_0"
 version = "0.1.0"
 dependencies = [
  "tfar_antennas_1_0",
+ "tfar_arma_values",
  "tfar_client_state_1_0",
  "tfar_geometry",
  "tfar_plugin_settings_1_0",

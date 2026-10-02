@@ -1,23 +1,47 @@
 # Radio routing for 1.0
 
-The `tfar_radio_routing_1_0` crate: whether and how a 1.0 listener hears a speaker: direct, over
-radio, intercom or speaker radio. Used by `tfar_plugin_1_0`, `tfar_voice_pipeline_1_0`.
+The `tfar_radio_routing_1_0` crate: whether and how a 1.0 listener hears a speaker over radio,
+intercom or speaker radio, the radio effect error levels, the serious-mode mute rules and the
+serious channel lookup. Used by `tfar_plugin_1_0`, `tfar_voice_pipeline_1_0`.
 
 ## Contents
 
 ```text
 crates/version_1_0/tfar_radio_routing_1_0/
 ├── Cargo.toml  the `tfar_radio_routing_1_0` package (lib): tier 4, workspace lints and dependencies
-└── src/        the crate root, the role constant, the error type and the prelude
+└── src/        the reception rules, the mute rules, the error levels and the serious channel
 ```
 
 ## How it works
 
-The 1.0 reception rules: `isOverRadio` and its neighbours decide whether a listener hears a speaker
-directly, over radio (with antennas and terrain interception), over intercom or through a speaker
-radio, and with which effect. The code is not written yet: `src/lib.rs` carries the module header
-and re-exports, `src/crate_role.rs` states the crate's role in one constant, and `src/error.rs`
-holds the `thiserror` error type.
+Every rule reads a `RoutingContext` (the session, the settings, the antenna manager and `now`)
+built under the session lock, and never changes state.
+
+`is_over_radio(context, sender, ignore)` lists every `HeardVia` of the sender for the local player,
+in the order of `isOverRadio` (`reference/tfar_1_0/ts/src/clientData.cpp:267-364`):
+
+1. **Intercom** (checked first): intercom enabled, the sender holds no tangent, both in the same
+   vehicle (not `no`) on the same intercom slot (not -1).
+2. A sender with range 0 (no tangent) is heard on nothing more.
+3. **Carried radio** (`is_over_local_radio`, `clientData.cpp:148-265`), unless the sender is the
+   listener. The short-range tangent (or flag) with a short-range or diver radio sends as short
+   range, or as a diver radio when the sender is under water without a short-range radio; else the
+   long-range tangent (or flag) with a long-range radio. The frequency must be on one of the
+   listener's radios. Under water the submerged part of the path is stretched to the diver range
+   (`70 + 230 · (1 − waves)`); beyond range a tower found by `find_connection` may still carry it
+   if the sender reaches the tower. The long-range radio is preferred when the listener can use
+   it; in half-duplex mode the radio being transmitted on (by class name) hears nothing.
+4. Beyond its range, with no tower, the sender is heard on nothing more.
+5. **Speakers** on the exact frequency, unless the speaker is the sender's own, its position is
+   unknown (on an unknown owner), or it is under water (height below 0).
+
+`mute_decision` follows `setGameClientMuteStatus` (`plugin.cpp:68-94`); `MuteTracker` records who
+this plugin muted, so requests go out only on a change and `unmute_all` returns the tracked set;
+`killed_mute_matrix` follows `processUnitKilled` (`CommandProcessor.cpp:552-587`).
+`serious_mode_channel` resolves `ID:<n>` or an exact channel name. `effect_error_from_distance`,
+`capped_by_antenna` and `underwater_effect_error` give the voice pipeline the error level of a
+radio effect, with no antenna read as the original's loss of 7. `apply_remote_tangent` runs
+`SessionState::apply_remote_tangent` with `is_over_radio` as its routing.
 
 ## Getting started
 
@@ -29,26 +53,37 @@ cargo test -p tfar_radio_routing_1_0  # the unit tests
 
 ## Configuration
 
-None: the crate reads no setting.
+Read from `tfar_plugin_settings_1_0::PluginSettings` through the context:
+
+- `intercomEnabled` (default true): the intercom rule.
+- `full_duplex` (default true): off, the radio being transmitted on hears nothing.
+- `disableAutomaticMute` (default false): on, `mute_decision` and `killed_mute_matrix` leave
+  serious-mode mutes alone.
 
 ## Public surface
 
-Today the crate exports `CRATE_ROLE`, `Error`, `Result` and `prelude`; the surface it is for:
-
-- `Reception`: how a listener hears a speaker, if at all.
-- `route_speaker`: the reception for one speaker and listener pair.
+- `RoutingContext`; `is_over_radio`, `is_over_local_radio`; `apply_remote_tangent`.
+- `mute_decision`, `MuteDecision`, `VOICE_RANGE_MARGIN`; `MuteTracker`; `killed_mute_matrix`,
+  `MuteChanges`.
+- `serious_mode_channel`, `ChannelId`, `CHANNEL_ID_PREFIX`.
+- `effect_error_from_distance`, `capped_by_antenna`, `underwater_effect_error`;
+  `diver_radio_distance`, `underwater_weighted_distance`; `prelude` adds `distance_underwater`.
+- `Error`, `Result`, `CRATE_ROLE`.
 
 ## Boundaries
 
-- Depends on: `tfar_client_state_1_0` (the 1.0 per-client state); `tfar_antennas_1_0` (the 1.0
-  antenna and tower model); `tfar_plugin_settings_1_0` (the 1.0 settings); `tfar_geometry` (positions,
-  directions and distances); `thiserror` for the error type.
+- Depends on: `tfar_client_state_1_0` (the session, the clients and `HeardVia`);
+  `tfar_antennas_1_0` (the towers); `tfar_plugin_settings_1_0` (the settings above);
+  `tfar_geometry` (distances, `distance_underwater`); `tfar_arma_values` (the `ID:<n>` integer);
+  `thiserror`.
 - Used by: `tfar_plugin_1_0`, `tfar_voice_pipeline_1_0`.
-- Rules: routing reads client state and never changes it. Tier 4 in `crates/version_1_0`: every
-  workspace dependency has a lower tier and follows the edge matrix in `crates/README.md`
+- Rules: routing reads client state and never changes it; the listener never hears itself on its
+  own radio (`the_listener_never_hears_itself_on_its_own_radio`) and is never muted
+  (`the_local_player_is_never_muted`). Tier 4 in `crates/version_1_0`: every workspace dependency
+  has a lower tier and follows the edge matrix in `crates/README.md`
   (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
 - [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
-  original 1.0 plugin this crate ports.
+  original 1.0 plugin this crate ports, §3.8 for the routing and §8 for the mute rules.

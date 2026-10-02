@@ -19,8 +19,12 @@ targets = "any"
 thiserror.workspace = true
 # Positions, directions and distances.
 tfar_geometry.workspace = true
+# The frequency entries, stereo modes and radio subtypes the game sends.
+tfar_arma_values.workspace = true
 # The typed 1.0 game commands.
 tfar_game_commands_1_0.workspace = true
+# The 1.0 plugin commands (tangent broadcasts, client ids) and the metadata test.
+tfar_plugin_commands_1_0.workspace = true
 # The 1.0 radio effect chains.
 tfar_radio_effects_1_0.workspace = true
 # The 1.0 settings.
@@ -31,6 +35,8 @@ tfar_dsp_filters.workspace = true
 tfar_dynamics.workspace = true
 # Binaural direction rendering.
 tfar_hrtf.workspace = true
+# The stereo buffer of the object-interception delay.
+tfar_sample_buffer.workspace = true
 
 [lints]
 workspace = true

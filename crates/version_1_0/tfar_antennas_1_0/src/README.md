@@ -1,33 +1,40 @@
 # Antennas for 1.0 source
 
-The source of `tfar_antennas_1_0`: the crate's role constant, its error type and its prelude. The
-crate's own code is not written yet.
+The source of `tfar_antennas_1_0`: the radio tower, the tower registry and its connection search,
+the net id and the error type.
 
 ## Contents
 
 ```text
 crates/version_1_0/tfar_antennas_1_0/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── antenna.rs             `Antenna`: one tower, its reach and the loss of a hop through it
+├── antenna_connection.rs  `AntennaConnection`, `NO_CONNECTION_LOSS`, `loss_or_no_connection`
+├── antenna_manager.rs     `AntennaManager`: add, remove and find the best tower
+├── crate_role.rs          `CRATE_ROLE`: what the crate is for, in one sentence
+├── error.rs               `Error` (a tower with an invalid range) and `Result`
+├── lib.rs                 the crate root: module header, `mod` lines and re-exports
+├── net_id.rs              `NetId`: the Arma `creator:object` id of a tower
+├── prelude.rs             the public names for glob import
+└── tests/                 unit tests of each module
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`.
+`AntennaManager` keeps a `Vec<Antenna>` in insertion order; `find_connection` scans it once,
+keeping the tower of lowest loss below 1 among those both ends reach, and returns it with its loss
+as an `AntennaConnection` (a copy of the tower, so no reference outlives the caller's lock).
+`Antenna::new` refuses a negative or non-finite range, which the original stores but can never
+connect through.
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
+- `Antenna`, `AntennaManager`, `AntennaConnection`, `NetId`, `NO_CONNECTION_LOSS`,
+  `loss_or_no_connection`, `Error`, `Result`, `CRATE_ROLE` and `prelude`, re-exported at the
+  crate root.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
+- Depends on: `tfar_geometry`, `tfar_arma_values`, `thiserror`.
 - Used by: `tfar_plugin_1_0`, `tfar_radio_routing_1_0`.
 - Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests
   live in `tests/` (`cargo xtask verify test-placement`).
