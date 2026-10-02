@@ -60,12 +60,13 @@ here (`thiserror`, `tracing`, `parking_lot`, `crossbeam-channel`, `arc-swap`, `r
 |---|---|
 | `windows-sys` | `tfar_arma_extension_abi` |
 | `rusqlite` | `tfar_ts3_settings_db` |
-| `ureq` | `tfar_web_requests` |
-| `eframe`, `egui` | `tfar_debug_window` |
+| `ureq`, `url` | `tfar_web_requests` |
+| `eframe`, `egui`, `winit` | `tfar_debug_window` |
 | `cc` | `tfar_golden_vectors` |
 | `sci-rs`, `biquad` | `tfar_dsp_filters` |
 | `hrtf`, `rustfft`, `realfft` | `tfar_hrtf` |
 | `hound` | `tfar_playback_mixer` |
+| `fastrand` | `tfar_radio_effects_0_9`, `tfar_radio_effects_1_0` |
 | `ts3plugin-sys` | `tfar_ts3_host`, `tfar_ts3_mock` |
 | `libc` | `tfar_ts3_host`, `tfar_ts3_mock` (malloc and free for memory that crosses the TeamSpeak boundary) |
 | `postcard` | the game_link crates |
@@ -82,7 +83,8 @@ here (`thiserror`, `tracing`, `parking_lot`, `crossbeam-channel`, `arc-swap`, `r
   - `tfar_arma_extension_abi` (Arma C ABI and Win32 calls);
   - the 4 apps (export glue only);
   - `tfar_ts3_mock` (loads plugins and fakes the function table);
-  - `tfar_extension_probe` (loads the extension DLL and calls `RVExtension` through raw pointers).
+  - `tfar_extension_probe` (loads the extension DLL and calls `RVExtension` through raw pointers);
+  - `tfar_golden_vectors` (calls the compiled C++ and C oracles through safe wrappers).
 - Every `unsafe` block carries a `// SAFETY:` comment directly above it
   (`clippy::undocumented_unsafe_blocks` is denied).
 - `unsafe_op_in_unsafe_fn` is denied, so an `unsafe fn` body still needs explicit blocks.

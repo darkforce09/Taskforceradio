@@ -35,9 +35,15 @@ The plugin binds `127.0.0.1` only, never another interface.
   defines the parameter; `reference/tfar_1_0/extensions/task_force_radio_pipe/dllmain.cpp:21` picks
   the debug pipe).
 - **Plugin:** listens on the normal port. The original plugin switched to the debug pipe only by
-  recompiling (`reference/tfar_0_9_12/ts/src/plugin.cpp:51`). Proposed for M3, pending the owner
-  (roadmap open question): the plugin listens on the debug port instead when TeamSpeak's environment
-  sets `TFAR_GAME_LINK_DEBUG=1`.
+  recompiling (`reference/tfar_0_9_12/ts/src/plugin.cpp:51`). Both plugins listen on the debug port
+  instead when TeamSpeak's environment sets `TFAR_GAME_LINK_DEBUG` to exactly `1`; any other value
+  keeps the normal port. This is the default answer to the roadmap's debug-port question, pending
+  the owner (`listen_port.rs` in each plugin app).
+- **Test override:** `TFAR_GAME_LINK_PORT`, set to a port from 1 to 65535, makes the plugin listen
+  on that port and wins over `TFAR_GAME_LINK_DEBUG`; any other value is ignored with a warning. It
+  exists for test suites that load the plugin, so parallel tests never fight over the fixed ports
+  (`apps/tfar_plugin_0_9/tests/plugin_in_mock_host.rs`). The extensions have no override: they
+  always use the port of the table.
 - A port already in use: the plugin logs it to the TeamSpeak log and the current tab, stays
   dormant, and retries the bind every 5 s.
 
@@ -104,7 +110,9 @@ The 0.9 extension sends no `ASYNC` and no `FOCUS`.
    The original tests only the first character (`D`, `M`); no other async command starts with
    either letter, so matching the command name answers every real call identically.
 3. Any other input: `SYNC_REQ`, wait at most 1000 ms for the matching `SYNC_RESP`, reply its text;
-   on timeout an empty reply, as the original.
+   on timeout an empty reply, as the original. A session that closes while the call waits (the
+   plugin dropped the connection, or the session died) replies `Not connected to TeamSpeak`, the
+   same as a call with no live session; 1.0 has no `Pipe was closed by TS`.
 4. Focus: on every call, at most every 250 ms, the extension reads the foreground window
    (`GetForegroundWindow`, `GetClassNameW`) and sends `FOCUS` when "is Arma in front" changed. The
    class-name test is the original's (`reference/tfar_1_0/ts/src/Teamspeak.cpp:207`).
@@ -158,7 +166,7 @@ These are produced by the extension itself and are byte-identical to the origina
 |---|---|---|
 | `Pipe not opened from TS plugin` | no session and connect failed or backoff running | — |
 | `Pipe was closed by TS` | the plugin closed the connection during a call | — |
-| `Not connected to TeamSpeak` | sync wait timed out | no live session, for every call |
+| `Not connected to TeamSpeak` | sync wait timed out | no live session, for every call; a session closed during a sync call |
 | `OK` | — | any async call except DFRAME with needcfg and MISSIONEND |
 | `NEEDCFG` | — | `DFRAME~` while the latest STATUS says needcfg |
 | empty | empty input | empty input, `MISSIONEND~`, sync wait timed out |

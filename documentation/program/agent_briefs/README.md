@@ -23,18 +23,25 @@ documentation/program/agent_briefs/
 ├── m3_l3_apps_probe.md                   M3 L3: both extension apps, plugin stubs with the link, the probe
 ├── m4_p1_p2_filters_dynamics.md          M4 P1 + P2: tfar_dsp_filters and tfar_dynamics
 ├── m4_p3_hrtf.md                         M4 P3: tfar_hrtf with the IRCAM sphere
+├── m4_g1_golden_vectors.md               M4 G1: tfar_golden_vectors, the live C++ and F3DAudio oracles
 ├── m4_p4_p5_spatial_playback.md          M4 P4 + P5: tfar_spatial_audio and tfar_playback_mixer
+├── m4_r1_records_tooling.md              M4 R1: the records and tooling pass after the M2–M5 slices
 ├── m5_s1_s2_services_debug_window.md     M5 S1 + S2: tfar_web_requests and tfar_debug_window
 ├── m6_v1_commands_0_9.md                 M6 V1: tfar_game_commands_0_9 and tfar_plugin_commands_0_9
+├── m6_v3_state_routing_0_9.md            M6 V3: tfar_client_state_0_9 and tfar_radio_routing_0_9
+├── m6m7_e1_radio_effects.md              M6 + M7 E1: tfar_radio_effects_0_9 and tfar_radio_effects_1_0
+├── m6m7_v4w4_voice_pipelines.md          M6 + M7 V4 + W4: tfar_voice_pipeline_0_9 and tfar_voice_pipeline_1_0
+├── m6m7_v5w6_plugin_apps.md              M6 + M7 V5 + W6: the full TeamSpeak plugin apps
 ├── m7_w1_commands_settings_1_0.md        M7 W1: tfar_plugin_settings_1_0, the 1.0 game and plugin commands
+├── m7_w3_state_routing_antennas_1_0.md   M7 W3: tfar_client_state_1_0, tfar_radio_routing_1_0, tfar_antennas_1_0
 └── shared_brief.md                       rules, environment facts, crate edges and report format for every agent
 ```
 
 ## How it works
 
-A slice brief is named `m<N>_<agent>_<role>.md`: the milestone number, the agent id in lowercase
-(`a1`, `b2`, `u7`) and a snake_case role, so `m0_a2_program_records.md` is milestone M0, agent A2,
-the program records. Each brief opens with "You are agent <ID>, …. Read the shared brief first",
+A slice brief is named `m<N>_<agent>_<role>.md`: the milestone number (`m6m7` for a slice that
+serves two milestones), the agent id in lowercase (`a1`, `b2`, `u7`) and a snake_case role, so
+`m0_a2_program_records.md` is milestone M0, agent A2, the program records. Each brief opens with "You are agent <ID>, …. Read the shared brief first",
 then holds Goal, Steps, Owned files, Checks, Report additions and a closing budget line (S = 150k,
 M = 250k, L = 350k tokens). The orchestrator writes a milestone's briefs at its start from the
 proposed roster in the [program plan](/documentation/program/program_plan.md#5-milestones-and-agents),

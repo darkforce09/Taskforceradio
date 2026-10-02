@@ -19,10 +19,10 @@ the [1.0 plugin spec](/documentation/program/behaviour_specs/tfar_1_0_plugin.md#
 | Filter processing | `tfar_dsp_filters` | f64 Direct Form II Transposed, one state per channel | DSPFilters f32 Direct Form II |
 | Compressor | `tfar_dynamics` | our feed-forward compressor | simpleSource `SimpleComp` |
 | Direction | `tfar_hrtf` | `hrtf` crate, IRCAM HRIR sphere, block adapter from TS frame sizes | clunk (an ear delay only, F-001) and X3DAudio panning |
-| Distance curve, emitter cone, simple ILD | `tfar_spatial_audio` | small gain model on `glam` | X3DAudio curve and cone (1.0), `volumeFromDistance` (0.9), `applyILD` (F-012) |
+| Distance curve, emitter cone, simple ILD | `tfar_spatial_audio` | small gain model on `glam` | X3DAudio curve and cone (1.0), `applyILD` (F-012) |
 | Radio effects | `tfar_radio_effects_0_9`, `tfar_radio_effects_1_0` | built on `tfar_dsp_filters` | `RadioEffect.h`, `RadioEffect.hpp` |
 | WAV cache and playback mixing | `tfar_playback_mixer` | `hound`, `rtrb` queues | `PlaybackHandler`, the 0.9 playback deques (F-005) |
-| The chain itself | `tfar_voice_pipeline_0_9`, `tfar_voice_pipeline_1_0` | — | the 0.9 stereo function, 1.0 `processVoiceData` |
+| The chain itself, and the distance volume | `tfar_voice_pipeline_0_9`, `tfar_voice_pipeline_1_0` | — | the 0.9 stereo function and `volumeFromDistance`, 1.0 `processVoiceData` and `volumeAttenuation` |
 
 Rules for every step:
 - **One panner.** `hrtf` gives direction; the curve and cone give level. Nothing pans twice (D20).
@@ -31,7 +31,8 @@ Rules for every step:
 - **State is owned.** Filters, effects, compressors and HRTF sources live per (sender, key) inside
   the pipeline's state, created on first use and dropped with the sender or the playback.
 - **Denormals:** f64 processing replaces the FTZ/DAZ register tricks.
-- **Format:** 48 kHz interleaved i16 in and out; processing in f64; output clamped to i16.
+- **Format:** 48 kHz interleaved i16 in and out; processing in f64, except the HRTF, which the
+  `hrtf` crate runs in f32; output clamped to i16.
 
 ## TeamSpeak callbacks
 
@@ -143,6 +144,46 @@ stereo).
   callback. Positional sounds get the speaker band-pass, the vehicle low-pass, the underwater
   low-pass and direction from `tfar_hrtf`, exactly as speech on a ground speaker.
 - Each playback owns its filters and is dropped when it ends; no thread per playback (F-005).
+
+## HRTF rendering (`tfar_hrtf`)
+
+- **Sample format:** the `hrtf` crate convolves in f32; every other step processes in f64. The
+  block adapter converts i16 to f32 on the way in and back on the way out.
+- **Block size and latency:** the processor renders 4 interpolation steps of 120 frames, 480 frames
+  at a time, and glides direction and gain across the steps. The adapter adds a constant
+  480 frames, 10 ms at 48 kHz (`ADDED_LATENCY_FRAMES`), to every source it renders.
+- **Level:** the compensated IRCAM sphere is diffuse-field equalised, so a source comes out quieter
+  than its input: about −4 dB straight ahead and −9 dB behind. Nothing compensates for it yet (see
+  the open questions below).
+- **Memory:** every `HrtfSource` holds its own copy of the prepared processor, about 2 MB, so a
+  pipeline with one source per (sender, key) grows by about 2 MB per audible source.
+- **The sphere file:** both plugins load it from `tfar_hrir/IRC_1002_C.bin` relative to
+  TeamSpeak's plugins folder, beside `radio-sounds/`; `cargo xtask dist` copies the sphere and its
+  `CREDITS.md` from `assets/hrir/` into `tfar_hrir/` of each version folder. When the file cannot
+  be loaded, the simple ILD is the fallback panner.
+
+## Spatial gains (`tfar_spatial_audio`)
+
+- **ILD coefficients:** 0.375 for 0.9 (`reference/tfar_0_9_12/ts/src/plugin.cpp:621`) and
+  21.5° in radians, 0.37525, for 1.0 (`reference/tfar_1_0/ts/src/datatypes.hpp:81`); both with the
+  base gain 0.625.
+- **The 1.0 cone call:** the original X3DAudio call swaps the roles on purpose: the X3DAudio
+  listener sits at the sender's position facing my view direction, and the emitter sits at my
+  position facing the sender's view direction with its x and y negated
+  (`reference/tfar_1_0/ts/src/helpers.cpp:75`). `tfar_voice_pipeline_1_0` honours both the swap and
+  the x/y flip when it calls `EmitterCone::gain`, so a sender facing me is the one at the inner
+  volume, as in the original.
+- **Distance volume:** `volumeAttenuation` (1.0) and `volumeFromDistance` (0.9) belong to the voice
+  pipeline crates; `tfar_spatial_audio` builds the 25-point curve from the function it is given and
+  owns no distance rule of its own.
+
+## Open questions
+
+- **Makeup gain for the HRTF:** whether the voice pipelines add a fixed gain after `tfar_hrtf`
+  (about +4 dB, the frontal loss of the diffuse-field EQ) so that direct speech keeps the
+  original's loudness, or accept the quieter output. Pending the owner.
+- **HRTF memory:** about 2 MB per source; whether many simultaneous senders need a shared
+  processor or a cap on HRTF sources. Pending a measurement in M6 and M7.
 
 ## Differences from Windows players
 

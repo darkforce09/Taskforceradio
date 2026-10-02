@@ -37,7 +37,7 @@ Taskforceradio/
 │   ├── xtask/                    verify · ci · dist · new-crate · reference-manifest
 │   ├── tfar_ts3_mock/            dlopens a plugin .so, fake TS3Functions, scripted scenarios
 │   ├── tfar_extension_probe/     Windows exe: LoadLibrary + RVExtension (run under Proton's wine)
-│   └── tfar_golden_vectors/      cc-built reference C++ -> fixtures for the audio crates
+│   └── tfar_golden_vectors/      cc-built reference C++ and F3DAudio, live oracles in its tests
 ├── assets/hrir/     IRCAM HRIR sphere (.bin) + CREDITS.md
 ├── documentation/   roadmap, program records, architecture, standards, decisions, runbooks
 └── reference/       README.md + MANIFEST.sha256 (written by xtask); the two mod trees, byte-identical
@@ -81,7 +81,8 @@ module with its sibling test.
 ## Dependency diagram
 
 Arrows point from a crate to what it depends on; tiers run from 0 at the bottom up to 6. The full
-edge list is in the [shared brief](/documentation/program/agent_briefs/shared_brief.md).
+edge list, read from `cargo metadata`, is in the
+[crate catalogue](/documentation/program/crate_catalogue.md#workspace-edges).
 
 ```text
  tier 6   tfar_plugin_0_9                                    tfar_plugin_1_0
@@ -102,6 +103,7 @@ edge list is in the [shared brief](/documentation/program/agent_briefs/shared_br
           tfar_game_link_protocol  tfar_arma_extension_abi  tfar_web_requests  tfar_debug_window
 
  tier 2   tfar_extension_0_9, tfar_extension_1_0 --> tfar_arma_extension_abi, tfar_game_link_client
- tools    tfar_ts3_mock (tier 2) --> tfar_game_link_protocol, tfar_game_link_client
-          xtask, tfar_extension_probe, tfar_golden_vectors (tier 0, no workspace dependency)
+ tools    tfar_ts3_mock (tier 2) --> tfar_ts3_host, tfar_game_link_protocol, tfar_game_link_client
+          xtask, tfar_extension_probe, tfar_golden_vectors (tier 0; the oracle dev-depends on the
+          audio crates it checks)
 ```

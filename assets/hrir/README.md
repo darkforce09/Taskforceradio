@@ -31,13 +31,14 @@ assets/hrir/
 
 - Producers: mrDIMAS's hrir_sphere_builder, from the IRCAM LISTEN compensated WAV files.
 - Consumers: `tfar_hrtf` (its `HrirLibrary::load` at plugin start, and its tests through
-  `CARGO_MANIFEST_DIR`). The plugins need the file beside them; `cargo xtask dist` does not copy
-  it today.
+  `CARGO_MANIFEST_DIR`). The plugins load it from `tfar_hrir/IRC_1002_C.bin` in TeamSpeak's plugins
+  folder, where `cargo xtask dist` puts it (with CREDITS.md) in each version folder.
 
 ## Boundaries
 
 - Depends on: the sphere format of the `hrtf` crate pinned in the root `Cargo.toml` (0.9.0).
-- Used by: `tfar_hrtf`.
+- Used by: `tfar_hrtf`; `cargo xtask dist` copies both files (`HRIR_FILES` in
+  `tools/xtask/src/commands/dist.rs`).
 - Rules: the sphere file is never edited; CREDITS.md stays beside it; `.gitattributes` keeps
   `*.bin` binary.
 

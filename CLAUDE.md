@@ -58,9 +58,9 @@ The detail is in the [standards](/documentation/standards/README.md).
     `panic`, `indexing_slicing`, `todo`, `unimplemented` and `dbg_macro` are denied, so no panic path
     exists outside tests. Gate: `cargo clippy --workspace --all-targets -- -D warnings`.
 12. **`unsafe` only in allow-listed FFI crates.** `tfar_ts3_host`, `tfar_arma_extension_abi`, the four
-    apps (export glue), `tfar_ts3_mock` and `tfar_extension_probe` may hold `#![allow(unsafe_code)]`,
-    with a reason; every `unsafe` block has a `// SAFETY:` comment right above it. Gate:
-    `cargo xtask verify unsafe-allowlist` and the `undocumented_unsafe_blocks` lint.
+    apps (export glue), `tfar_ts3_mock`, `tfar_extension_probe` and `tfar_golden_vectors` may hold
+    `#![allow(unsafe_code)]`, with a reason; every `unsafe` block has a `// SAFETY:` comment right
+    above it. Gate: `cargo xtask verify unsafe-allowlist` and the `undocumented_unsafe_blocks` lint.
 13. **Docs move with code.** The comments, the README.md of every folder whose contents, surface or
     boundaries change, and the documents whose behaviour changes land in the same commit as the code.
     Gate: `cargo xtask verify readme-coverage`, `readme-sections`, `status-lines`, `markdown-placement`
@@ -109,7 +109,7 @@ Taskforceradio/
 │   ├── xtask/                  `cargo xtask`: verify, ci, dist, new-crate, reference-manifest
 │   ├── tfar_ts3_mock/          dlopens a plugin .so with a fake TS3Functions table, scripted scenarios
 │   ├── tfar_extension_probe/   Windows exe: LoadLibrary + RVExtension, run under Proton's wine
-│   └── tfar_golden_vectors/    cc-built reference C++ → fixtures for the audio crates (the one C/C++)
+│   └── tfar_golden_vectors/    cc-built reference C++ oracles compared live against the audio crates
 ├── assets/hrir/                IRCAM HRIR sphere (.bin) + CREDITS.md
 ├── documentation/              every document; map and authority ladder in its README.md
 │   ├── roadmap.md  glossary.md

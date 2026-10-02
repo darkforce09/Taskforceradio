@@ -56,11 +56,12 @@ holds it; the rest are held in review.
   | `ts3plugin-sys` | `tfar_ts3_host`, `tfar_ts3_mock` |
   | `libc` | `tfar_ts3_host`, `tfar_ts3_mock` |
   | `rusqlite` | `tfar_ts3_settings_db` |
-  | `ureq` | `tfar_web_requests` |
-  | `egui`, `eframe` | `tfar_debug_window` |
+  | `ureq`, `url` | `tfar_web_requests` |
+  | `egui`, `eframe`, `winit` | `tfar_debug_window` |
   | `sci-rs`, `biquad` | `tfar_dsp_filters` |
   | `hrtf`, `rustfft`, `realfft` | `tfar_hrtf` |
   | `hound` | `tfar_playback_mixer` |
+  | `fastrand` | `tfar_radio_effects_0_9`, `tfar_radio_effects_1_0` |
   | `postcard` | the game_link crates |
   | `libloading` | `tfar_ts3_mock`, `tfar_extension_probe` |
   | `tracy-client` | the two plugin apps, behind the `tracy` feature |
@@ -129,7 +130,7 @@ All of it is checked by `cargo xtask verify crate-anatomy`; `cargo xtask new-cra
 ## Unsafe code and FFI
 
 - `unsafe_code` is denied workspace-wide. Only `tfar_ts3_host`, `tfar_arma_extension_abi`, the four apps
-  (their export glue), `tfar_ts3_mock` and `tfar_extension_probe` may state `#![allow(unsafe_code)]` at the crate root, with a
+  (their export glue), `tfar_ts3_mock`, `tfar_extension_probe` and `tfar_golden_vectors` may state `#![allow(unsafe_code)]` at the crate root, with a
   reason comment on the line above (`cargo xtask verify unsafe-allowlist`). Everything else uses their safe wrappers.
 - Every `unsafe` block has a `// SAFETY:` comment directly above it saying which invariant makes it sound
   (`undocumented_unsafe_blocks`, `cargo xtask verify unsafe-allowlist`); every `unsafe fn` has a

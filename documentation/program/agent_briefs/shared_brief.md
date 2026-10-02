@@ -77,7 +77,7 @@ Tier = 0 with no workspace dependency, else 1 + highest dependency tier.
 | crates/interface/tfar_debug_window | lib | — | 0 |
 | crates/version_0_9/tfar_game_commands_0_9 | lib | tfar_arma_values, tfar_geometry | 2 |
 | crates/version_0_9/tfar_plugin_commands_0_9 | lib | tfar_arma_values | 2 |
-| crates/version_0_9/tfar_radio_effects_0_9 | lib | tfar_dsp_filters, tfar_sample_buffer | 2 |
+| crates/version_0_9/tfar_radio_effects_0_9 | lib | tfar_arma_values, tfar_dsp_filters, tfar_sample_buffer | 2 |
 | crates/version_0_9/tfar_client_state_0_9 | lib | tfar_geometry, tfar_game_commands_0_9, tfar_radio_effects_0_9, tfar_dsp_filters, tfar_dynamics, tfar_hrtf | 3 |
 | crates/version_0_9/tfar_radio_routing_0_9 | lib | tfar_client_state_0_9, tfar_geometry | 4 |
 | crates/version_0_9/tfar_voice_pipeline_0_9 | lib | tfar_client_state_0_9, tfar_radio_routing_0_9, tfar_radio_effects_0_9, tfar_dsp_filters, tfar_dynamics, tfar_hrtf, tfar_spatial_audio, tfar_sample_buffer, tfar_playback_mixer | 5 |
@@ -85,7 +85,7 @@ Tier = 0 with no workspace dependency, else 1 + highest dependency tier.
 | crates/version_1_0/tfar_antennas_1_0 | lib | tfar_geometry, tfar_arma_values | 2 |
 | crates/version_1_0/tfar_game_commands_1_0 | lib | tfar_arma_values, tfar_geometry, tfar_plugin_settings_1_0 | 2 |
 | crates/version_1_0/tfar_plugin_commands_1_0 | lib | tfar_arma_values | 2 |
-| crates/version_1_0/tfar_radio_effects_1_0 | lib | tfar_dsp_filters, tfar_sample_buffer | 2 |
+| crates/version_1_0/tfar_radio_effects_1_0 | lib | tfar_arma_values, tfar_dsp_filters, tfar_sample_buffer | 2 |
 | crates/version_1_0/tfar_client_state_1_0 | lib | tfar_geometry, tfar_game_commands_1_0, tfar_radio_effects_1_0, tfar_plugin_settings_1_0, tfar_dsp_filters, tfar_dynamics, tfar_hrtf | 3 |
 | crates/version_1_0/tfar_radio_routing_1_0 | lib | tfar_client_state_1_0, tfar_antennas_1_0, tfar_plugin_settings_1_0, tfar_geometry | 4 |
 | crates/version_1_0/tfar_voice_pipeline_1_0 | lib | tfar_client_state_1_0, tfar_radio_routing_1_0, tfar_radio_effects_1_0, tfar_plugin_settings_1_0, tfar_dsp_filters, tfar_dynamics, tfar_hrtf, tfar_spatial_audio, tfar_sample_buffer, tfar_playback_mixer | 5 |
@@ -94,9 +94,15 @@ Tier = 0 with no workspace dependency, else 1 + highest dependency tier.
 | apps/tfar_extension_0_9 | cdylib + rlib | tfar_arma_extension_abi, tfar_game_link_client | 2 |
 | apps/tfar_extension_1_0 | cdylib + rlib | tfar_arma_extension_abi, tfar_game_link_client | 2 |
 | tools/xtask | bin | — | 0 |
-| tools/tfar_ts3_mock | lib + bin | tfar_game_link_protocol, tfar_game_link_client | 2 |
+| tools/tfar_ts3_mock | lib + bin | tfar_ts3_host, tfar_game_link_protocol, tfar_game_link_client | 2 |
 | tools/tfar_extension_probe | bin | — | 0 |
 | tools/tfar_golden_vectors | lib | — | 0 |
+
+The table matches `cargo metadata` of 2026-10-03 (normal and build dependencies). The workspace
+dev-dependencies, for tests only: `tfar_plugin_0_9` and `tfar_plugin_1_0` → `tfar_ts3_mock`,
+`tfar_game_link_client`; `tfar_extension_0_9` → `tfar_game_link_server`, `tfar_game_link_protocol`;
+`tfar_extension_1_0` → `tfar_game_link_server`; `tfar_golden_vectors` → `tfar_dsp_filters`,
+`tfar_dynamics`, `tfar_spatial_audio`, `tfar_sample_buffer`, `tfar_geometry`.
 
 The `[package.metadata.layout] category` is the parent path (`crates/audio`, `apps`, `tools`). `targets` is
 `"any"`, except `"windows"` for `tfar_extension_probe` (built for windows-gnu only).

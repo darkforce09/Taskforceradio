@@ -34,8 +34,8 @@ and probe steps (4, 5, 7, 8) from M3, and a real game from M6 (0.9) and M7 (1.0)
    **Expected:** the dist folder under target holds a tfar_1_0 and a tfar_0_9 folder, each with the
    plugin `.so` for Linux (`task_force_radio_linux_amd64.so` in tfar_0_9, `TFAR_linux_amd64.so`
    in tfar_1_0; TeamSpeak takes the plugin name from the file name, and the originals accept plugin
-   commands only from those names), `task_force_radio_pipe_x64.dll` for Windows, and a radio-sounds
-   folder.
+   commands only from those names), `task_force_radio_pipe_x64.dll` for Windows, a radio-sounds
+   folder and a tfar_hrir folder with the HRIR sphere `IRC_1002_C.bin` and its `CREDITS.md`.
 
 2. Close TeamSpeak, then remove the old Windows plugin files by hand.
 
@@ -49,16 +49,18 @@ and probe steps (4, 5, 7, 8) from M3, and a real game from M6 (0.9) and M7 (1.0)
    **Expected:** the listing shows no `task_force_radio_win*.dll` and no `TFAR_win*.dll` when run
    again.
 
-3. Copy the plugin `.so` files and the sounds into the TeamSpeak plugins folder. Both versions'
-   sound files are byte-identical, so one `radio-sounds` folder serves both plugins.
+3. Copy the plugin `.so` files, the sounds and the HRIR sphere into the TeamSpeak plugins folder.
+   Both versions' sound files are byte-identical, so one `radio-sounds` folder serves both plugins,
+   and both load the sphere from `tfar_hrir/IRC_1002_C.bin` in the plugins folder.
 
    ```bash
    cp target/dist/tfar_1_0/*.so target/dist/tfar_0_9/*.so ~/.var/app/com.teamspeak.TeamSpeak3/.ts3client/plugins/
    cp -r target/dist/tfar_1_0/radio-sounds ~/.var/app/com.teamspeak.TeamSpeak3/.ts3client/plugins/
+   cp -r target/dist/tfar_1_0/tfar_hrir ~/.var/app/com.teamspeak.TeamSpeak3/.ts3client/plugins/
    ```
 
-   **Expected:** the plugins folder lists both `.so` files and the radio-sounds folder with `on.wav`,
-   `off.wav` and the `sw`, `lr`, `dd` and `ab` folders.
+   **Expected:** the plugins folder lists both `.so` files, the tfar_hrir folder and the radio-sounds
+   folder with `on.wav`, `off.wav` and the `sw`, `lr`, `dd` and `ab` folders.
 
 4. Install the extension DLL into the mod root of the mod you test. First move the original
    `task_force_radio_pipe_x64.dll` (and the 32-bit `task_force_radio_pipe.dll`, if present; 64-bit

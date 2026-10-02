@@ -250,3 +250,44 @@ plugins folder. `tools/xtask/src/commands/dist.rs` holds the names and the insta
 files.
 
 **Supersedes:** the artifact names in 2026-10-02 — dist builds into target/dist and nothing installs (D13).
+
+### 2026-10-03 — The library map gains url, winit and fastrand (D18)
+
+**Context:** Three external crates joined the workspace with their slices and have no row in the
+library map of the entry "Use libraries, don't reinvent the wheel (D18)": `tfar_web_requests` builds
+the Piwik tracking URLs with `url`; `tfar_debug_window` needs winit's X11 event-loop option
+`with_any_thread`, which eframe does not re-export, so its loop runs off TeamSpeak's main thread; the
+radio effects draw the underwater sample dropouts from a seeded generator, one per effect. `libc`
+already has its row in the entry "The library map gains libc for TeamSpeak memory and libloading for
+the probe (D18)".
+
+**Decision:** Three rows join the library map:
+
+| Need | Crate (version) | Used in | We still write |
+|---|---|---|---|
+| Tracking URLs and their query strings | `url` 2.5.8 (`std`) | `tfar_web_requests` | the Piwik parameters |
+| The X11 event loop off the main thread | `winit` 0.30.13 (`x11`) | `tfar_debug_window` | — |
+| Seeded per-effect random numbers | `fastrand` 2.5.0 (no default features) | `tfar_radio_effects_0_9`, `tfar_radio_effects_1_0` | the dropout rule of each version |
+
+**Consequences:** `url` is firewalled to `tfar_web_requests`, `winit` to `tfar_debug_window` and
+`fastrand` to the two radio effect crates (`cargo xtask verify dependency-firewalls`); `libc` stays
+firewalled to `tfar_ts3_host` and `tfar_ts3_mock`.
+
+**Supersedes:** none.
+
+### 2026-10-03 — dist follows CARGO_TARGET_DIR and ships the HRIR sphere in tfar_hrir/
+
+**Context:** Agents build into their own `target-<id>/` folders, so a `dist` that always passes
+`target/` as `--target-dir` rebuilds everything into the folder the host hook guards. Both plugins
+render binaural audio with the IRCAM sphere in `assets/hrir/`, which no TeamSpeak install holds.
+
+**Decision:** `cargo xtask dist` builds into the effective target folder, `CARGO_TARGET_DIR` when set
+and not empty, else `target/`, and writes `<target>/dist/tfar_0_9/` and `<target>/dist/tfar_1_0/`. Each
+version folder also gets `tfar_hrir/IRC_1002_C.bin` and `tfar_hrir/CREDITS.md`, so the folder sits
+beside `radio-sounds/` in the TeamSpeak plugins folder and both plugins load the sphere from
+`<plugins folder>/tfar_hrir/IRC_1002_C.bin`.
+
+**Consequences:** The install runbook copies `tfar_hrir/` with `radio-sounds/`; everything else in
+D13 holds, and nothing is copied into TeamSpeak or a mod folder.
+
+**Supersedes:** the fixed target/dist path of 2026-10-02 — dist builds into target/dist and nothing installs (D13).

@@ -48,12 +48,12 @@ A safe Rust layer over the TeamSpeak 3 plugin SDK, and a mock host that can load
 - [x] `ts3plugin-sys` 0.5 adopted. Its layout is verified against the official
       TeamSpeak plugin SDK (GitHub teamspeak/ts3client-pluginsdk) API 26 headers with `size_of`/`offset_of` tests.
 - [x] `tfar_ts3_host`: safe wrapper, export macro, logging, config paths from TS (F-018).
-- [ ] `tfar_ts3_settings_db`.
-- [ ] `tfar_ts3_mock`.
-- [ ] The plugin stubs export their metadata.
+- [x] `tfar_ts3_settings_db`.
+- [x] `tfar_ts3_mock`.
+- [x] The plugin stubs export their metadata.
 
 **Acceptance:** the mock loads both stubs, and the owner sees both plugins load in the Flatpak
-TeamSpeak.
+TeamSpeak. Status: the mock part holds (f2df927, 30678a8); live check deferred by the owner.
 
 ## M3 — Game link
 
@@ -63,34 +63,38 @@ in the [game link protocol](/documentation/architecture/game_link_protocol.md).
 - [x] `tfar_game_link_protocol`, `tfar_game_link_server` (FIFO async, F-007),
       `tfar_game_link_client`.
 - [x] `tfar_arma_extension_abi`: the `RVExtension` export and the focus query.
-- [ ] Both extension apps with real transport.
-- [ ] `tfar_extension_probe`.
+- [x] Both extension apps with real transport.
+- [x] `tfar_extension_probe`.
 
 **Acceptance:** the probe under Proton's wine gets `PONG` from the stub plugins; in Arma under
 Proton (BattlEye off), `"task_force_radio_pipe" callExtension "TS_INFO\tPING"` returns `PONG` for
-both mods.
+both mods. Status: the probe and the extensions pass their tests against the stub plugins on
+Linux (30678a8); live check deferred by the owner.
 
 ## M4 — Audio primitives
 
 The DSP building blocks, proven against the original C/C++ libraries as golden oracles.
 
-- [ ] `tfar_dsp_filters` (sci-rs + biquad).
-- [ ] `tfar_dynamics` (feed-forward compressor).
-- [ ] `tfar_hrtf` (the `hrtf` crate, IRCAM sphere, block adapter; F-001).
-- [ ] `tfar_spatial_audio` (distance curve and cone, simple ILD for the 0.9 fallback; F-012).
-- [ ] `tfar_playback_mixer` (hound; F-005).
-- [ ] `tfar_golden_vectors` (oracles: DSPFilters, SimpleComp, F3DAudio curve and cone).
+- [x] `tfar_dsp_filters` (sci-rs + biquad).
+- [x] `tfar_dynamics` (feed-forward compressor).
+- [x] `tfar_hrtf` (the `hrtf` crate, IRCAM sphere, block adapter; F-001).
+- [x] `tfar_spatial_audio` (distance curve and cone, simple ILD for the 0.9 fallback; F-012).
+- [x] `tfar_playback_mixer` (hound; F-005).
+- [x] `tfar_golden_vectors` (oracles: DSPFilters, SimpleComp, F3DAudio curve and cone).
 
-**Acceptance:** the golden tests hold within tolerance.
+**Acceptance:** the golden tests hold within tolerance. Status: holds at e5eecb5 (the results are in
+[progress](/documentation/program/progress.md#m4-audio-primitives)).
 
 ## M5 — Services and diagnostics
 
 The features that talk to the outside world or show state: update check, Piwik and the debug window.
 
-- [ ] `tfar_web_requests` (update check with real version comparison (F-026), Piwik `TRACK`).
-- [ ] `tfar_debug_window`.
+- [x] `tfar_web_requests` (update check with real version comparison (F-026), Piwik `TRACK`).
+- [x] `tfar_debug_window`.
 
-**Acceptance:** each one is exercised against a local test server or window.
+**Acceptance:** each one is exercised against a local test server or window. Status: the update
+check and the Piwik requests pass against a local test server in their tests (243b5f1); the debug
+window check is live, deferred by the owner.
 
 ## M6 — 0.9 track
 
@@ -118,7 +122,8 @@ move.
 
 The artifacts the owner installs by hand, the finished runbook, and every bug fix closed with a test.
 
-- [ ] `cargo xtask dist` produces the final artifacts plus the `radio-sounds` folders.
+- [ ] `cargo xtask dist` produces the final artifacts plus the `radio-sounds` and `tfar_hrir`
+      folders.
 - [ ] The [manual install runbook](/documentation/runbooks/manual_install_and_test.md) is complete.
 - [ ] Every [bug fix](/documentation/program/bug_fixes.md) entry is closed with a test.
 
@@ -131,4 +136,7 @@ The artifacts the owner installs by hand, the finished runbook, and every bug fi
 | Licence of the Rust port (D16: `UNLICENSED` until decided; upstream is APL-SA) | Before release (M8) |
 | Are the `hrtf` crate's click artefacts on fast-moving sources acceptable, or does `tfar_hrtf` need its own crossfade? | M4 |
 | Does 32-bit Arma matter? | Settled as no, unless the owner says otherwise |
-| How the plugin picks the `-tfdebug` port (proposed: an environment variable in TeamSpeak's environment; see the [game link protocol](/documentation/architecture/game_link_protocol.md#ports)) | M3 |
+| How the plugin picks the `-tfdebug` port (default since 30678a8: `TFAR_GAME_LINK_DEBUG=1` in TeamSpeak's environment; see the [game link protocol](/documentation/architecture/game_link_protocol.md#ports)) | The owner confirms the default |
+| Does direct speech get a makeup gain after the HRTF, whose diffuse-field EQ costs about 4 dB in front and 9 dB behind? See the [audio pipeline](/documentation/architecture/audio_pipeline.md#open-questions) | M6 and M7, before the voice pipelines |
+| Does about 2 MB of memory per HRTF source need a cap or a shared processor? | M6 and M7 |
+| May the IRCAM LISTEN sphere, published with no licence text, ship in the dist folders with its credit? | Before release (M8) |
