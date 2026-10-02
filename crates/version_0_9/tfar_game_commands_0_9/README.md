@@ -35,21 +35,23 @@ when it has one.
 | `KILLED` | 2 or more | `DONE` |
 | `SPEAKERS` | 1 or more | `OK` |
 | `RELEASE_ALL_TANGENTS` | exactly 2 | `OK` (the original falls through to `FAIL`) |
-| `VERSION` | exactly 4 | `OK` |
+| `VERSION` | 4, or 3 for an empty password (the original refuses 3) | `OK` |
 | `TRACK` | exactly 2 | `OK` (the original falls through to `FAIL`) |
 | `POS` | exactly 14 | `SPEAKING` when the player talks, else `NOT_SPEAKING` |
-| `TANGENT`, `TANGENT_LR`, `TANGENT_DD` | exactly 5 | `OK` |
+| `TANGENT`, `TANGENT_LR`, `TANGENT_DD` | 5, or 4 for an empty subtype (the original refuses 4) | `OK` |
 | `FREQ` | exactly 14 | `OK` |
 | `IS_SPEAKING` | exactly 2 | `SPEAKING` when the player talks, else `NOT_SPEAKING` |
 | unknown name, wrong count, malformed field | — | `FAIL` |
 
-### Behaviour kept from the original
+### Field rules
 
 - `KILLED` accepts the 2 fields Arma sends; the original needs more than 2 and never runs.
 - `SPEAKERS` reads records only from a message of exactly 2 fields; 1 field or more than 2 is an
   empty list, which clears the speakers.
-- `VERSION` with an empty serious channel password has 3 fields after the split and is refused,
-  as in the original.
+- `VERSION` with an empty serious channel password loses its last field to the split; 3 fields
+  read as an empty password, where the original refuses the handshake.
+- A tangent from a radio without `tf_subtype` loses its empty last field the same way; 4 fields
+  read as the empty, unknown subtype (no radio sound), where the original refuses the press.
 - Booleans are `true` only for the exact text `true`; `POS` field 11 (`std::stoi`) and `FREQ`
   field 6 (`(int)atof`) truncate, the other integers round (`parseArmaNumberToInt`).
 - `FREQ` field 11 (a second voice volume) is never read, so it is neither parsed nor checked.

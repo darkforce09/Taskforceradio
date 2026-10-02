@@ -45,11 +45,16 @@ impl TangentKind {
 }
 
 /// `<TANGENT|TANGENT_LR|TANGENT_DD>\t<PRESSED|RELEASED>\t<frequency>\t<range>\t<subtype>`:
-/// exactly 5 fields. Anything but `PRESSED` is a release, and the range is rounded as the
-/// receiving plugin rounds it (`parseArmaNumberToInt`).
+/// 5 fields, or 4 for an empty subtype: a radio without `tf_subtype` sends an empty last field,
+/// which `std::getline` drops, and it reads as [`RadioSubtype::Unknown`] of the empty text (no
+/// radio sound). Anything but `PRESSED` is a release, and the range is rounded as the receiving
+/// plugin rounds it (`parseArmaNumberToInt`).
 pub(crate) fn parse_tangent(kind: TangentKind, fields: &[&str]) -> Result<GameCommand> {
     let command = kind.command_name();
-    let [_, state, frequency, range, subtype] = exact_fields::<5>(command, fields)?;
+    let [_, state, frequency, range, subtype] = match fields {
+        [name, state, frequency, range] => [*name, *state, *frequency, *range, ""],
+        _ => exact_fields::<5>(command, fields)?,
+    };
     Ok(GameCommand::Tangent {
         kind,
         pressed: state == "PRESSED",

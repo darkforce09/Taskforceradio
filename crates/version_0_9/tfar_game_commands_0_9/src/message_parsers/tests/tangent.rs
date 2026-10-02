@@ -67,14 +67,34 @@ fn the_range_is_rounded_and_a_malformed_range_is_an_error() {
 }
 
 #[test]
-fn a_tangent_needs_exactly_five_fields() {
-    // A radio with no `tf_subtype` sends an empty last field, which getline drops.
-    assert!(matches!(
-        GameCommand::parse("TANGENT_DD\tPRESSED\t32\t70\t"),
-        Err(Error::WrongFieldCount {
-            command: "TANGENT_DD",
-            expected: 5,
-            found: 4
-        })
-    ));
+fn a_tangent_with_an_empty_subtype_parses_as_an_unknown_subtype() {
+    // F-028: a radio with no `tf_subtype` sends an empty last field, which getline drops; the
+    // original needs `tokens.size() == 5` (plugin.cpp:1812) and refuses the press.
+    assert_eq!(
+        GameCommand::parse("TANGENT\tPRESSED\t87.6\t5000\t").unwrap(),
+        GameCommand::Tangent {
+            kind: TangentKind::ShortRange,
+            pressed: true,
+            frequency: "87.6".to_owned(),
+            range: 5000,
+            subtype: RadioSubtype::Unknown(String::new()),
+        }
+    );
+}
+
+#[test]
+fn a_tangent_needs_four_or_five_fields() {
+    for (message, found) in [
+        ("TANGENT_DD\tPRESSED\t32", 3),
+        ("TANGENT_DD\tPRESSED\t32\t70\tdd\textra", 6),
+    ] {
+        assert_eq!(
+            GameCommand::parse(message).unwrap_err(),
+            Error::WrongFieldCount {
+                command: "TANGENT_DD",
+                expected: 5,
+                found
+            }
+        );
+    }
 }

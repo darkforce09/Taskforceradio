@@ -34,6 +34,19 @@ fn version_fields_may_be_empty_except_the_last() {
 }
 
 #[test]
+fn version_with_three_fields_has_an_empty_password() {
+    assert_eq!(
+        parse_version(&["VERSION", "0.9.12", ""]).unwrap(),
+        GameCommand::Version {
+            addon_version: "0.9.12".to_owned(),
+            serious_channel_name: String::new(),
+            serious_channel_password: String::new(),
+        }
+    );
+    assert!(parse_version(&["VERSION", "0.9.12"]).is_err());
+}
+
+#[test]
 fn each_two_field_message_refuses_another_count() {
     assert!(parse_release_all_tangents(&["RELEASE_ALL_TANGENTS"]).is_err());
     assert!(parse_release_all_tangents(&["RELEASE_ALL_TANGENTS", "a", "b"]).is_err());

@@ -99,8 +99,8 @@ impl GameCommand {
     /// | `TS_INFO`, `RELEASE_ALL_TANGENTS`, `TRACK`, `IS_SPEAKING` | exactly 2 |
     /// | `KILLED` | 2 or more |
     /// | `SPEAKERS` | 1 or more; records read from exactly 2 |
-    /// | `VERSION` | exactly 4 |
-    /// | `TANGENT`, `TANGENT_LR`, `TANGENT_DD` | exactly 5 |
+    /// | `VERSION` | 4, or 3 with an empty password |
+    /// | `TANGENT`, `TANGENT_LR`, `TANGENT_DD` | 5, or 4 with an empty subtype |
     /// | `POS`, `FREQ` | exactly 14 |
     ///
     /// # Errors

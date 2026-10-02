@@ -33,20 +33,24 @@ pub(crate) fn parse_release_all_tangents(fields: &[&str]) -> Result<GameCommand>
     })
 }
 
-/// `VERSION\t<addon version>\t<serious channel name>\t<serious channel password>`: exactly 4
-/// fields. A field may be empty but the last: `std::getline` drops a trailing empty field, so a
-/// mission without a serious channel password sends 3 fields and is refused, as the original
-/// refuses it.
+/// `VERSION\t<addon version>\t<serious channel name>\t<serious channel password>`: 4 fields, or
+/// 3 for an empty password. The game writes all four, but `std::getline` drops the trailing empty
+/// field of a mission without a password, so 3 fields mean that password is empty.
 pub(crate) fn parse_version(fields: &[&str]) -> Result<GameCommand> {
-    let [
-        _,
-        addon_version,
-        serious_channel_name,
-        serious_channel_password,
-    ] = exact_fields::<4>(VERSION, fields)?;
+    let (addon_version, serious_channel_name, serious_channel_password) = match fields {
+        [_, addon, name, password] => (addon, name, *password),
+        [_, addon, name] => (addon, name, ""),
+        _ => {
+            return Err(Error::WrongFieldCount {
+                command: VERSION,
+                expected: 4,
+                found: fields.len(),
+            });
+        }
+    };
     Ok(GameCommand::Version {
-        addon_version: addon_version.to_owned(),
-        serious_channel_name: serious_channel_name.to_owned(),
+        addon_version: (*addon_version).to_owned(),
+        serious_channel_name: (*serious_channel_name).to_owned(),
         serious_channel_password: serious_channel_password.to_owned(),
     })
 }

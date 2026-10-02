@@ -104,14 +104,22 @@ fn version_carries_addon_channel_and_password() {
 }
 
 #[test]
-fn version_with_an_empty_password_is_refused_as_getline_drops_it() {
-    // plugin.cpp:1789 needs 4 fields; "VERSION\tv\tname\t" splits into 3.
+fn version_with_an_empty_password_parses_although_getline_drops_it() {
+    // F-027: plugin.cpp:1789 needs 4 fields; "VERSION\tv\tname\t" splits into 3 and is refused.
+    assert_eq!(
+        GameCommand::parse("VERSION\t0.9.12\tTaskForceRadio\t").unwrap(),
+        GameCommand::Version {
+            addon_version: "0.9.12".to_owned(),
+            serious_channel_name: "TaskForceRadio".to_owned(),
+            serious_channel_password: String::new(),
+        }
+    );
     assert!(matches!(
-        GameCommand::parse("VERSION\t0.9.12\tTaskForceRadio\t"),
+        GameCommand::parse("VERSION\t0.9.12"),
         Err(Error::WrongFieldCount {
             command: "VERSION",
             expected: 4,
-            found: 3
+            found: 2
         })
     ));
 }
