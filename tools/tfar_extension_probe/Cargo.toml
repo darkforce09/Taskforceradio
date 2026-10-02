@@ -1,0 +1,20 @@
+# A Windows executable that loads an extension DLL and calls `RVExtension`, run under Proton's wine.
+# Developers run it under Proton's wine against a built extension.
+[package]
+name = "tfar_extension_probe"
+description = "A Windows executable that loads an extension DLL and calls RVExtension, run under Proton's wine."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "tools"
+tier = 0
+targets = "windows"
+
+[dependencies]
+
+[lints]
+workspace = true

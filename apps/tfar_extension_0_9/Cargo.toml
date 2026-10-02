@@ -1,0 +1,32 @@
+# The `task_force_radio_pipe` Arma extension for the 0.9.12 mod, a Windows x64 DLL run under Proton.
+# Arma 3 loads it through `callExtension` under Proton.
+[package]
+name = "tfar_extension_0_9"
+description = "The task_force_radio_pipe Arma extension for the 0.9.12 mod, a Windows x64 DLL run under Proton."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "apps"
+tier = 2
+targets = "any"
+
+# The cdylib is the file Arma loads; the rlib lets host tests and the mock host link the
+# same code.
+[lib]
+name = "tfar_extension_0_9"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+# The Arma extension exports.
+tfar_arma_extension_abi.workspace = true
+# The extension-side link client.
+tfar_game_link_client.workspace = true
+
+[lints]
+workspace = true

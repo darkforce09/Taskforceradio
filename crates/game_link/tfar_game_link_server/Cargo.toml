@@ -1,0 +1,24 @@
+# The plugin side of the game link: a localhost TCP listener that answers the extension. Used by
+# `tfar_plugin_0_9`, `tfar_plugin_1_0`.
+[package]
+name = "tfar_game_link_server"
+description = "The plugin side of the game link: a localhost TCP listener that answers the extension."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/game_link"
+tier = 1
+targets = "any"
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+# The game link frames and ports.
+tfar_game_link_protocol.workspace = true
+
+[lints]
+workspace = true

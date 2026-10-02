@@ -1,0 +1,10 @@
+# Tests may unwrap, expect, index and panic: a failing test is meant to stop. Production code keeps
+# the deny list in the root `Cargo.toml`.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-panic-in-tests = true
+# Matches `rust-version` in the root `Cargo.toml` and the pin in `rust-toolchain.toml`.
+msrv = "1.99"
+# Product and library names that read as words in docs, not as code; ".." keeps clippy's defaults.
+doc-valid-idents = ["TeamSpeak", "SimpleComp", "DSPFilters", "FAudio", "F3DAudio", "X3DAudio", "SQLite", ".."]

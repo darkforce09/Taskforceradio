@@ -1,0 +1,58 @@
+# The TeamSpeak 3 plugin for the 1.0 mod, built as a native Linux shared library. TeamSpeak 3 loads
+# it from its plugins folder.
+[package]
+name = "tfar_plugin_1_0"
+description = "The TeamSpeak 3 plugin for the 1.0 mod, built as a native Linux shared library."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "apps"
+tier = 6
+targets = "any"
+
+# The cdylib is the file TeamSpeak loads; the rlib lets host tests and the mock host link the
+# same code.
+[lib]
+name = "tfar_plugin_1_0"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+# The safe TeamSpeak export layer and function table.
+tfar_ts3_host.workspace = true
+# TeamSpeak settings lookups.
+tfar_ts3_settings_db.workspace = true
+# The plugin-side link listener.
+tfar_game_link_server.workspace = true
+# The update check and Piwik calls.
+tfar_web_requests.workspace = true
+# The 1.0 voice frame processing.
+tfar_voice_pipeline_1_0.workspace = true
+# The 1.0 reception decisions.
+tfar_radio_routing_1_0.workspace = true
+# The 1.0 per-client state.
+tfar_client_state_1_0.workspace = true
+# The typed 1.0 game commands.
+tfar_game_commands_1_0.workspace = true
+# The 1.0 plugin command and metadata formats.
+tfar_plugin_commands_1_0.workspace = true
+# Radio sound playback.
+tfar_playback_mixer.workspace = true
+# Positions, directions and distances.
+tfar_geometry.workspace = true
+# The parsers for Arma's field, array and position strings.
+tfar_arma_values.workspace = true
+# The 1.0 settings.
+tfar_plugin_settings_1_0.workspace = true
+# The 1.0 antenna and tower model.
+tfar_antennas_1_0.workspace = true
+# The debug window.
+tfar_debug_window.workspace = true
+
+[lints]
+workspace = true

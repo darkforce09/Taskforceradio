@@ -1,0 +1,202 @@
+# The TFAR Rust port: the two TeamSpeak plugins (native Linux `.so`) and the two Arma extensions
+# (Windows x64 DLLs run under Proton) for the 1.0 and 0.9.12 mods, the library crates they share
+# under `crates/`, and the repository tooling under `tools/`.
+[workspace]
+resolver = "3"
+members = [
+    # The four deliverables: one plugin and one extension per mod version.
+    "apps/*",
+    # The library crates, one folder per category (`crates/<category>/<name>`).
+    "crates/*/*",
+    # The repository tooling: xtask, the mock TeamSpeak host, the extension probe, the golden vectors.
+    "tools/*",
+]
+
+# Package fields a member inherits with `<field>.workspace = true`.
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+# The licence is decided later; cargo-deny ignores private crates until then.
+license = "UNLICENSED"
+publish = false
+
+# Internal crates by path, then every external crate pinned to the version checked on crates.io.
+# Members name their own features beside `workspace = true`, so a feature stays the choice of the
+# crate that needs it.
+[workspace.dependencies]
+# apps
+tfar_extension_0_9 = { path = "apps/tfar_extension_0_9" }
+tfar_extension_1_0 = { path = "apps/tfar_extension_1_0" }
+tfar_plugin_0_9 = { path = "apps/tfar_plugin_0_9" }
+tfar_plugin_1_0 = { path = "apps/tfar_plugin_1_0" }
+
+# crates/foundation:
+tfar_arma_values = { path = "crates/foundation/tfar_arma_values" }
+tfar_geometry = { path = "crates/foundation/tfar_geometry" }
+
+# crates/audio:
+tfar_dsp_filters = { path = "crates/audio/tfar_dsp_filters" }
+tfar_dynamics = { path = "crates/audio/tfar_dynamics" }
+tfar_hrtf = { path = "crates/audio/tfar_hrtf" }
+tfar_playback_mixer = { path = "crates/audio/tfar_playback_mixer" }
+tfar_sample_buffer = { path = "crates/audio/tfar_sample_buffer" }
+tfar_spatial_audio = { path = "crates/audio/tfar_spatial_audio" }
+
+# crates/teamspeak:
+tfar_ts3_host = { path = "crates/teamspeak/tfar_ts3_host" }
+tfar_ts3_settings_db = { path = "crates/teamspeak/tfar_ts3_settings_db" }
+
+# crates/game_link:
+tfar_arma_extension_abi = { path = "crates/game_link/tfar_arma_extension_abi" }
+tfar_game_link_client = { path = "crates/game_link/tfar_game_link_client" }
+tfar_game_link_protocol = { path = "crates/game_link/tfar_game_link_protocol" }
+tfar_game_link_server = { path = "crates/game_link/tfar_game_link_server" }
+
+# crates/services:
+tfar_web_requests = { path = "crates/services/tfar_web_requests" }
+
+# crates/interface:
+tfar_debug_window = { path = "crates/interface/tfar_debug_window" }
+
+# crates/version_0_9:
+tfar_client_state_0_9 = { path = "crates/version_0_9/tfar_client_state_0_9" }
+tfar_game_commands_0_9 = { path = "crates/version_0_9/tfar_game_commands_0_9" }
+tfar_plugin_commands_0_9 = { path = "crates/version_0_9/tfar_plugin_commands_0_9" }
+tfar_radio_effects_0_9 = { path = "crates/version_0_9/tfar_radio_effects_0_9" }
+tfar_radio_routing_0_9 = { path = "crates/version_0_9/tfar_radio_routing_0_9" }
+tfar_voice_pipeline_0_9 = { path = "crates/version_0_9/tfar_voice_pipeline_0_9" }
+
+# crates/version_1_0:
+tfar_antennas_1_0 = { path = "crates/version_1_0/tfar_antennas_1_0" }
+tfar_client_state_1_0 = { path = "crates/version_1_0/tfar_client_state_1_0" }
+tfar_game_commands_1_0 = { path = "crates/version_1_0/tfar_game_commands_1_0" }
+tfar_plugin_commands_1_0 = { path = "crates/version_1_0/tfar_plugin_commands_1_0" }
+tfar_plugin_settings_1_0 = { path = "crates/version_1_0/tfar_plugin_settings_1_0" }
+tfar_radio_effects_1_0 = { path = "crates/version_1_0/tfar_radio_effects_1_0" }
+tfar_radio_routing_1_0 = { path = "crates/version_1_0/tfar_radio_routing_1_0" }
+tfar_voice_pipeline_1_0 = { path = "crates/version_1_0/tfar_voice_pipeline_1_0" }
+
+# tools (the bin-only `tfar_extension_probe` and `xtask` have no library to depend on)
+tfar_golden_vectors = { path = "tools/tfar_golden_vectors" }
+tfar_ts3_mock = { path = "tools/tfar_ts3_mock" }
+
+# External crates. Each is pinned to the version checked on crates.io with its default features off;
+# a member turns on only the features it uses, beside `workspace = true`.
+# Errors: `thiserror` derives every library and app `Error` (through `core::error::Error`).
+thiserror = { version = "2.0.21", default-features = false }
+# Errors in tools only (xtask, the mock host); libraries never use it.
+anyhow = { version = "1.0.104", default-features = false }
+
+# TeamSpeak SDK API 26 bindings (`tfar_ts3_host`, `tfar_ts3_mock`): raw `#[repr(C)]` tables only.
+ts3plugin-sys = { version = "0.5.0", default-features = false }
+# Win32 calls in `tfar_arma_extension_abi`; it has no default features, so the member lists the
+# `Win32_*` modules it calls.
+windows-sys = { version = "0.61.2", default-features = false }
+
+# Vector maths under `tfar_geometry` and everything above it; the member enables `std`.
+glam = { version = "0.33.12", default-features = false }
+# Butterworth low-pass and band-pass design as second-order sections (`tfar_dsp_filters` only).
+sci-rs = { version = "0.4.1", default-features = false }
+# RBJ high-pass and low-pass coefficients and Direct Form II Transposed processing
+# (`tfar_dsp_filters` only).
+biquad = { version = "0.6.0", default-features = false }
+# Binaural HRTF over the IRCAM HRIR sphere (`tfar_hrtf` only).
+hrtf = { version = "0.9.0", default-features = false }
+# FFT beyond what `hrtf` does internally, if `tfar_hrtf` needs it.
+rustfft = { version = "6.4.1", default-features = false }
+realfft = { version = "3.5.0", default-features = false }
+# WAV loading for radio sounds (`tfar_playback_mixer` only).
+hound = { version = "3.5.1", default-features = false }
+
+# TeamSpeak's settings database (`tfar_ts3_settings_db` only); defaults off, the member enables
+# `bundled` so SQLite is built in and no system library is needed.
+rusqlite = { version = "0.40.2", default-features = false }
+# Update check and Piwik calls (`tfar_web_requests` only); defaults off, the member enables
+# `rustls` so no native TLS library is linked.
+ureq = { version = "3.4.2", default-features = false }
+# Version comparison for the update check and the 1.0 settings.
+version-compare = { version = "0.2.1", default-features = false }
+
+# Game link framing: `postcard` over `serde` types (game_link crates only); defaults off, the
+# member enables `use-std`.
+postcard = { version = "1.1.3", default-features = false }
+# Serialisation traits for the game link frames; the member enables `derive`.
+serde = { version = "1.0.229", default-features = false }
+
+# Concurrency in the plugins, the link and the audio path.
+parking_lot = { version = "0.12.5", default-features = false }
+crossbeam-channel = { version = "0.5.17", default-features = false }
+arc-swap = { version = "1.9.2", default-features = false }
+# Wait-free single-producer single-consumer queues for the real-time audio callbacks.
+rtrb = { version = "0.4.0", default-features = false }
+
+# Logging: `tracing` everywhere, with a layer that forwards to TeamSpeak's `logMessage`.
+tracing = { version = "0.1.44", default-features = false }
+# Defaults off (no ANSI colours, no `tracing-log` bridge); the member enables `fmt` and `std`.
+tracing-subscriber = { version = "0.3.23", default-features = false }
+
+# Profiling behind the plugin apps' `tracy` and `api_profiler` features.
+profiling = { version = "1.0.18", default-features = false }
+# Defaults off so the Tracy client (a C++ build) compiles only when the `tracy` feature asks for it.
+tracy-client = { version = "0.19.0", default-features = false }
+
+# The 1.0 debug window (`tfar_debug_window` only); defaults off, the member enables `glow`, `x11`
+# and `default_fonts`.
+eframe = { version = "0.36.2", default-features = false }
+egui = { version = "0.36.2", default-features = false }
+
+# The mock TeamSpeak host loads a plugin `.so` (`tfar_ts3_mock` only).
+libloading = { version = "0.9.0", default-features = false }
+
+# xtask: arguments, process calls, workspace metadata, manifest edits, the reference manifest,
+# tree walks.
+clap = { version = "4.6.7", default-features = false }
+xshell = { version = "0.2.7", default-features = false }
+cargo_metadata = { version = "0.23.1", default-features = false }
+toml_edit = { version = "0.25.15", default-features = false }
+sha2 = { version = "0.11.0", default-features = false }
+walkdir = { version = "2.5.0", default-features = false }
+ignore = { version = "0.4.33", default-features = false }
+
+# The lint policy a crate adopts with `[lints] workspace = true`; CI runs clippy with `-D warnings`,
+# so every warning fails the build. The root `clippy.toml` lifts the panic-prone lints in tests.
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_docs = "warn"
+unreachable_pub = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# Production code has no panic path: both profiles abort on panic inside TeamSpeak and Arma.
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+todo = "deny"
+dbg_macro = "deny"
+unimplemented = "deny"
+undocumented_unsafe_blocks = "deny"
+# Crate-prefixed names such as `GameLinkFrame` in `tfar_game_link_protocol` are the naming law
+# (self-describing names), not a stutter.
+module_name_repetitions = "allow"
+# Pure accessors and constructors would all need `#[must_use]`; the noise outweighs the catch.
+must_use_candidate = "allow"
+
+# A panic must never unwind into TeamSpeak or Arma, so both profiles abort. Tests still unwind:
+# cargo ignores `panic` for the test harness, so `#[should_panic]` and the test runner keep working.
+[profile.dev]
+panic = "abort"
+opt-level = 1
+
+# Dependencies (DSP, FFT, HRTF) run optimised even in dev builds, so audio runs in real time.
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+panic = "abort"
+lto = "thin"
+codegen-units = 1
+strip = true

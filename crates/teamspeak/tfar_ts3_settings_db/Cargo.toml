@@ -1,0 +1,22 @@
+# Reads TeamSpeak's settings.db for the values the plugins need. Used by `tfar_plugin_0_9`,
+# `tfar_plugin_1_0`.
+[package]
+name = "tfar_ts3_settings_db"
+description = "Reads TeamSpeak's settings.db for the values the plugins need."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/teamspeak"
+tier = 0
+targets = "any"
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+
+[lints]
+workspace = true

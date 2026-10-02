@@ -1,0 +1,22 @@
+# Reference outputs of the original C++ audio code, used as test fixtures for the audio crates. The
+# audio crates' tests read its fixtures.
+[package]
+name = "tfar_golden_vectors"
+description = "Reference outputs of the original C++ audio code, used as test fixtures for the audio crates."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "tools"
+tier = 0
+targets = "any"
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+
+[lints]
+workspace = true

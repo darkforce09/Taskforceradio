@@ -1,0 +1,22 @@
+# The `RVExtension` exports and the Win32 calls an Arma extension DLL needs. Used by
+# `tfar_extension_0_9`, `tfar_extension_1_0`.
+[package]
+name = "tfar_arma_extension_abi"
+description = "The RVExtension exports and the Win32 calls an Arma extension DLL needs."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/game_link"
+tier = 0
+targets = "any"
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+
+[lints]
+workspace = true

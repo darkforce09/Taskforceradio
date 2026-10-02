@@ -1,0 +1,24 @@
+# Loading and mixing of the radio sound WAV files into the outgoing audio. Used by
+# `tfar_plugin_0_9`, `tfar_plugin_1_0`, `tfar_voice_pipeline_0_9`, `tfar_voice_pipeline_1_0`.
+[package]
+name = "tfar_playback_mixer"
+description = "Loading and mixing of the radio sound WAV files into the outgoing audio."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/audio"
+tier = 1
+targets = "any"
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+# The shared sample frame type and saturating gain.
+tfar_sample_buffer.workspace = true
+
+[lints]
+workspace = true

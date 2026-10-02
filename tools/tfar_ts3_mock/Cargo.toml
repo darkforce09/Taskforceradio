@@ -1,0 +1,35 @@
+# A fake TeamSpeak host that loads a plugin .so and drives it through scripted scenarios. The plugin
+# apps' test suites and developers run it.
+[package]
+name = "tfar_ts3_mock"
+description = "A fake TeamSpeak host that loads a plugin .so and drives it through scripted scenarios."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "tools"
+tier = 2
+targets = "any"
+
+[lib]
+name = "tfar_ts3_mock"
+path = "src/lib.rs"
+
+# Runs one scenario against a built plugin.
+[[bin]]
+name = "tfar_ts3_mock"
+path = "src/main.rs"
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+# The game link frames and ports.
+tfar_game_link_protocol.workspace = true
+# The extension-side link client.
+tfar_game_link_client.workspace = true
+
+[lints]
+workspace = true

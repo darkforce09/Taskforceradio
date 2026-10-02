@@ -1,0 +1,40 @@
+# The 0.9.12 audio path: one TeamSpeak voice frame through routing, effects, HRTF and mixing. Used
+# by `tfar_plugin_0_9`.
+[package]
+name = "tfar_voice_pipeline_0_9"
+description = "The 0.9.12 audio path: one TeamSpeak voice frame through routing, effects, HRTF and mixing."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/version_0_9"
+tier = 5
+targets = "any"
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+# The 0.9 per-client state.
+tfar_client_state_0_9.workspace = true
+# The 0.9 reception decisions.
+tfar_radio_routing_0_9.workspace = true
+# The 0.9 radio effect chains.
+tfar_radio_effects_0_9.workspace = true
+# The Butterworth and RBJ filters.
+tfar_dsp_filters.workspace = true
+# The compressor.
+tfar_dynamics.workspace = true
+# Binaural direction rendering.
+tfar_hrtf.workspace = true
+# The distance curve and cone gains.
+tfar_spatial_audio.workspace = true
+# The shared sample frame type and saturating gain.
+tfar_sample_buffer.workspace = true
+# Radio sound playback.
+tfar_playback_mixer.workspace = true
+
+[lints]
+workspace = true

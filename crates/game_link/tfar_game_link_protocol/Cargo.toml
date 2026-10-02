@@ -1,0 +1,22 @@
+# The frames the Arma extensions and the TeamSpeak plugins exchange over localhost TCP. Used by
+# `tfar_game_link_client`, `tfar_game_link_server`, `tfar_ts3_mock`.
+[package]
+name = "tfar_game_link_protocol"
+description = "The frames the Arma extensions and the TeamSpeak plugins exchange over localhost TCP."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/game_link"
+tier = 0
+targets = "any"
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+
+[lints]
+workspace = true

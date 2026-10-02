@@ -1,0 +1,26 @@
+# The 1.0 antenna and radio tower model used for terrain-aware reception. Used by `tfar_plugin_1_0`,
+# `tfar_radio_routing_1_0`.
+[package]
+name = "tfar_antennas_1_0"
+description = "The 1.0 antenna and radio tower model used for terrain-aware reception."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/version_1_0"
+tier = 2
+targets = "any"
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+# Positions, directions and distances.
+tfar_geometry.workspace = true
+# The parsers for Arma's field, array and position strings.
+tfar_arma_values.workspace = true
+
+[lints]
+workspace = true

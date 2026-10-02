@@ -1,0 +1,16 @@
+# Spell check for the whole repository; the gate runs `typos` from the root.
+[files]
+# The original mods are read-only, build output and the lock file are generated, and assets are data.
+extend-exclude = ["reference/", "target/", "Cargo.lock", "assets/"]
+
+# TFAR and Arma vocabulary, and identifiers of the original C++ that the specs quote verbatim.
+[default.extend-words]
+arma = "arma"
+tangent = "tangent"
+speakers = "speakers"
+multiplifier = "multiplifier"
+leve = "leve"
+rbj = "rbj"
+hrir = "hrir"
+nkey = "nkey"
+dedmen = "dedmen"

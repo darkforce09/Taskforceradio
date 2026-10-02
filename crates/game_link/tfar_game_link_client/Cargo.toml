@@ -1,0 +1,24 @@
+# The extension side of the game link: a lazy, time-bounded localhost TCP client. Used by
+# `tfar_extension_0_9`, `tfar_extension_1_0`, `tfar_ts3_mock`.
+[package]
+name = "tfar_game_link_client"
+description = "The extension side of the game link: a lazy, time-bounded localhost TCP client."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/game_link"
+tier = 1
+targets = "any"
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+# The game link frames and ports.
+tfar_game_link_protocol.workspace = true
+
+[lints]
+workspace = true

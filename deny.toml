@@ -1,0 +1,39 @@
+# cargo-deny policy: licences, bans, sources and advisories; the gate runs `cargo deny check`.
+[graph]
+# The only triples the deliverables build for: Linux plugins and Windows (Proton) extensions.
+targets = ["x86_64-unknown-linux-gnu", "x86_64-pc-windows-gnu"]
+
+[advisories]
+# An ignore entry whose advisory no longer matches anything must be removed.
+unused-ignored-advisory = "deny"
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "CC0-1.0",
+    "MPL-2.0",
+    "BSL-1.0",
+]
+confidence-threshold = 0.93
+# The allow-list is written for the external crates the library map plans, so an entry no crate in
+# today's graph uses is expected, not stale.
+unused-allowed-license = "allow"
+
+# The workspace crates are `publish = false` and `UNLICENSED` until the licence is decided.
+[licenses.private]
+ignore = true
+
+[bans]
+# Warn while the skeletons hold no external dependency; it becomes deny once they land.
+multiple-versions = "warn"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
