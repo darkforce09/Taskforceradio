@@ -1,0 +1,210 @@
+**Status:** live
+
+# Workspace decisions
+
+What is built, in which language, where it lives, how it is named and laid out, how it is committed,
+built and shipped, and which libraries it uses. The ids D1 to D22 are the approved program plan's.
+
+### 2026-10-02 — Everything native is rewritten in Rust (D1)
+
+**Context:** Both TFAR versions link game and TeamSpeak through Win32 named objects (0.9.12 the named
+pipe `\\.\pipe\task_force_radio_pipe`, 1.0 the shared memory `Local\TFARSHAMEM` with events and a mutex).
+Under Proton these live inside wineserver, where a native TeamSpeak plugin cannot reach them, and the
+installed plugins are Windows DLLs. Porting the C++ piece by piece would keep its Win32 coupling and its
+bugs.
+
+**Decision:** Rewrite everything native in Rust, from scratch: both Arma extensions, both TeamSpeak
+plugins and all of the DSP. One extension and one plugin per mod: tfar_extension_1_0 with tfar_plugin_1_0,
+tfar_extension_0_9 with tfar_plugin_0_9. Shared logic goes in library crates. The SQF and the extension
+name `task_force_radio_pipe` stay as they are.
+
+**Consequences:** The originals become the specification, read from `reference/` and recorded in the
+behaviour specs. No C++ is linked into a product (decision D9 allows it only as a test oracle).
+
+**Supersedes:** none.
+
+### 2026-10-02 — The repository root holds the port, the mods sit read-only in reference/ (D5)
+
+**Context:** The two mod trees sat beside each other in the project folder with nothing around them.
+
+**Decision:** `Taskforceradio/` is the repository root. The mods move, unchanged, to `reference/tfar_1_0/`
+and `reference/tfar_0_9_12/`, and are read-only from then on.
+
+**Consequences:** No file under `reference/` is ever written, formatted or moved; `reference/README.md` is
+the one exception. `cargo xtask verify reference-untouched` holds this against the manifest (see D15).
+
+**Supersedes:** none.
+
+### 2026-10-02 — Crate names carry the tfar_ prefix and a version tag (D6)
+
+**Context:** 38 crates share one workspace and two of them per role differ only by mod version.
+
+**Decision:** Every crate is prefixed `tfar_`, in snake_case, and its folder name equals its package name.
+Version crates end in `_1_0` or `_0_9`.
+
+**Consequences:** `cargo xtask verify crate-tiers` checks folder = package name and path = category +
+name. Commit scopes are the package names in kebab-case.
+
+**Supersedes:** none.
+
+### 2026-10-02 — Deliverables in apps, libraries in crates by category, tooling in tools (D7)
+
+**Context:** The workspace needs one obvious place for each kind of crate.
+
+**Decision:** apps/ holds the four deliverables, crates/<category>/<crate>/ the libraries, and
+tools/ the tooling. The categories are foundation, audio, teamspeak, game_link, services, interface,
+version_0_9 and version_1_0.
+
+**Consequences:** Every manifest declares `[package.metadata.layout]` with its category, tier and targets;
+the category edge matrix and the version ban are checked by `cargo xtask verify crate-tiers`.
+
+**Supersedes:** none.
+
+### 2026-10-02 — Conventions follow TBD-Reforger and rerun, milestones TBD-subtitles (D8)
+
+**Context:** The owner's other Rust workspaces already have tested conventions and gates.
+
+**Decision:** Conventions follow TBD-Reforger and rerun: workspace package, dependencies and lints, tier
+metadata, the crate anatomy, `cargo xtask verify` gates, cargo-deny and typos. Milestones live in
+`roadmap.md` in the TBD-subtitles style; program records follow the Reforger restructure style.
+
+**Consequences:** The standards adapt those documents and drop everything particular to them. The
+conventions survey in `documentation/program/research/` maps what was adopted.
+
+**Supersedes:** none.
+
+### 2026-10-02 — Local git, Conventional Commits straight to main (D11)
+
+**Context:** One owner, one machine, agents doing the slices.
+
+**Decision:** Local git, Conventional Commits straight to `main`, explicit paths, a Co-Authored-By
+trailer, no remote yet.
+
+**Consequences:** No branches. During a program only the orchestrator commits; agents report their files.
+The rules are in the [commit conventions](/documentation/standards/commit_conventions.md).
+
+**Supersedes:** none.
+
+### 2026-10-02 — Panics abort and no panic path exists (D12)
+
+**Context:** A plugin runs inside TeamSpeak and an extension inside Arma; an unwinding panic across their
+C ABI is undefined behaviour, and any panic takes the host down.
+
+**Decision:** `panic = "abort"` in dev and release. The panic-prone lints are denied (`unwrap_used`,
+`expect_used`, `panic`, `indexing_slicing`, `todo`, `unimplemented`, `dbg_macro`), so no panic path exists
+in production code.
+
+**Consequences:** Errors are values to the host boundary; slices are read with `get`, tokens with length
+checks, sample arithmetic saturates. Tests keep unwinding, because cargo ignores `panic` for the test
+harness, and clippy allows unwrap, expect, indexing and panic in tests. Held by
+`cargo clippy --workspace --all-targets -- -D warnings`.
+
+**Supersedes:** none.
+
+### 2026-10-02 — dist builds into target/dist and nothing installs (D13)
+
+**Context:** The owner's TeamSpeak plugins folder and mod folders hold the live installation; a script
+writing there could break it or leave stale DLLs.
+
+**Decision:** `cargo xtask dist` builds into target/dist/tfar_1_0/ and target/dist/tfar_0_9/. No script
+copies anything into a mod folder or into TeamSpeak; the owner copies by hand.
+
+**Consequences:** dist renames the artifacts to their final names (`libtfar_plugin_<v>_linux_amd64.so`,
+`task_force_radio_pipe_x64.dll`) and copies `radio-sounds/` from `reference/` without modifying it. The
+manual install runbook holds the copy steps.
+
+**Supersedes:** none.
+
+### 2026-10-02 — Opus sub-agents run the slices, the orchestrator gates and commits (D14)
+
+**Context:** Each milestone is too big for one session and splits into independent slices.
+
+**Decision:** Opus sub-agents work one slice each from briefs and prompts under `documentation/program/`;
+the orchestrator reviews and gates every slice, and `progress.md` holds the handoff.
+
+**Consequences:** Every brief follows the [agent brief template](/documentation/standards/templates/agent_brief.md)
+and the shared brief; the fast stage gate runs per slice and the full `cargo xtask ci ci-local` at each
+milestone close.
+
+**Supersedes:** none.
+
+### 2026-10-02 — The 1.0 tree is an upstream clone, guarded by a manifest (D15)
+
+**Context:** The 1.0 tree is a git clone of upstream with its own history (411 MB); the 0.9.12 tree is a
+release with no version control (22 MB).
+
+**Decision:** `reference/tfar_1_0` is a clean upstream clone (`origin/master` at `fce977fa`) and keeps
+its own `.git`. The outer repository gitignores it, and only `MANIFEST.sha256` guards it, excluding
+`.git/`. `reference/tfar_0_9_12` has no other version control, so it is committed as plain files.
+
+**Consequences:** A fresh clone of the outer repository restores the 1.0 tree by cloning upstream and
+checking out `fce977fa` ([reference README](/reference/README.md)). `cargo xtask verify
+reference-untouched` detects drift in either tree.
+
+**Supersedes:** none.
+
+### 2026-10-02 — The licence is decided later (D16)
+
+**Context:** Upstream is APL-SA; the port is new code but follows upstream behaviour closely.
+
+**Decision:** M0 sets `license = "UNLICENSED"`, and cargo-deny ignores private crates. The IRCAM HRIR data
+is credited in assets/hrir/CREDITS.md.
+
+**Consequences:** The licence is an open question in the roadmap, settled before any release.
+
+**Supersedes:** none.
+
+### 2026-10-02 — The toolchain is pinned to Rust 1.99.0 (D17)
+
+**Context:** Every gate must run on the same compiler, on the host and for the Windows target.
+
+**Decision:** Pin 1.99.0, the newest stable on 2026-09-28, in `rust-toolchain.toml`, with `rustfmt`,
+`clippy` and the targets `x86_64-unknown-linux-gnu` and `x86_64-pc-windows-gnu`.
+
+**Consequences:** `rust-version = "1.99"` in the workspace package and `msrv = "1.99"` in clippy's
+configuration. A toolchain bump is a new decision entry.
+
+**Supersedes:** none.
+
+### 2026-10-02 — Use libraries, don't reinvent the wheel (D18)
+
+**Context:** Most of the port's needs (TeamSpeak bindings, filters, HRTF, SQLite, HTTP, framing,
+concurrency) have maintained crates; writing them again costs time and adds bugs.
+
+**Decision:** Product code is pure Rust and uses libraries wherever one fits; C and C++ appear only as a
+test oracle (D9). The library map, checked on crates.io on 2026-10-02:
+
+| Need | Crate (version) | Used in | We still write |
+|---|---|---|---|
+| TS3 SDK API 26 bindings | `ts3plugin-sys` 0.5.0 | `tfar_ts3_host` | the export layer, C-string ownership, thread separation |
+| Arma extension | none fits | `tfar_arma_extension_abi` | `RVExtension`, `RVExtensionVersion`, truncating writes |
+| Win32 calls | `windows-sys` 0.61.2 | `tfar_arma_extension_abi` | — |
+| Vector maths | `glam` 0.33.12 | `tfar_geometry` and above | domain helpers (underwater distance, Arma angles) |
+| Butterworth design | `sci-rs` 0.4.1 | `tfar_dsp_filters` | per-setup wrappers, multi-channel state |
+| RBJ coefficients, DF2T | `biquad` 0.6.0 | `tfar_dsp_filters` | — |
+| HRTF | `hrtf` 0.9.0 + IRCAM sphere | `tfar_hrtf` | the block adapter, per-source state |
+| FFT, if needed | `rustfft` 6.4.1, `realfft` 3.5.0 | `tfar_hrtf` | — |
+| Compressor | none usable | `tfar_dynamics` | a feed-forward compressor |
+| Distance curve, cone | none | `tfar_spatial_audio` | the piecewise curve and the cone gain |
+| WAV | `hound` 3.5.1 | `tfar_playback_mixer` | 48 kHz, 16-bit, stereo validation and cache |
+| SQLite | `rusqlite` 0.40.2 (`bundled`) | `tfar_ts3_settings_db` | — |
+| HTTP | `ureq` 3.4.2 (rustls) | `tfar_web_requests` | the update check and Piwik calls |
+| Version compare | `version-compare` | `tfar_web_requests`, the 1.0 settings | — |
+| Link framing | `postcard` 1.1.3 + `serde` 1.0.229 | `tfar_game_link_protocol` | the u32 length prefix |
+| Concurrency | `parking_lot` 0.12.5, `crossbeam-channel` 0.5.17, `arc-swap` 1.9.2, `rtrb` 0.4.0 | plugins, link, audio | — |
+| Logging | `tracing` 0.1.44 + `tracing-subscriber` 0.3.23 | everywhere | a layer forwarding to TeamSpeak's `logMessage` |
+| Profiling | `profiling` 1.0.18 + `tracy-client` 0.19.0 | plugins | — |
+| Debug window | `eframe`/`egui` 0.36.2 | `tfar_debug_window` | the panels |
+| Errors | `thiserror` 2.0.21; `anyhow` 1.0.104 in tools only | all | — |
+| Mock TeamSpeak host | `libloading` 0.9.0 | `tfar_ts3_mock` | the fake function table |
+| xtask | `clap`, `xshell`, `cargo_metadata`, `toml_edit`, `sha2`, `walkdir`, `ignore` | tools/xtask | the gates |
+
+Rejected: `bincode` (3.0.0 is a dead placeholder); the high-level `ts3plugin` wrapper (a global mutex with
+`unwrap`, missing callbacks); `arma-rs` (no raw-string handler); `fundsp` and `idsp` (no Butterworth
+band-pass); `audionimbus` (C++ Steam Audio).
+
+**Consequences:** Every external crate is pinned once in `[workspace.dependencies]` and stays in the
+crates the map names (`cargo xtask verify dependency-firewalls`). A new need gets a row here, in a new
+entry, before its crate is added.
+
+**Supersedes:** none.
