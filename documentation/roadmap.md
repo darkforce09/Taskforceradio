@@ -1,0 +1,134 @@
+**Status:** live
+
+# Roadmap
+
+The milestones that take the TFAR Rust port from an empty workspace to two installable mods (0.9.12
+and 1.0), each with a checklist and an acceptance test. Rules:
+- Tick items in the same commit as the work.
+- A milestone is done when its acceptance test passes. Nothing moves to a later milestone without the
+  owner saying so.
+- Only the owner moves items between milestones.
+- Every milestone close runs the full `cargo xtask ci ci-local`.
+
+The program records that drive each milestone (agent rosters, budgets, gates, progress) live in the
+[program folder](/documentation/program/README.md).
+
+## M0 — Workspace skeleton, reference archive, gates
+
+The repository, the read-only reference trees, the conventions, every crate as a compiling skeleton
+and the gate tooling, so every later milestone starts from a green workspace.
+
+- [ ] git init.
+- [ ] Move the trees to `reference/`, write the reference manifest (MANIFEST.sha256), add the
+      reference README.
+- [ ] Root config, CLAUDE.md and AGENTS.md, the whole documentation tree.
+- [ ] All 38 crates as compiling skeletons.
+- [ ] `xtask` with `verify`, `ci`, `new-crate`, `reference-manifest`, and `dist` (skeleton).
+
+**Acceptance:** `cargo xtask ci ci-local` passes; both extension stubs cross-compile to Windows
+DLLs; both plugin stubs build as `.so` files; `cargo xtask verify reference-untouched` holds.
+
+## M1 — Foundations
+
+The tier-0 and tier-1 building blocks every other crate stands on.
+
+- [ ] `tfar_geometry`: glam-based vectors and Arma angles, with correct normalisation (F-009).
+- [ ] `tfar_arma_values`: getline-exact field split, Arma arrays, frequency lists, radio subtypes
+      matched by name (F-010).
+- [ ] `tfar_sample_buffer`: interleaved i16 buffers with saturating gain (F-004) and a bounds-safe
+      stereo view (F-006).
+- [ ] The tracing setup shared by all crates.
+
+**Acceptance:** the unit tests pass.
+
+## M2 — TeamSpeak host layer
+
+A safe Rust layer over the TeamSpeak 3 plugin SDK, and a mock host that can load our plugins.
+
+- [ ] `ts3plugin-sys` 0.5 adopted. Its layout is verified against the official
+      TeamSpeak plugin SDK (GitHub teamspeak/ts3client-pluginsdk) API 26 headers with `size_of`/`offset_of` tests.
+- [ ] `tfar_ts3_host`: safe wrapper, export macro, logging, config paths from TS (F-018).
+- [ ] `tfar_ts3_settings_db`.
+- [ ] `tfar_ts3_mock`.
+- [ ] The plugin stubs export their metadata.
+
+**Acceptance:** the mock loads both stubs, and the owner sees both plugins load in the Flatpak
+TeamSpeak.
+
+## M3 — Game link
+
+The localhost TCP link that replaces the named pipe (0.9) and the shared memory (1.0), as specified
+in the [game link protocol](/documentation/architecture/game_link_protocol.md).
+
+- [ ] `tfar_game_link_protocol`, `tfar_game_link_server` (FIFO async, F-007),
+      `tfar_game_link_client`.
+- [ ] `tfar_arma_extension_abi`: the `RVExtension` export and the focus query.
+- [ ] Both extension apps with real transport.
+- [ ] `tfar_extension_probe`.
+
+**Acceptance:** the probe under Proton's wine gets `PONG` from the stub plugins; in Arma under
+Proton (BattlEye off), `"task_force_radio_pipe" callExtension "TS_INFO\tPING"` returns `PONG` for
+both mods.
+
+## M4 — Audio primitives
+
+The DSP building blocks, proven against the original C/C++ libraries as golden oracles.
+
+- [ ] `tfar_dsp_filters` (sci-rs + biquad).
+- [ ] `tfar_dynamics` (feed-forward compressor).
+- [ ] `tfar_hrtf` (the `hrtf` crate, IRCAM sphere, block adapter; F-001).
+- [ ] `tfar_spatial_audio` (distance curve and cone, simple ILD for the 0.9 fallback; F-012).
+- [ ] `tfar_playback_mixer` (hound; F-005).
+- [ ] `tfar_golden_vectors` (oracles: DSPFilters, SimpleComp, F3DAudio curve and cone).
+
+**Acceptance:** the golden tests hold within tolerance.
+
+## M5 — Services and diagnostics
+
+The features that talk to the outside world or show state: update check, Piwik and the debug window.
+
+- [ ] `tfar_web_requests` (update check with real version comparison (F-026), Piwik `TRACK`).
+- [ ] `tfar_debug_window`.
+
+**Acceptance:** each one is exercised against a local test server or window.
+
+## M6 — 0.9 track
+
+The full 0.9.12 plugin and extension, built from the M1–M5 crates.
+
+- [ ] The 6 `version_0_9` crates.
+- [ ] The full `tfar_plugin_0_9` and `tfar_extension_0_9`.
+- [ ] Mock scenario suites.
+
+**Acceptance:** the mock scenarios pass, and the owner runs a live two-client session with the
+0.9.12 mod: SW, LR, DD, speakers, serious mode.
+
+## M7 — 1.0 track
+
+The full 1.0 plugin and extension, built from the M1–M5 crates and never from the 0.9 ones.
+
+- [ ] The 8 `version_1_0` crates.
+- [ ] The full `tfar_plugin_1_0` and `tfar_extension_1_0`.
+- [ ] Mock suites.
+
+**Acceptance:** the same as M6, plus antennas, intercom, SETCFG/NEEDCFG and the focus-aware channel
+move.
+
+## M8 — Release readiness
+
+The artifacts the owner installs by hand, the finished runbook, and every bug fix closed with a test.
+
+- [ ] `cargo xtask dist` produces the final artifacts plus the `radio-sounds` folders.
+- [ ] The [manual install runbook](/documentation/runbooks/manual_install_and_test.md) is complete.
+- [ ] Every [bug fix](/documentation/program/bug_fixes.md) entry is closed with a test.
+
+**Acceptance:** the owner installs from the dist folder under target by hand and plays both mods.
+
+## Open questions
+
+| Question | Settle by |
+|---|---|
+| Licence of the Rust port (D16: `UNLICENSED` until decided; upstream is APL-SA) | Before release (M8) |
+| Are the `hrtf` crate's click artefacts on fast-moving sources acceptable, or does `tfar_hrtf` need its own crossfade? | M4 |
+| Does 32-bit Arma matter? | Settled as no, unless the owner says otherwise |
+| How the plugin picks the `-tfdebug` port (proposed: an environment variable in TeamSpeak's environment; see the [game link protocol](/documentation/architecture/game_link_protocol.md#ports)) | M3 |
