@@ -28,5 +28,11 @@ tfar_arma_extension_abi.workspace = true
 # The extension-side link client.
 tfar_game_link_client.workspace = true
 
+[dev-dependencies]
+# The frames the raw stand-in plugin of the round-trip test writes.
+tfar_game_link_protocol.workspace = true
+# The real plugin-side listener the round-trip test answers from.
+tfar_game_link_server.workspace = true
+
 [lints]
 workspace = true

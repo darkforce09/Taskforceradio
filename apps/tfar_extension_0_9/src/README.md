@@ -1,33 +1,42 @@
 # TFAR 0.9 Arma extension source
 
-The source of `tfar_extension_0_9`: the crate's role constant, its error type and its prelude. The
-crate's own code is not written yet.
+The source of `tfar_extension_0_9`: the `RVExtension` exports, the process-wide game link client
+and the call handling that gives every outcome the original extension's reply string.
 
 ## Contents
 
 ```text
 apps/tfar_extension_0_9/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── call_handling.rs      `answer_call` over the `GameLinkCalls` trait, and the three failure strings
+├── crate_role.rs         `CRATE_ROLE`: what the crate is for, in one sentence
+├── error.rs              `Error`, the `thiserror` enum, and `Result`
+├── extension_exports.rs  the exports, the `OnceLock` client, the flavour, the port and the version
+├── lib.rs                the crate root: module header, `mod` lines and re-exports
+├── prelude.rs            the call handling, the strings and the crate constants for glob import
+└── tests/                unit tests of the string mapping, the exports module and `CRATE_ROLE`
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`.
+`extension_exports.rs` expands `arma_extension!` with `answer_game_call` as the handler and
+`EXTENSION_VERSION` as the version. `answer_game_call` takes the process-wide `GameLinkClient`
+(made on the first call with `client_config(arma_command_line_contains("-tfdebug"))`) and hands it
+to `call_handling::answer_call`. `answer_call` is a pure function over the `GameLinkCalls` trait,
+which `GameLinkClient` implements, so `tests/call_handling.rs` checks every `SyncOutcome` against
+its string with a fake. Each module attaches its sibling test file under `tests/` with `#[path]`.
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
+- `call_handling`: `answer_call`, `GameLinkCalls`, `PIPE_NOT_OPENED`, `PIPE_CLOSED_BY_TEAMSPEAK`,
+  `NOT_CONNECTED_TO_TEAMSPEAK`; the round-trip test drives `answer_call` with a real client.
+- `FLAVOUR`, `DEBUG_SWITCH`, `EXTENSION_VERSION`, `client_config`, `CRATE_ROLE`, `Error`, `Result`
+  and `prelude`, at the crate root.
+- The C exports `RVExtension` and `RVExtensionVersion`, for Arma.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
+- Depends on: `tfar_arma_extension_abi`, `tfar_game_link_client`, `thiserror`.
 - Used by: Arma, which loads the cdylib, and the tests that link the rlib.
 - Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests
-  live in `tests/` (`cargo xtask verify test-placement`).
+  live in `tests/` (`cargo xtask verify test-placement`); the only `unsafe` is the code
+  `arma_extension!` expands.

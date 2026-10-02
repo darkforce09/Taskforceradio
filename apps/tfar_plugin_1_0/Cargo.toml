@@ -53,6 +53,14 @@ tfar_plugin_settings_1_0.workspace = true
 tfar_antennas_1_0.workspace = true
 # The debug window.
 tfar_debug_window.workspace = true
+# Log lines of the plugin and its game link, forwarded to TeamSpeak's log by `tfar_ts3_host`.
+tracing = { workspace = true, features = ["std"] }
+
+[dev-dependencies]
+# The raw extension side of the mock-host test's game link round trip.
+tfar_game_link_client.workspace = true
+# The fake TeamSpeak host that loads the built `.so` in the integration test.
+tfar_ts3_mock.workspace = true
 
 [lints]
 workspace = true

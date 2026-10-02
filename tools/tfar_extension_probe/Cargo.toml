@@ -15,6 +15,10 @@ tier = 0
 targets = "windows"
 
 [dependencies]
+# The probe's errors, with the context of the step that failed.
+anyhow = { workspace = true, features = ["std"] }
+# Loads the extension library (`LoadLibrary` on Windows, `dlopen` on Linux) and resolves its exports.
+libloading = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true

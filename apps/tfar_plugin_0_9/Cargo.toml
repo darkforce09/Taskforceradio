@@ -47,6 +47,14 @@ tfar_playback_mixer.workspace = true
 tfar_geometry.workspace = true
 # The parsers for Arma's field, array and position strings.
 tfar_arma_values.workspace = true
+# Log lines of the plugin and its game link, forwarded to TeamSpeak's log by `tfar_ts3_host`.
+tracing = { workspace = true, features = ["std"] }
+
+[dev-dependencies]
+# The raw extension side of the mock-host test's game link round trip.
+tfar_game_link_client.workspace = true
+# The fake TeamSpeak host that loads the built `.so` in the integration test.
+tfar_ts3_mock.workspace = true
 
 [lints]
 workspace = true

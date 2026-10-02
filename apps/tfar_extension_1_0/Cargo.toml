@@ -27,6 +27,13 @@ thiserror.workspace = true
 tfar_arma_extension_abi.workspace = true
 # The extension-side link client.
 tfar_game_link_client.workspace = true
+# Debug lines for a call that did not reach the plugin; Arma installs no subscriber, so they cost
+# nothing there.
+tracing = { workspace = true, features = ["std"] }
+
+[dev-dependencies]
+# The real plugin-side listener the round-trip test answers from.
+tfar_game_link_server.workspace = true
 
 [lints]
 workspace = true
