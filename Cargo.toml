@@ -46,6 +46,8 @@ tfar_spatial_audio = { path = "crates/audio/tfar_spatial_audio" }
 # crates/teamspeak:
 tfar_ts3_host = { path = "crates/teamspeak/tfar_ts3_host" }
 tfar_ts3_settings_db = { path = "crates/teamspeak/tfar_ts3_settings_db" }
+# `malloc`/`free` for the memory `tfar_ts3_host` hands TeamSpeak and frees in `ts3plugin_freeMemory`.
+libc = { version = "0.2.190", default-features = false }
 
 # crates/game_link:
 tfar_arma_extension_abi = { path = "crates/game_link/tfar_arma_extension_abi" }

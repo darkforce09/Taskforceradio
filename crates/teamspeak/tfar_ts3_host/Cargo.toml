@@ -15,8 +15,18 @@ tier = 0
 targets = "any"
 
 [dependencies]
-# Derives the crate's `Error`.
+# Derives the crate's `Error` and `Ts3Error`.
 thiserror.workspace = true
+# The raw `#[repr(C)]` `TS3Functions` table and SDK enums of plugin API 26.
+ts3plugin-sys.workspace = true
+# `malloc`/`free`: the `infoData` text TeamSpeak hands back to `ts3plugin_freeMemory`.
+libc.workspace = true
+# The events the logging layer forwards to TeamSpeak's `logMessage`.
+tracing = { workspace = true, features = ["std"] }
+# The `Layer` and registry the TeamSpeak log forwarder plugs into.
+tracing-subscriber = { workspace = true, features = ["std", "registry"] }
+# The bounded queue between threads that log (audio threads included) and the logger thread.
+crossbeam-channel = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true
