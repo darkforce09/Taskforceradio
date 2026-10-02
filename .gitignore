@@ -1,0 +1,15 @@
+# Build output: every cargo target dir, including per-agent and per-purpose ones.
+/target/
+target-*/
+
+# The 1.0 reference tree is an upstream clone with its own .git; MANIFEST.sha256 guards it.
+/reference/tfar_1_0/
+
+# Editor and OS clutter.
+.idea/
+.vscode/
+*.swp
+.directory
+
+# Machine-local agent settings.
+.claude/settings.local.json

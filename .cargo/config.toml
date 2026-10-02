@@ -1,0 +1,9 @@
+[alias]
+# Repository tasks run as Rust: gates, CI lane, dist, crate scaffolding.
+xtask = "run --quiet --package xtask --"
+
+[target.x86_64-pc-windows-gnu]
+# The Arma extensions are built with mingw and link the C runtime statically, so the DLL needs no
+# extra runtime files beside it under Proton.
+linker = "x86_64-w64-mingw32-gcc"
+rustflags = ["-C", "target-feature=+crt-static"]

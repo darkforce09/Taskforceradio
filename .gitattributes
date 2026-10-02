@@ -1,0 +1,9 @@
+# Binary assets are never diffed or normalised.
+*.wav binary
+*.paa binary
+*.dll binary
+*.so binary
+*.bin binary
+*.png binary
+*.jpg binary
+*.pbo binary

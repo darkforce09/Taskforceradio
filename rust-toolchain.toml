@@ -1,0 +1,7 @@
+[toolchain]
+# One pin for the whole workspace, so every gate runs on the same compiler. Extensions cross-compile
+# to Windows for Arma under Proton; plugins build for native Linux TeamSpeak.
+channel = "1.99.0"
+components = ["rustfmt", "clippy"]
+targets = ["x86_64-unknown-linux-gnu", "x86_64-pc-windows-gnu"]
+profile = "minimal"
