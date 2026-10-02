@@ -202,8 +202,14 @@ pub(crate) const FIREWALLS: &[(&str, FirewallScope)] = &[
     ),
     ("rusqlite", FirewallScope::Crates(&["tfar_ts3_settings_db"])),
     ("ureq", FirewallScope::Crates(&["tfar_web_requests"])),
+    ("url", FirewallScope::Crates(&["tfar_web_requests"])),
     ("eframe", FirewallScope::Crates(&["tfar_debug_window"])),
     ("egui", FirewallScope::Crates(&["tfar_debug_window"])),
+    ("winit", FirewallScope::Crates(&["tfar_debug_window"])),
+    (
+        "fastrand",
+        FirewallScope::Crates(&["tfar_radio_effects_0_9", "tfar_radio_effects_1_0"]),
+    ),
     ("cc", FirewallScope::Crates(&["tfar_golden_vectors"])),
     ("sci-rs", FirewallScope::Crates(&["tfar_dsp_filters"])),
     ("biquad", FirewallScope::Crates(&["tfar_dsp_filters"])),
@@ -248,6 +254,7 @@ pub(crate) const UNSAFE_ALLOWED: &[&str] = &[
     "tfar_extension_1_0",
     "tfar_ts3_mock",
     "tfar_extension_probe",
+    "tfar_golden_vectors",
 ];
 
 /// The feature any crate may declare.

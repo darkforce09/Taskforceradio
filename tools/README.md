@@ -8,7 +8,7 @@ golden-vector oracle. Nothing here ships to a player.
 ```text
 tools/
 ├── tfar_extension_probe/  a Windows executable that loads an extension DLL and calls it, crate `tfar_extension_probe`
-├── tfar_golden_vectors/   reference outputs of the original C++ audio code, crate `tfar_golden_vectors`
+├── tfar_golden_vectors/   the original C++ audio code as a live test oracle for the audio crates, crate `tfar_golden_vectors`
 ├── tfar_ts3_mock/         a fake TeamSpeak host that loads a plugin and runs scenarios, crate `tfar_ts3_mock`
 └── xtask/                 the repository tasks: verify gates, CI lane, dist, new-crate, reference manifest
 ```

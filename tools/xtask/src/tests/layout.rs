@@ -137,8 +137,13 @@ fn header_only_folders_admit_only_dot_h() {
 }
 
 #[test]
-fn the_ffi_crates_and_the_probe_may_lift_unsafe() {
-    for name in ["tfar_ts3_host", "tfar_ts3_mock", "tfar_extension_probe"] {
+fn the_ffi_crates_the_probe_and_the_oracle_may_lift_unsafe() {
+    for name in [
+        "tfar_ts3_host",
+        "tfar_ts3_mock",
+        "tfar_extension_probe",
+        "tfar_golden_vectors",
+    ] {
         assert!(UNSAFE_ALLOWED.contains(&name), "{name}");
     }
     assert!(!UNSAFE_ALLOWED.contains(&"tfar_geometry"));
