@@ -15,10 +15,11 @@ crates/foundation/tfar_geometry/
 
 ## How it works
 
-The vector and angle helpers every positional crate shares: Arma world positions, view directions,
-distances (including the underwater rule) and correct normalisation. The code is not written yet:
-`src/lib.rs` carries the module header and re-exports, `src/crate_role.rs` states the crate's role
-in one constant, and `src/error.rs` holds the `thiserror` error type.
+The vector and angle helpers every positional crate shares, over `glam`'s `DVec3`: `Position` and
+`Direction` in Arma's frame (x east, y north, z up, metres), `Angle` in radians, the underwater
+distance rule and the rotation about the vertical axis. Constructors reject non-finite coordinates
+with `Error::NonFinite`; every direction is normalised to unit length or kept at zero. The modules
+are described in `src/README.md`.
 
 ## Getting started
 
@@ -34,16 +35,17 @@ None: the crate reads no setting.
 
 ## Public surface
 
-Today the crate exports `CRATE_ROLE`, `Error`, `Result` and `prelude`; the surface it is for:
-
-- `Position` and `Direction`: Arma world coordinates and unit view vectors over `glam`.
-- distance and angle helpers: listener-to-speaker distance, the underwater distance rule, Arma
-  heading angles.
-- a normalisation that never divides by zero.
+- `Position`: a point in metres, built from `[f64; 3]`, with `distance_to` and `direction_to`.
+- `Direction`: a unit vector or zero, from `from_vector` or `from_array`, with `view_angle`
+  (`atan2(x, y)`) and `polar_angle` (`atan2(y, x)`).
+- `Angle`: radians, with `from_degrees`, `to_degrees` and the (-π, π] wrap `normalized_signed`.
+- `distance_underwater(from, to)`: the length of a segment below z = 0.
+- `rotate_about_z(position, angle)`: a position turned about the z axis.
+- `Error` (`NonFinite`), `Result`, `CRATE_ROLE` and `prelude`.
 
 ## Boundaries
 
-- Depends on: no workspace crate; `thiserror` for the error type. Planned externals: `glam`.
+- Depends on: no workspace crate; `glam` for the vectors and `thiserror` for the error type.
 - Used by: `tfar_antennas_1_0`, `tfar_arma_values`, `tfar_client_state_0_9`,
   `tfar_client_state_1_0`, `tfar_game_commands_0_9`, `tfar_game_commands_1_0`, `tfar_hrtf`,
   `tfar_plugin_0_9`, `tfar_plugin_1_0`, `tfar_radio_routing_0_9`, `tfar_radio_routing_1_0`,

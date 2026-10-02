@@ -1,13 +1,14 @@
 //! The error type of `tfar_geometry`.
 
 /// Every failure `tfar_geometry` reports.
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Copy, Debug, PartialEq, thiserror::Error)]
 pub enum Error {
-    /// The operation asked for is not offered by this crate.
-    #[error("tfar_geometry does not offer the operation `{operation}`")]
-    UnsupportedOperation {
-        /// The name of the operation that was asked for.
-        operation: &'static str,
+    /// A constructor was given a NaN or infinite coordinate; positions and directions hold only
+    /// finite numbers.
+    #[error("coordinates must be finite, got {coordinates:?}")]
+    NonFinite {
+        /// The coordinates that were given, in Arma's x (east), y (north), z (up) order.
+        coordinates: [f64; 3],
     },
 }
 

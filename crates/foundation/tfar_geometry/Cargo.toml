@@ -17,6 +17,8 @@ tier = 0
 targets = "any"
 
 [dependencies]
+# The `f64` vectors under `Position` and `Direction`, with their normalisation and distances.
+glam = { workspace = true, features = ["std", "f64"] }
 # Derives the crate's `Error`.
 thiserror.workspace = true
 

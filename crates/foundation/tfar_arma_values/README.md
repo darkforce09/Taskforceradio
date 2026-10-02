@@ -15,10 +15,12 @@ crates/foundation/tfar_arma_values/
 
 ## How it works
 
-The parsers for every value shape Arma's `callExtension` strings carry: tab-split fields split
-exactly like the original getline loop, Arma array literals, frequency lists and positions. The code
-is not written yet: `src/lib.rs` carries the module header and re-exports, `src/crate_role.rs`
-states the crate's role in one constant, and `src/error.rs` holds the `thiserror` error type.
+The parsers for every value shape Arma's `callExtension` strings carry. Tab-split fields are split
+exactly like the original getline loop. Arma array literals become positions or string lists, and
+frequency lists become typed entries in the shape each mod version accepts. Numbers, booleans,
+radio subtypes and nicknames have their own parsers. Every parser returns a typed `Error` instead of
+indexing past the end or crashing on a malformed value. The modules are described in
+`src/README.md`.
 
 ## Getting started
 
@@ -34,11 +36,13 @@ None: the crate reads no setting.
 
 ## Public surface
 
-Today the crate exports `CRATE_ROLE`, `Error`, `Result` and `prelude`; the surface it is for:
-
-- `split_fields`: tab-split fields exactly like the original getline loop, empty fields kept.
-- `ArmaArray`: the parsed form of an Arma array literal.
-- `FrequencyList` and position parsing, returning `Result` instead of indexing past the end.
+- `split_fields` and the `separators` constants (`FIELD`, `SPEAKER_RECORD`, `SPEAKER_PART`,
+  `FREQUENCY_PART`, `VEHICLE_PART`, `ASYNC_SUFFIX`).
+- `parse_number`, `parse_int` and `parse_bool`.
+- `parse_position_array`, `parse_optional_position` and `parse_string_array`.
+- `parse_frequency_entries`, `FrequencyEntry`, `FrequencyEntryShape` and `StereoMode`.
+- `RadioSubtype` and `sanitize_nickname`.
+- `Error`, `Result`, `CRATE_ROLE` and `prelude`.
 
 ## Boundaries
 
