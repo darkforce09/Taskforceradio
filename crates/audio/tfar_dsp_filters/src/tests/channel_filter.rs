@@ -261,8 +261,8 @@ fn the_f32_path_matches_the_f64_path_to_f32_precision() {
     }
 }
 
-/// The original `processFilterStereo` for one stereo block, with this crate's clamp: split to
-/// `f32` by `/ 32767`, filter, `* gain`, clamp to `[-1, 1]`, `* 32766`, truncate.
+/// The original `processFilterStereo` for one stereo block: split to `f32` by `/ 32767`, filter,
+/// `* gain`, then above 1.0 `i16::MAX`, below -1.0 `i16::MIN`, else `* 32766` and truncate.
 fn reference_stereo_i16(filter: &mut StereoFilter, samples: &[i16], gain: f32) -> Vec<i16> {
     samples
         .as_chunks::<2>()
@@ -275,7 +275,13 @@ fn reference_stereo_i16(filter: &mut StereoFilter, samples: &[i16], gain: f32) -
             ];
             filter.process_frame(input).map(|value| {
                 let scaled = (value * f64::from(gain)) as f32;
-                (scaled.clamp(-1.0, 1.0) * 32_766.0) as i16
+                if scaled > 1.0 {
+                    i16::MAX
+                } else if scaled < -1.0 {
+                    i16::MIN
+                } else {
+                    (scaled * 32_766.0) as i16
+                }
             })
         })
         .collect()
@@ -328,7 +334,7 @@ fn a_low_pass_passes_steady_dc_through_the_i16_path() {
 }
 
 #[test]
-fn the_stereo_i16_path_clips_at_the_output_scale_instead_of_wrapping() {
+fn the_stereo_i16_path_clips_to_i16_max_and_min_instead_of_wrapping() {
     let mut filter = StereoFilter::new(
         FilterDesign::ButterworthLowPass {
             order: 2,
@@ -340,13 +346,20 @@ fn the_stereo_i16_path_clips_at_the_output_scale_instead_of_wrapping() {
     let mut buffer = stereo_block(&[16_384, -16_384].repeat(4_800));
     filter.process_stereo_i16(&mut buffer, 4.0);
     let last = &buffer.as_slice()[buffer.as_slice().len() - 2..];
-    assert_eq!(last, &[32_766, -32_766]);
-    assert!(
-        buffer
-            .as_slice()
-            .iter()
-            .all(|sample| (-32_766..=32_766).contains(sample))
-    );
+    assert_eq!(last, &[i16::MAX, i16::MIN]);
+}
+
+#[test]
+fn a_sample_beyond_full_scale_writes_i16_max_or_min_like_process_filter_stereo() {
+    // helpers.hpp:185-187: above 1.0 is SHRT_MAX, below -1.0 SHRT_MIN, else `* (SHRT_MAX - 1)`.
+    assert_eq!(clip_to_sample(1.000_001), i16::MAX);
+    assert_eq!(clip_to_sample(-1.000_001), i16::MIN);
+    assert_eq!(clip_to_sample(f32::INFINITY), i16::MAX);
+    assert_eq!(clip_to_sample(f32::NEG_INFINITY), i16::MIN);
+    assert_eq!(clip_to_sample(1.0), 32_766);
+    assert_eq!(clip_to_sample(-1.0), -32_766);
+    assert_eq!(clip_to_sample(0.5), 16_383);
+    assert_eq!(clip_to_sample(f32::NAN), 0);
 }
 
 #[test]

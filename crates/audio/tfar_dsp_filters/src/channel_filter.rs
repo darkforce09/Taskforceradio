@@ -122,16 +122,30 @@ impl ChannelFilter<1> {
 impl ChannelFilter<2> {
     /// Filters a stereo `i16` block in place as the original `processFilterStereo` does: each
     /// sample becomes `sample / INPUT_SCALE`, runs through its channel's sections, is multiplied
-    /// by `gain`, and goes back through [`float_to_sample`] (clamped to `[-1, 1]`, times
-    /// `OUTPUT_SCALE`, truncated toward zero; `NaN` becomes 0). Allocates nothing.
+    /// by `gain`, and is written back by [`clip_to_sample`]: above 1.0 `i16::MAX`, below -1.0
+    /// `i16::MIN`, otherwise times `OUTPUT_SCALE` and truncated toward zero (`NaN` becomes 0).
+    /// Allocates nothing.
     pub fn process_stereo_i16(&mut self, buffer: &mut StereoBuffer, gain: f32) {
         let gain = f64::from(gain);
         let (frames, _) = buffer.as_mut_slice().as_chunks_mut::<2>();
         for frame in frames {
             let input = frame.map(|sample| f64::from(sample_to_float(sample)));
             let output = self.process_frame(input);
-            *frame = output.map(|value| float_to_sample(narrow_to_f32(value * gain)));
+            *frame = output.map(|value| clip_to_sample(narrow_to_f32(value * gain)));
         }
+    }
+}
+
+/// The write-back of `processFilterStereo` (`reference/tfar_1_0/ts/src/helpers.hpp:185-187`): a
+/// value above 1.0 is `i16::MAX` and one below -1.0 is `i16::MIN`; anything else goes through
+/// [`float_to_sample`], times `OUTPUT_SCALE` and truncated toward zero, with `NaN` as 0.
+fn clip_to_sample(value: f32) -> i16 {
+    if value > 1.0 {
+        i16::MAX
+    } else if value < -1.0 {
+        i16::MIN
+    } else {
+        float_to_sample(value)
     }
 }
 

@@ -263,7 +263,7 @@ fn stereo_i16_noise(frames: usize, amplitude: f64) -> Vec<i16> {
 }
 
 #[test]
-fn the_stereo_i16_path_matches_process_filter_stereo_apart_from_the_clip_values() {
+fn the_stereo_i16_path_matches_process_filter_stereo_within_one_lsb_clipped_or_not() {
     let input = stereo_i16_noise(9_600, 20_000.0);
     let mut failures = Vec::new();
     let (mut worst_unclipped, mut worst_clipped) = (0_i32, 0_i32);
@@ -290,13 +290,12 @@ fn the_stereo_i16_path_matches_process_filter_stereo_apart_from_the_clip_values(
                         differing_unclipped += 1;
                     }
                 }
-                let tolerance = if is_clipped {
+                if is_clipped {
                     worst_clipped = worst_clipped.max(difference);
-                    2
                 } else {
                     worst_unclipped = worst_unclipped.max(difference);
-                    1
-                };
+                }
+                let tolerance = 1;
                 if difference > tolerance {
                     failures.push(format!(
                         "{} gain {gain} sample {index}: original {expected}, ours {actual}",

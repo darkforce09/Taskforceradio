@@ -24,8 +24,8 @@ then runs every channel through its own copy of the cascade, each section a `biq
 `process_frame`, `process_frames_f64` and `process_frames_f32` work on interleaved frames,
 `MonoFilter::process_sample` on the radio effects' mono signal, and
 `StereoFilter::process_stereo_i16` is the original `processFilterStereo`
-(`reference/tfar_1_0/ts/src/helpers.hpp`): `sample / 32767`, filter, `× gain`, clamp to
-[-1, 1], `× 32766`, truncate.
+(`reference/tfar_1_0/ts/src/helpers.hpp`): `sample / 32767`, filter, `× gain`; above 1.0 the sample
+is `i16::MAX`, below -1.0 `i16::MIN`, otherwise `× 32766` and truncated, as the original clips.
 
 ### Designs and their originals
 

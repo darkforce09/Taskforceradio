@@ -44,7 +44,7 @@ test signal ──▶ OracleFilter / OracleCompressor / f3daudio_calculate ─�
 |---|---|---|
 | every TFAR filter design, mono and stereo `f32` | white noise, sine sweep, impulse at 48 kHz | RMS error ≤ 1e-4 of the oracle's RMS |
 | magnitude response | 64 log-spaced frequencies, 20 Hz to 23 kHz | 0.1 dB at or above −3 dB, 1 dB elsewhere |
-| stereo `i16` filter path (`processFilterStereo`) | noise at gains 1 and 4 | 1 LSB, 2 LSB on clipped samples |
+| stereo `i16` filter path (`processFilterStereo`) | noise at gains 1 and 4 | 1 LSB, clipped samples included |
 | compressor presets 0.9 and 1.0 | AM-modulated noise burst, level steps | gain within 1e-6; `i16` path exact |
 | voice distance curve | 0 to twice the scaler, voice volumes 5 to 60 | 1e-5 |
 | voice cone, and curve and cone together | 72 angles; a spiral round the emitter | 1e-5 |
