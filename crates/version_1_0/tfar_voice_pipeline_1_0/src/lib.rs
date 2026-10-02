@@ -1,21 +1,49 @@
 //! The 1.0 audio path: one TeamSpeak voice frame through routing, effects, compressor, HRTF and
 //! mixing.
 //!
-//! **Role:** the 1.0 audio path for one voice frame: routes the speaker, applies the radio effect
-//! and the compressor once, the distance and cone gains and the HRTF, and mixes radio sounds.
+//! **Role:** the 1.0 audio path for one voice frame: gates the sender, applies direct speech
+//! (muffling, the distance curve and voice cone level, HRTF direction, its compressor) and every
+//! radio reception (the radio compressor, the effects, speakers, intercom), then the global
+//! volume; and creates the DSP objects those frames need, off the audio thread.
 //!
 //! **Position:** `crates/version_1_0`, tier 5, depending on `tfar_client_state_1_0`,
 //! `tfar_radio_routing_1_0`, `tfar_radio_effects_1_0`, `tfar_plugin_settings_1_0`,
-//! `tfar_dsp_filters`, `tfar_dynamics`, `tfar_hrtf`, `tfar_spatial_audio`, `tfar_sample_buffer`,
-//! `tfar_playback_mixer`; used by `tfar_plugin_1_0`.
+//! `tfar_antennas_1_0`, `tfar_geometry`, `tfar_dsp_filters`, `tfar_dynamics`, `tfar_hrtf`,
+//! `tfar_spatial_audio`, `tfar_sample_buffer`, `tfar_playback_mixer`; used by
+//! `tfar_plugin_1_0`.
 //!
-//! **Signals and state:** none of its own; it works on client state and the buffer it is handed.
+//! **Signals and state:** a [`VoiceProcessor`] per server connection with its scratch buffers;
+//! the DSP objects live in the senders' client state. Called on the TeamSpeak audio threads
+//! with the server lock held; [`ensure_sender_dsp`] runs off them.
 //!
-//! **Invariants:** the compressor runs once per frame.
+//! **Invariants:** each compressor runs once per frame; nothing pans twice; the audio path
+//! allocates nothing once its scratch fits the frame.
 
 mod crate_role;
+mod direct_speech;
+mod distance_gain;
+mod dsp_needs;
 mod error;
+mod filter_step;
+mod frame_plan;
+mod placement;
 pub mod prelude;
+mod radio_paths;
+mod scene;
+mod sender_gate;
+mod voice_context;
+mod voice_processor;
+mod voice_scratch;
 
 pub use crate_role::CRATE_ROLE;
+pub use distance_gain::{
+    CANT_SPEAK_DISTANCE, CANT_SPEAK_GAIN, MAX_VEHICLE_LOSS, NO_VEHICLE_LOSS, SPEAKER_GAIN,
+    UNDERWATER_LEVEL, speaker_audible_distance, vehicle_loss_gain, vehicle_volume_loss,
+    volume_attenuation,
+};
+pub use dsp_needs::{ensure_every_sender_dsp, ensure_sender_dsp};
 pub use error::{Error, Result};
+pub use placement::{HRTF_MAKEUP_GAIN_DB, hrtf_makeup_gain};
+pub use voice_context::{VoiceFrameContext, VoiceOutcome};
+pub use voice_processor::{OWN_RADIO_VOICE_STREAM, VoiceProcessor};
+pub use voice_scratch::VoiceScratchCapacities;

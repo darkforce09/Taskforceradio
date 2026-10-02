@@ -25,6 +25,10 @@ tfar_radio_routing_1_0.workspace = true
 tfar_radio_effects_1_0.workspace = true
 # The 1.0 settings.
 tfar_plugin_settings_1_0.workspace = true
+# The radio towers the routing reads.
+tfar_antennas_1_0.workspace = true
+# Positions and directions, for the swapped X3DAudio cone geometry.
+tfar_geometry.workspace = true
 # The Butterworth and RBJ filters.
 tfar_dsp_filters.workspace = true
 # The compressor.

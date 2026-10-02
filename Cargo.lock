@@ -3234,9 +3234,11 @@ dependencies = [
 name = "tfar_voice_pipeline_1_0"
 version = "0.1.0"
 dependencies = [
+ "tfar_antennas_1_0",
  "tfar_client_state_1_0",
  "tfar_dsp_filters",
  "tfar_dynamics",
+ "tfar_geometry",
  "tfar_hrtf",
  "tfar_playback_mixer",
  "tfar_plugin_settings_1_0",
