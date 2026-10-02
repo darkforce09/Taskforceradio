@@ -1,33 +1,40 @@
 # TeamSpeak settings database source
 
-The source of `tfar_ts3_settings_db`: the crate's role constant, its error type and its prelude. The
-crate's own code is not written yet.
+The source of `tfar_ts3_settings_db`: the read-only query on `settings.db`, the parser of the
+capture pre-processing profile, the error type and the prelude.
 
 ## Contents
 
 ```text
 crates/teamspeak/tfar_ts3_settings_db/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── crate_role.rs          `CRATE_ROLE`: what the crate is for, in one sentence
+├── error.rs               `Error`, the `thiserror` enum of every failure, and `Result`
+├── lib.rs                 the crate root: module header, `mod` lines and re-exports
+├── prelude.rs             the public names for glob import, without `Error` and `Result`
+├── push_to_talk_delay.rs  `PushToTalkDelay` and the parser of the profile text
+├── settings_database.rs   `read_push_to_talk_delay`: the read-only open and the query
+└── tests/                 the parser tests and the queries on temporary databases
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`.
+`settings_database.rs` opens the file with `SQLITE_OPEN_READ_ONLY`, looks for the `Profiles`
+table in `sqlite_master`, reads the `Capture/Default/PreProcessing` value (TEXT, BLOB, a number or
+NULL, all as text) and hands it to `PushToTalkDelay::parse_pre_processing` in
+`push_to_talk_delay.rs`, which reads one `key=value` per line, `\n` or `\r\n` ended. Each module
+attaches its sibling test file in `tests/` with `#[path]`.
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
+- `read_push_to_talk_delay`, `settings_database_path`, `SETTINGS_DATABASE_FILE_NAME`.
+- `PushToTalkDelay`.
+- `Error`, `Result`, `CRATE_ROLE` and `prelude`.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
+- Depends on: `rusqlite`, `thiserror`.
 - Used by: `tfar_plugin_0_9`, `tfar_plugin_1_0`.
-- Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests
-  live in `tests/` (`cargo xtask verify test-placement`).
+- Rules: the query is the one of `reference/tfar_1_0/ts/src/plugin.cpp` (line 351) and its
+  line rules those of the original `pttCallback` (`tests/push_to_talk_delay.rs`); production files
+  hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests live in `tests/`
+  (`cargo xtask verify test-placement`).

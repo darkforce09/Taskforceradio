@@ -18,7 +18,7 @@ targets = "any"
 name = "tfar_ts3_mock"
 path = "src/lib.rs"
 
-# Runs one scenario against a built plugin.
+# Loads one plugin, connects a fake server, shuts it down and prints what the plugin did.
 [[bin]]
 name = "tfar_ts3_mock"
 path = "src/main.rs"
@@ -26,10 +26,23 @@ path = "src/main.rs"
 [dependencies]
 # Derives the crate's `Error`.
 thiserror.workspace = true
-# The game link frames and ports.
+# The game link frames and ports, for scenarios that play the game side.
 tfar_game_link_protocol.workspace = true
-# The extension-side link client.
+# The extension-side link client, for scenarios that play the game side.
 tfar_game_link_client.workspace = true
+# The SDK newtypes and values (`ClientId`, `ConnectStatus`, `LogLevel`, `Ts3Vector`) the call log
+# and the drivers speak in, shared with the plugins under test.
+tfar_ts3_host.workspace = true
+# The raw `#[repr(C)]` `Ts3Functions` table, SDK enums and error codes the fakes implement.
+ts3plugin-sys.workspace = true
+# Loads the plugin `.so` and resolves its `ts3plugin_*` exports; `std` for path file names and
+# `std::error::Error` on its error.
+libloading = { workspace = true, features = ["std"] }
+# `malloc`/`free` for the strings and lists the fakes hand the plugin, freed by `freeMemory`.
+libc.workspace = true
+# The process-global fake TeamSpeak state the `extern "C"` fakes reach, and the one-host-at-a-time
+# session lock.
+parking_lot.workspace = true
 
 [lints]
 workspace = true

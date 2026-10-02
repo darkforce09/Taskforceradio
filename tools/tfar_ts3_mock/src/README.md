@@ -1,35 +1,50 @@
 # Mock TeamSpeak host source
 
-The source of `tfar_ts3_mock`: the crate's role constant, its error type and its prelude. The
-crate's own code is not written yet.
+The source of `tfar_ts3_mock`: the host and its drivers, the fake function table, the fake
+TeamSpeak state, the plugin loader, the call log and the binary.
 
 ## Contents
 
 ```text
 tools/tfar_ts3_mock/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── main.rs        the binary: prints the library's `CRATE_ROLE`
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── crate_role.rs        `CRATE_ROLE`: what the crate is for, in one sentence
+├── error.rs             `Error`, the `thiserror` enum of every failure, and `Result`
+├── fake_functions/      the typed `extern "C"` fakes and the `Ts3Functions` table that holds them
+├── fake_state/          `FakeTeamSpeak`, the allocation ledger and the one-host-at-a-time session
+├── host_call.rs         `HostCall`, `HostQuery`, `SentCommandTarget`: the call log's records
+├── lib.rs               the crate root: module header, `mod` lines and re-exports
+├── locate_cdylib.rs     `locate_cdylib`: a plugin app's own `.so` from inside its test executable
+├── main.rs              the binary: load, metadata, init, connect, shutdown, call log
+├── mock_host/           `MockHost`: start and shutdown, the event drivers and the audio drivers
+├── plugin_library/      `PluginLibrary`: the loaded `.so`, its resolved exports and its metadata
+├── prelude.rs           the public names and the `tfar_ts3_host` newtypes for glob import
+├── temporary_folder.rs  the session's temporary plugin and config folders
+└── tests/               unit tests of `CRATE_ROLE` and `locate_cdylib`
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`. `main.rs` links the library and prints its role.
+`mock_host` opens a plugin through `plugin_library`, begins a session in `fake_state` (waiting
+for any other host, resetting the state, creating the folders) and hands the plugin the table
+from `fake_functions`. From then on two kinds of code touch the fake state: the drivers on the
+test's thread, which change it and then call a plugin export with the lock released, and the
+fakes on whichever thread the plugin calls from, which read or change it, append a `HostCall`
+and, for strings and lists, record a `malloc`ed block in the ledger. The lock is re-entrant over
+a `RefCell`, so a nested use fails at once instead of deadlocking.
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
-- The binary's `main`: prints `CRATE_ROLE`; developers run it.
+- `MockHost` and its option, setup and outcome types; `PluginLibrary`, `PluginMetadata`,
+  `PluginExports`; `HostCall` and its parts; the fake state types; `LeakReport`.
+- `locate_cdylib`, `FAKED_FUNCTIONS`, `SLOT_COUNT`, `mock_error_text`, `Error`, `Result`,
+  `CRATE_ROLE`, `prelude`.
+- The binary's `main`, which developers run.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
-- Used by: the plugin apps' test suites.
-- Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests
-  live in `tests/` (`cargo xtask verify test-placement`).
+- Depends on: `tfar_ts3_host`, `ts3plugin-sys`, `libloading`, `libc`, `parking_lot`, `thiserror`.
+- Used by: the plugin apps' integration tests and the binary.
+- Rules: `lib.rs` holds only the header, attributes, `mod` lines and re-exports
+  (`cargo xtask verify crate-anatomy`); every `unsafe` block has a `// SAFETY:` comment naming who
+  owns the memory (`cargo xtask verify unsafe-allowlist`); tests live in `tests/` folders
+  (`cargo xtask verify test-placement`).

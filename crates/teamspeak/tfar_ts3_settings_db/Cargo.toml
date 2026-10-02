@@ -17,6 +17,9 @@ targets = "any"
 [dependencies]
 # Derives the crate's `Error`.
 thiserror.workspace = true
+# Opens settings.db read-only and runs the one query; `bundled` builds SQLite in, so the plugin
+# needs no system library inside the TeamSpeak Flatpak.
+rusqlite = { workspace = true, features = ["bundled"] }
 
 [lints]
 workspace = true
