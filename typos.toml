@@ -1,7 +1,7 @@
 # Spell check for the whole repository; the gate runs `typos` from the root.
 [files]
 # The original mods are read-only, build output and the lock file are generated, and assets are data.
-extend-exclude = ["reference/", "target/", "target-*/", "Cargo.lock", "assets/", "crates/teamspeak/tfar_ts3_host/sdk_headers/"]
+extend-exclude = ["reference/", "target/", "target-*/", "Cargo.lock", "assets/", "crates/teamspeak/tfar_ts3_host/sdk_headers/", "tools/tfar_golden_vectors/oracle/"]
 
 # TFAR and Arma vocabulary, and identifiers of the original C++ that the specs quote verbatim.
 [default.extend-words]

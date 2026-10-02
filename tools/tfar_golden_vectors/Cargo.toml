@@ -1,8 +1,8 @@
-# Reference outputs of the original C++ audio code, used as test fixtures for the audio crates. The
-# audio crates' tests read its fixtures.
+# The golden-vector oracle: the original C++ filters and compressor and FAudio's F3DAudio, built
+# with `cc` and wrapped safely, run live against the audio crates in this crate's tests.
 [package]
 name = "tfar_golden_vectors"
-description = "Reference outputs of the original C++ audio code, used as test fixtures for the audio crates."
+description = "The original C++ audio code and FAudio's F3DAudio as a live test oracle for the audio crates."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -17,6 +17,22 @@ targets = "any"
 [dependencies]
 # Derives the crate's `Error`.
 thiserror.workspace = true
+
+[build-dependencies]
+# Compiles DSPFilters, simpleSource, F3DAudio and the shim into the oracle library.
+cc.workspace = true
+
+[dev-dependencies]
+# The Butterworth and RBJ filters compared against DSPFilters.
+tfar_dsp_filters.workspace = true
+# The compressor compared against SimpleComp.
+tfar_dynamics.workspace = true
+# The distance curve and emitter cone compared against F3DAudio.
+tfar_spatial_audio.workspace = true
+# The stereo i16 buffer the filter and compressor block paths run on.
+tfar_sample_buffer.workspace = true
+# The directions and angles of the cone comparison.
+tfar_geometry.workspace = true
 
 [lints]
 workspace = true

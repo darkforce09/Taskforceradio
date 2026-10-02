@@ -160,6 +160,9 @@ egui = { version = "0.36.2", default-features = false }
 # The mock TeamSpeak host loads a plugin `.so` (`tfar_ts3_mock` only).
 libloading = { version = "0.9.0", default-features = false }
 
+# Builds the golden-vector oracle's C and C++ (`tfar_golden_vectors`' build script only).
+cc = { version = "1.5.1", default-features = false }
+
 # xtask: arguments, process calls, workspace metadata, manifest edits, the reference manifest,
 # tree walks.
 clap = { version = "4.6.7", default-features = false }
