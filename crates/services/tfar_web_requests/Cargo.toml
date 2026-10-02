@@ -1,8 +1,8 @@
-# The update check and the Piwik tracking calls, over blocking HTTPS. Used by `tfar_plugin_0_9`,
-# `tfar_plugin_1_0`.
+# The update check and the Piwik tracking calls, over blocking HTTP and HTTPS. Used by
+# `tfar_plugin_0_9`, `tfar_plugin_1_0`.
 [package]
 name = "tfar_web_requests"
-description = "The update check and the Piwik tracking calls, over blocking HTTPS."
+description = "The update check and the Piwik tracking calls, over blocking HTTP and HTTPS."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -17,6 +17,14 @@ targets = "any"
 [dependencies]
 # Derives the crate's `Error`.
 thiserror.workspace = true
+# The blocking HTTP client; `rustls` gives HTTPS for the update check without a native TLS library.
+ureq = { workspace = true, features = ["rustls"] }
+# The Piwik tracking URLs, built and percent-encoded the way a request line needs.
+url = { workspace = true, features = ["std"] }
+# Compares the published version with the plugin's, component by component.
+version-compare.workspace = true
+# Logs a failed request instead of reporting it to a caller that does not wait.
+tracing = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true

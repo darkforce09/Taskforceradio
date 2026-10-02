@@ -16,6 +16,17 @@ targets = "any"
 [dependencies]
 # Derives the crate's `Error`.
 thiserror.workspace = true
+# The window: eframe's event loop with the `glow` renderer on X11 only (the Flatpak TeamSpeak has an
+# X11 socket and no Wayland one), egui's built-in fonts, no accessibility bridge.
+eframe = { workspace = true, features = ["glow", "x11", "default_fonts"] }
+# `EventLoopBuilderExtX11`: forces the X11 backend and lets the loop run off the main thread.
+winit = { workspace = true, features = ["x11"] }
+# The published snapshot and the window's waker, read without a lock.
+arc-swap.workspace = true
+# The show/hide/shutdown request and the condition variable the UI thread waits on.
+parking_lot.workspace = true
+# Logs a window that failed to open.
+tracing = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true

@@ -117,8 +117,14 @@ rusqlite = { version = "0.40.2", default-features = false }
 # Update check and Piwik calls (`tfar_web_requests` only); defaults off, the member enables
 # `rustls` so no native TLS library is linked.
 ureq = { version = "3.4.2", default-features = false }
+# The Piwik tracking URLs `tfar_web_requests` builds and hands the plugins; defaults off, the member
+# enables `std`.
+url = { version = "2.5.8", default-features = false }
 # Version comparison for the update check and the 1.0 settings.
 version-compare = { version = "0.2.1", default-features = false }
+# The X11 event-loop options eframe does not re-export (`with_any_thread`, so the debug window's
+# loop runs off TeamSpeak's main thread); `tfar_debug_window` only, the member enables `x11`.
+winit = { version = "0.30.13", default-features = false }
 
 # Game link framing: `postcard` over `serde` types (game_link crates only); defaults off, the
 # member enables `use-std`.
@@ -132,6 +138,9 @@ crossbeam-channel = { version = "0.5.17", default-features = false }
 arc-swap = { version = "1.9.2", default-features = false }
 # Wait-free single-producer single-consumer queues for the real-time audio callbacks.
 rtrb = { version = "0.4.0", default-features = false }
+# Seeded per-effect random numbers for the underwater sample dropouts (the radio effect crates);
+# defaults off, `Rng::with_seed` needs no `std`.
+fastrand = { version = "2.5.0", default-features = false }
 
 # Logging: `tracing` everywhere, with a layer that forwards to TeamSpeak's `logMessage`.
 tracing = { version = "0.1.44", default-features = false }

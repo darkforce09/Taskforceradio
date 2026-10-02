@@ -1,33 +1,42 @@
 # Web requests source
 
-The source of `tfar_web_requests`: the crate's role constant, its error type and its prelude. The
-crate's own code is not written yet.
+The source of `tfar_web_requests`: one blocking HTTP client, the update check and the Piwik
+tracking requests built on it.
 
 ## Contents
 
 ```text
 crates/services/tfar_web_requests/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── crate_role.rs    `CRATE_ROLE`: what the crate is for, in one sentence
+├── error.rs         `Error`, the `thiserror` enum, and `Result`
+├── http_client.rs   the `ureq` agent: whole-request timeout, redirects, body limit, error mapping
+├── lib.rs           the crate root: module header, `mod` lines and re-exports
+├── piwik_tracking/  the 0.9 and 1.0 `TRACK` URLs and the fire-and-forget sender
+├── prelude.rs       the functions a plugin calls, for glob import
+├── tests/           unit tests of `CRATE_ROLE` and the loopback HTTP responder the tests share
+└── update_check/    fetching the published version, the comparison and the background check
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`.
+`http_client` is the only module that talks to `ureq`: `HttpClient::new(timeout, proxy)` builds an
+agent with one timeout for the whole request, up to five redirects, the `TFAR` user agent and
+4xx/5xx as errors, and maps a `ureq` timeout to `Error::TimedOut` and anything else to
+`Error::Request`. `update_check` and `piwik_tracking` each start their own named thread with a
+client and return at once. The tests give the client `ProxyChoice::Direct` and point it at
+`tests/local_responder.rs`, a `TcpListener` on 127.0.0.1 that plays one scripted reply per
+connection (a body, a redirect, a 404 or silence) and records each request line.
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
+- The update check and Piwik items listed in the crate README, re-exported at the crate root from
+  `update_check` and `piwik_tracking`; `Url` from `url`.
+- `CRATE_ROLE`, `Error`, `Result` and `prelude`.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
+- Depends on: `ureq`, `url`, `version-compare`, `tracing`, `thiserror`.
 - Used by: `tfar_plugin_0_9`, `tfar_plugin_1_0`.
-- Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests
-  live in `tests/` (`cargo xtask verify test-placement`).
+- Rules: only `http_client` names `ureq`; production files hold no `unwrap`, `expect`, `panic` or
+  indexing (clippy deny list); tests live in `tests/` (`cargo xtask verify test-placement`) and
+  reach only the loopback responder.

@@ -8,43 +8,62 @@ The `tfar_debug_window` crate: the 1.0 plugin's debug window, an egui window on 
 ```text
 crates/interface/tfar_debug_window/
 ├── Cargo.toml  the `tfar_debug_window` package (lib): tier 0, workspace lints and dependencies
-└── src/        the crate root, the role constant, the error type and the prelude
+└── src/        the snapshot model, the handle and its UI thread, and the eframe window
 ```
 
 ## How it works
 
-The 1.0 plugin's debug window: one long-lived UI thread running an `eframe` window on X11 with the
-panels that show client and radio state. The code is not written yet: `src/lib.rs` carries the
-module header and re-exports, `src/crate_role.rs` states the crate's role in one constant, and
-`src/error.rs` holds the `thiserror` error type.
+The `/tfar debug` window, redone as panels: the plugin builds a `DebugSnapshot` (titled sections of
+key/value rows or tables, such as the client list with positions, frequencies and radios) and
+publishes it; the window draws the latest one, each section a collapsible header over a grid.
+
+```text
+plugin threads                          UI thread "tfar-debug-window"
+DebugWindow::spawn(title) ───────────▶  waits while hidden
+handle.show()  ── request Shown ──────▶ eframe::run_native (X11, glow, run_and_return)
+handle.publish(snapshot) ── ArcSwap ──▶   draws the latest snapshot, at least every 500 ms
+handle.hide()  ── request Hidden ─────▶   closes the window, back to waiting
+handle.shutdown() ── ShutDown ────────▶ closes any window, ends; joined within 1 s
+```
+
+winit allows one event loop per process, so the crate runs one UI thread for the life of the
+process and eframe reuses its thread-local event loop for every window; `show` and `hide` open and
+close windows on it. The event loop is forced onto X11 (the Flatpak TeamSpeak has no Wayland
+socket) and allowed off the main thread. Without `DISPLAY`, `spawn` returns `Error::NoDisplay` and
+the plugin prints a message instead.
 
 ## Getting started
 
 Run from the repository root:
 
 ```bash
-cargo test -p tfar_debug_window  # the unit tests
+cargo test -p tfar_debug_window              # the snapshot model, the view and the handle, headless
+cargo test -p tfar_debug_window -- --ignored  # adds the real-window test; needs an X11 display
 ```
 
 ## Configuration
 
-None: the crate reads no setting.
+None: the crate reads no setting. `DISPLAY` must name an X11 display.
 
 ## Public surface
 
-Today the crate exports `CRATE_ROLE`, `Error`, `Result` and `prelude`; the surface it is for:
-
-- `DebugWindow::spawn` and `DebugWindow::join`: the one UI thread per process.
-- `DebugSnapshot`: the state the plugin publishes for the panels to draw.
+- `DebugWindow::spawn`, and `DebugWindowHandle`: `show`, `hide`, `publish`, `is_open`,
+  `take_window_error`, `shutdown` (dropping the handle shuts down too); `SHUTDOWN_TIMEOUT`.
+- `DebugSnapshot`, `DebugSection`, `SectionContent`, `KeyValueRow`, `DebugTable`, `TableRow`.
+- `Error`, `Result`, `CRATE_ROLE` and `prelude`.
 
 ## Boundaries
 
-- Depends on: no workspace crate; `thiserror` for the error type. Planned externals: `eframe`,
-  `egui`.
+- Depends on: no workspace crate; `eframe` (with `glow`, `x11`, `default_fonts`) for the window,
+  `winit` for the X11 event-loop options, `arc-swap` and `parking_lot` for the shared state,
+  `tracing` for log lines, `thiserror` for the error type.
 - Used by: `tfar_plugin_1_0`.
-- Rules: one event loop per process, joined at shutdown. Tier 0 in `crates/interface`: every
-  workspace dependency has a lower tier and follows the edge matrix in `crates/README.md`
-  (`cargo xtask verify crate-tiers`).
+- Rules: one UI thread per process, ever (`a_second_claim_of_the_process_slot_is_refused`);
+  windows reopen on the same thread and event loop
+  (`hide_closes_the_window_and_show_reopens_it_on_the_same_thread`,
+  `a_real_window_opens_closes_reopens_and_shuts_down_on_one_event_loop`); shutdown joins within
+  one second (`shutdown_while_open_closes_the_window_and_joins_within_a_second`). Tier 0 in
+  `crates/interface` (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 

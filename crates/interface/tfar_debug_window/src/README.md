@@ -1,33 +1,42 @@
 # Debug window source
 
-The source of `tfar_debug_window`: the crate's role constant, its error type and its prelude. The
-crate's own code is not written yet.
+The source of `tfar_debug_window`: the snapshot model, the handle's state machine and the egui
+window that draws it.
 
 ## Contents
 
 ```text
 crates/interface/tfar_debug_window/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── crate_role.rs      `CRATE_ROLE`: what the crate is for, in one sentence
+├── debug_snapshot.rs  `DebugSnapshot` and its sections, rows and tables
+├── egui_window/       the eframe window backend and the snapshot view
+├── error.rs           `Error`, the `thiserror` enum, and `Result`
+├── lib.rs             the crate root: module header, `mod` lines and re-exports
+├── prelude.rs         the spawn, handle and snapshot types for glob import
+├── tests/             unit tests of `CRATE_ROLE` and the snapshot model
+└── window_control/    `DebugWindow::spawn`, the handle, the UI thread and the backend seam
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`.
+`window_control` owns the threads: `DebugWindow::spawn` checks `DISPLAY`, claims the process's one
+UI thread and starts it over the `EframeBackend` from `egui_window`; the handle turns show, hide
+and shutdown into requests on shared state, and publish into an `ArcSwap` store. `egui_window`
+only draws: on each frame it reads the latest snapshot and lays it out with `snapshot_view`.
+`debug_snapshot` is plain data shared by both. The `WindowBackend` trait between them lets the
+tests drive the state machine with a fake window and no display.
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
+- `DebugWindow`, `DebugWindowHandle` and `SHUTDOWN_TIMEOUT` from `window_control`.
+- `DebugSnapshot`, `DebugSection`, `SectionContent`, `KeyValueRow`, `DebugTable` and `TableRow`
+  from `debug_snapshot`.
+- `CRATE_ROLE`, `Error`, `Result` and `prelude`.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
+- Depends on: `eframe`, `winit`, `arc-swap`, `parking_lot`, `tracing`, `thiserror`.
 - Used by: `tfar_plugin_1_0`.
-- Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests
-  live in `tests/` (`cargo xtask verify test-placement`).
+- Rules: only `egui_window` names `eframe` or `winit`; production files hold no `unwrap`,
+  `expect`, `panic` or indexing (clippy deny list); tests live in `tests/`
+  (`cargo xtask verify test-placement`).
