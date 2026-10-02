@@ -20,7 +20,8 @@ crates/audio/
 Every crate works on the `tfar_sample_buffer` frame type. `tfar_dsp_filters` and `tfar_dynamics`
 shape a radio signal, `tfar_hrtf` and `tfar_spatial_audio` place a voice in space, and
 `tfar_playback_mixer` adds the radio sounds. The version tracks compose them into a voice pipeline;
-no crate here knows which mod version calls it.
+no crate here knows which mod version calls it. The audio crates log only through the `tracing`
+macros and never install a subscriber; the plugin apps install it through `tfar_ts3_host`.
 
 ## Getting started
 

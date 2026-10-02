@@ -7,5 +7,5 @@ mod tests;
 /// What `tfar_sample_buffer` is for, in one sentence.
 pub const CRATE_ROLE: &str = "tfar_sample_buffer: the sample frame type the audio crates pass \
      around: interleaved i16 channels as TeamSpeak delivers them, \
-     conversion to and from f32/f64, and gain that saturates instead of \
+     conversion to and from planar f32, and gain that saturates instead of \
      wrapping.";
