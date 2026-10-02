@@ -1,33 +1,45 @@
 # Playback mixer source
 
-The source of `tfar_playback_mixer`: the crate's role constant, its error type and its prelude. The
-crate's own code is not written yet.
+The source of `tfar_playback_mixer`: the WAV library, the playback and its id, the named stream,
+the mixed-playback block helpers and the mixer, with the role constant, the error type and the
+prelude.
 
 ## Contents
 
 ```text
 crates/audio/tfar_playback_mixer/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── crate_role.rs       `CRATE_ROLE`: what the crate is for, in one sentence
+├── error.rs            `Error`, the `thiserror` enum, and `Result`
+├── lib.rs              the crate root: module header, `mod` lines and re-exports
+├── output_block.rs     the block bounds check, the fill-mask silencing and saturating stereo mixing
+├── playback.rs         `Playback` and `PlaybackId`
+├── playback_mixer.rs   `PlaybackMixer` and its capacity constants
+├── playback_stream.rs  the bounded named FIFO behind `append_stream`, `STREAM_CAPACITY_FRAMES`
+├── prelude.rs          the public API except `Error` and `Result`, for glob import
+├── wave_library.rs     `WaveLibrary`, the `hound` decoder and cache
+└── tests/              one unit test file per module
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`.
+`lib.rs` declares the modules privately and re-exports their public items at the crate root;
+`prelude.rs` re-exports the same items except `Error` and `Result`, so a glob import never
+shadows `std`'s `Result`. `output_block.rs` is the one place samples reach the TeamSpeak block:
+playbacks and streams both feed it an iterator of interleaved stereo samples, so a stream's ring
+of samples never has to be made contiguous. `PlaybackMixer` keeps three locks: the hand-off of new
+and finished playbacks (non-audio threads), the mixing state (the audio thread, `try_lock`), and
+the streams (`append_stream` locks, `mix_into` uses `try_lock`). Each module attaches its sibling
+test file in `tests/` with `#[path]`.
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
+- `WaveLibrary`, `Playback`, `PlaybackId`, `PlaybackMixer`, `MAX_ACTIVE_PLAYBACKS`,
+  `PLAYBACK_QUEUE_CAPACITY`, `MAX_STREAMS`, `STREAM_CAPACITY_FRAMES`, `CRATE_ROLE`, `Error`,
+  `Result` and `prelude`, re-exported at the crate root.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
+- Depends on: `tfar_sample_buffer`, `hound`, `rtrb`, `parking_lot`, `thiserror`.
 - Used by: `tfar_plugin_0_9`, `tfar_plugin_1_0`, `tfar_voice_pipeline_0_9`,
   `tfar_voice_pipeline_1_0`.
 - Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests

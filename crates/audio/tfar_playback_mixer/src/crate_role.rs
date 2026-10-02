@@ -6,6 +6,6 @@ mod tests;
 
 /// What `tfar_playback_mixer` is for, in one sentence.
 pub const CRATE_ROLE: &str = "tfar_playback_mixer: the radio sound player: loads the WAV files \
-     shipped in the mod's radio-sounds folder through hound, checks \
-     they are 48 kHz 16-bit stereo, caches them and mixes active \
-     playbacks into a frame.";
+     shipped in the mod's radio-sounds folder through hound, refuses any \
+     format but 48 kHz 16-bit stereo, caches them, and mixes processed \
+     playbacks and named streams into TeamSpeak's mixed-playback block.";

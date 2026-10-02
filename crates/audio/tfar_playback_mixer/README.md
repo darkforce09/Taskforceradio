@@ -1,24 +1,33 @@
 # Playback mixer
 
-The `tfar_playback_mixer` crate: loading and mixing of the radio sound WAV files into the outgoing
-audio. Used by `tfar_plugin_0_9`, `tfar_plugin_1_0`, `tfar_voice_pipeline_0_9`,
-`tfar_voice_pipeline_1_0`.
+The `tfar_playback_mixer` crate: loading and mixing of the radio sound WAV files and the own-voice
+stream into the outgoing audio. Used by `tfar_plugin_0_9`, `tfar_plugin_1_0`,
+`tfar_voice_pipeline_0_9`, `tfar_voice_pipeline_1_0`.
 
 ## Contents
 
 ```text
 crates/audio/tfar_playback_mixer/
 ├── Cargo.toml  the `tfar_playback_mixer` package (lib): tier 1, workspace lints and dependencies
-└── src/        the crate root, the role constant, the error type and the prelude
+└── src/        the WAV library, the playback, the named stream and the mixer
 ```
 
 ## How it works
 
-The radio sound player: loads the WAV files shipped in the mod's `radio-sounds` folder through
-`hound`, checks they are 48 kHz 16-bit stereo, caches them and mixes active playbacks into a frame.
-The code is not written yet: `src/lib.rs` carries the module header and re-exports,
-`src/crate_role.rs` states the crate's role in one constant, and `src/error.rs` holds the
-`thiserror` error type.
+`WaveLibrary` decodes a radio sound with `hound` once and caches it by canonical path as a shared
+`Arc<[i16]>`; anything but 48 kHz, 2-channel, 16-bit integer PCM is an `Error` naming the file and
+its format. A `Playback` copies a sound and runs the caller's processing (gain, filters, panning)
+on it at creation, off the audio thread, so the closure and the filters it owns are freed before
+the playback is queued (F-005); it is named by a `PlaybackId` from a counter, never `rand()`.
+`PlaybackMixer::add` queues it through an `rtrb` ring buffer. `PlaybackMixer::mix_into` is the
+mixed-playback callback: it zeroes channels 0 and 1 where the fill mask says TeamSpeak left them
+empty, adds every active playback and stream into them saturating (a mono block gets the average
+of left and right), leaves channels 2 and up alone, sets the written channels' mask bits, and
+hands finished playbacks back through a second ring buffer so `add` or `release_finished` frees
+them off the audio thread. It takes its locks with `try_lock` and never allocates. The
+`my_radio_voice` stream of the player's own radio voice is a named FIFO filled by `append_stream`
+and bounded to 500 ms, dropping the oldest frames so a stalled playback side never grows memory
+or delay.
 
 ## Getting started
 
@@ -30,27 +39,34 @@ cargo test -p tfar_playback_mixer  # the unit tests
 
 ## Configuration
 
-None: the crate reads no setting.
+None: the crate reads no setting. The plugins pass the WAV paths under their plugin folder.
 
 ## Public surface
 
-Today the crate exports `CRATE_ROLE`, `Error`, `Result` and `prelude`; the surface it is for:
-
-- `SoundCache`: loaded and validated WAV files by name.
-- `PlaybackMixer`: active playbacks mixed into a `SampleFrames` buffer, with per-playback gain.
+- `WaveLibrary`: `new`, `load`, `preload`, `cached`, `len`, `is_empty`.
+- `Playback`: `new`, `from_stereo`, `id`, `frames`, `remaining_frames`, `is_finished`,
+  `samples`; `PlaybackId`: `next`, `value`.
+- `PlaybackMixer`: `new`, `add`, `release_finished`, `append_stream`, `mix_into`,
+  `active_playback_count`, `stream_queued_frames`; `MAX_ACTIVE_PLAYBACKS`,
+  `PLAYBACK_QUEUE_CAPACITY`, `MAX_STREAMS`, `STREAM_CAPACITY_FRAMES`.
+- `Error`, `Result`, `CRATE_ROLE` and `prelude`.
 
 ## Boundaries
 
-- Depends on: `tfar_sample_buffer` (the shared sample frame type and saturating gain); `thiserror`
-  for the error type. Planned externals: `hound`.
+- Depends on: `tfar_sample_buffer` (the stereo buffer a playback's processing works on); `hound`
+  for WAV decoding, `rtrb` for the queues to and from the audio thread, `parking_lot` for the short
+  locks, `thiserror` for the error type.
 - Used by: `tfar_plugin_0_9`, `tfar_plugin_1_0`, `tfar_voice_pipeline_0_9`,
   `tfar_voice_pipeline_1_0`.
-- Rules: a playback's filters and buffers are freed when it ends. Tier 1 in `crates/audio`: every
-  workspace dependency has a lower tier and follows the edge matrix in `crates/README.md`
-  (`cargo xtask verify crate-tiers`).
+- Rules: a playback's filters and buffers are freed when it ends, off the audio thread;
+  `mix_into` never waits, never allocates and never writes past `channels * frames` samples or into
+  channels 2 and up. Tier 1 in `crates/audio`: every workspace dependency has a lower tier and
+  follows the edge matrix in `crates/README.md` (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
+- [Audio pipeline](/documentation/architecture/audio_pipeline.md) — the sound playback section and
+  the mixed-playback callback.
 - [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports.
 - [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the

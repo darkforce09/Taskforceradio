@@ -1,8 +1,8 @@
-# The distance curve and emitter cone gains that replace X3DAudio, plus the 0.9 stereo fallback.
+# The distance curve and emitter cone gains that replace X3DAudio, plus the simple stereo panner.
 # Used by `tfar_voice_pipeline_0_9`, `tfar_voice_pipeline_1_0`.
 [package]
 name = "tfar_spatial_audio"
-description = "The distance curve and emitter cone gains that replace X3DAudio, plus the 0.9 stereo fallback."
+description = "The distance curve and emitter cone gains that replace X3DAudio, plus the simple stereo panner."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -17,9 +17,9 @@ targets = "any"
 [dependencies]
 # Derives the crate's `Error`.
 thiserror.workspace = true
-# Positions, directions and distances.
+# Directions and angles for the cone and the stereo panner.
 tfar_geometry.workspace = true
-# The shared sample frame type and saturating gain.
+# The stereo buffer and saturating stereo gain the panner applies.
 tfar_sample_buffer.workspace = true
 
 [lints]

@@ -7,4 +7,4 @@ mod tests;
 /// What `tfar_spatial_audio` is for, in one sentence.
 pub const CRATE_ROLE: &str = "tfar_spatial_audio: the gain model that replaces X3DAudio: the \
      piecewise distance curve, the emitter cone gain and the simple \
-     interaural level difference the 0.9 stereo fallback uses.";
+     interaural level difference both versions use as their stereo fallback.";
