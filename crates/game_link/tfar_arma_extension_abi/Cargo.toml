@@ -18,5 +18,10 @@ targets = "any"
 # Derives the crate's `Error`.
 thiserror.workspace = true
 
+[target.'cfg(windows)'.dependencies]
+# `GetCommandLineW` (the `-tfdebug` test) and `GetForegroundWindow` with `GetClassNameW` (the
+# "is Arma in front" test behind the `FOCUS` frame).
+windows-sys = { workspace = true, features = ["Win32_System_Environment", "Win32_UI_WindowsAndMessaging"] }
+
 [lints]
 workspace = true

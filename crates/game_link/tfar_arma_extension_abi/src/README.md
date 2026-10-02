@@ -1,33 +1,41 @@
 # Arma extension ABI source
 
-The source of `tfar_arma_extension_abi`: the crate's role constant, its error type and its prelude.
-The crate's own code is not written yet.
+The source of `tfar_arma_extension_abi`: the `RVExtension` export macro and its checked bodies, the
+reply writer and the two Win32 queries.
 
 ## Contents
 
 ```text
 crates/game_link/tfar_arma_extension_abi/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── command_line.rs       `arma_command_line_contains`: `GetCommandLineW`, or `std::env::args` off Windows
+├── crate_role.rs         `CRATE_ROLE`: what the crate is for, in one sentence
+├── error.rs              `Error`, the `thiserror` enum, and `Result`
+├── extension_exports.rs  `arma_extension!`, `answer_extension_call`, `answer_extension_version`
+├── foreground_window.rs  `foreground_window_is_arma`: the class-name test behind `FOCUS`
+├── lib.rs                the crate root: module header, `#![allow(unsafe_code)]`, `mod` lines, re-exports
+├── prelude.rs            the macro, the reply writer and the two queries for glob import
+├── reply_buffer.rs       `write_reply`: truncation at a character boundary, then the NUL
+└── tests/                unit tests, one file per module
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`.
+`extension_exports.rs` holds every pointer check, so the exports the macro writes are one `unsafe`
+call each; `reply_buffer.rs` is the safe core both exports write through. The Win32 calls sit behind
+`#[cfg(windows)]` in `command_line.rs` and `foreground_window.rs`, each with a portable fallback.
+`tests/extension_exports.rs` expands the macro and calls the exports through raw function pointers
+with Rust-allocated buffers, as Arma calls them.
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
+- `arma_extension!`, `answer_extension_call`, `answer_extension_version`, `write_reply`,
+  `arma_command_line_contains`, `foreground_window_is_arma`, `CRATE_ROLE`, `Error`, `Result` and
+  `prelude`, re-exported at the crate root.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
+- Depends on: `thiserror`; `windows-sys` on Windows.
 - Used by: `tfar_extension_0_9`, `tfar_extension_1_0`.
-- Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests
-  live in `tests/` (`cargo xtask verify test-placement`).
+- Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); every
+  `unsafe` block has a `// SAFETY:` comment; tests live in `tests/`
+  (`cargo xtask verify test-placement`).

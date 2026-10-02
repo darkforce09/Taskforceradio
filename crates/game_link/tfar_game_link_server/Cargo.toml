@@ -15,10 +15,16 @@ tier = 1
 targets = "any"
 
 [dependencies]
+# The one FIFO queue between the session thread and the async worker.
+crossbeam-channel = { workspace = true, features = ["std"] }
+# The session, writer and last-message locks, which need no poison handling.
+parking_lot.workspace = true
 # Derives the crate's `Error`.
 thiserror.workspace = true
-# The game link frames and ports.
+# The game link frames, the codec, the streaming decoder and the ports.
 tfar_game_link_protocol.workspace = true
+# Log lines for a busy port, a refused handshake, a malformed frame and each session change.
+tracing = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true

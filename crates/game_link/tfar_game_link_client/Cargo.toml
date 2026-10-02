@@ -17,8 +17,10 @@ targets = "any"
 [dependencies]
 # Derives the crate's `Error`.
 thiserror.workspace = true
-# The game link frames and ports.
+# The game link frames, the `HELLO` check and the streaming frame decoder.
 tfar_game_link_protocol.workspace = true
+# Logs why a session closed or a connect failed; the extension app decides where the lines go.
+tracing = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true

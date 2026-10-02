@@ -15,6 +15,11 @@ tier = 0
 targets = "any"
 
 [dependencies]
+# Encodes and decodes each frame's payload fields; `use-std` gives the `std::io::Write` encoder and
+# the `std::error::Error` impl the error type wraps.
+postcard = { workspace = true, features = ["use-std"] }
+# The `Serialize` and `Deserialize` derives of the `HELLO` payload.
+serde = { workspace = true, features = ["derive"] }
 # Derives the crate's `Error`.
 thiserror.workspace = true
 
