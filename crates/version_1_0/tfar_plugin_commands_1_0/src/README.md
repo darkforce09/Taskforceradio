@@ -1,33 +1,40 @@
 # Plugin commands for 1.0 source
 
-The source of `tfar_plugin_commands_1_0`: the crate's role constant, its error type and its prelude.
-The crate's own code is not written yet.
+The source of `tfar_plugin_commands_1_0`: the plugin command types, their codec, the sender
+filter, the metadata block, the error type and the prelude.
 
 ## Contents
 
 ```text
 crates/version_1_0/tfar_plugin_commands_1_0/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── command_codec.rs   `encode` and `decode`: the TAB-separated text, byte for byte
+├── crate_role.rs      `CRATE_ROLE`: what the crate is for, in one sentence
+├── error.rs           `Error`: unrecognised command or malformed field; `Result`
+├── lib.rs             the crate root: module header, `mod` lines and re-exports
+├── metadata.rs        the TFAR metadata block: format, merge, read, playing check, info text
+├── plugin_command.rs  `PluginCommand`, `TangentBroadcast`, `TangentKind`, `TeamspeakClientId`
+├── prelude.rs         the command, codec, filter and metadata names for glob import
+├── sender_filter.rs   `PLUGIN_NAME_PREFIX` and `accepts_sender`
+└── tests/             unit tests: byte-exact texts, round trips, both tangent forms, filter, metadata
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`.
+`command_codec.rs` matches the split tokens against each command's name and token count in one
+slice pattern per command, so a count the original does not accept is `Error::Unrecognised`, and
+reads the tangent's tail (`[sw, dd, nick]` or `[classname, sw, dd, nick]`) by its own layout.
+`metadata.rs` works on whole metadata strings with `str::find` for the first tags, as the
+original's `std::string::find`.
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
+- `PluginCommand`, `TangentBroadcast`, `TangentKind`, `TeamspeakClientId`, `encode`, `decode`,
+  `PLUGIN_NAME_PREFIX`, `accepts_sender`, the metadata functions and constants, `Error`, `Result`,
+  `CRATE_ROLE` and `prelude`, re-exported at the crate root.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
+- Depends on: `tfar_arma_values`, `thiserror`.
 - Used by: `tfar_plugin_1_0`.
-- Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests
-  live in `tests/` (`cargo xtask verify test-placement`).
+- Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list);
+  tests live in `tests/` (`cargo xtask verify test-placement`).
