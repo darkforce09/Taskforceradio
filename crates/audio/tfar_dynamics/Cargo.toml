@@ -17,7 +17,7 @@ targets = "any"
 [dependencies]
 # Derives the crate's `Error`.
 thiserror.workspace = true
-# The shared sample frame type and saturating gain.
+# The shared stereo `i16` frame type the compressor runs over.
 tfar_sample_buffer.workspace = true
 
 [lints]

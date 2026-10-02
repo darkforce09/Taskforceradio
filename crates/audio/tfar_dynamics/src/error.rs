@@ -1,13 +1,19 @@
 //! The error type of `tfar_dynamics`.
 
-/// Every failure `tfar_dynamics` reports.
-#[derive(Debug, thiserror::Error)]
+/// Every failure `tfar_dynamics` reports. Each one comes from building a compressor; processing
+/// never fails.
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
-    /// The operation asked for is not offered by this crate.
-    #[error("tfar_dynamics does not offer the operation `{operation}`")]
-    UnsupportedOperation {
-        /// The name of the operation that was asked for.
-        operation: &'static str,
+    /// A compressor setting is outside its range: the sample rate, the ratio and the two time
+    /// constants must be finite and above zero, the threshold finite.
+    #[error("the compressor setting `{setting}` = {value} is outside its range ({requirement})")]
+    InvalidSetting {
+        /// The name of the setting, as the `CompressorSettings` field is named.
+        setting: &'static str,
+        /// The value that was given.
+        value: f64,
+        /// What the setting must be.
+        requirement: &'static str,
     },
 }
 

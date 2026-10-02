@@ -1,33 +1,39 @@
 # Dynamics source
 
-The source of `tfar_dynamics`: the crate's role constant, its error type and its prelude. The
-crate's own code is not written yet.
+The source of `tfar_dynamics`: the compressor, its settings and presets, and the attack and
+release envelope it smooths with, with the role constant, the error type and the prelude.
 
 ## Contents
 
 ```text
 crates/audio/tfar_dynamics/src/
-├── crate_role.rs  `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs       `Error`, the `thiserror` enum, and `Result`
-├── lib.rs         the crate root: module header, `mod` lines and re-exports
-├── prelude.rs     `CRATE_ROLE` for glob import
-└── tests/         unit tests of `CRATE_ROLE`
+├── attack_release_envelope.rs  the one-pole attack and release follower and its coefficient
+├── compressor.rs               `Compressor`, `DC_OFFSET` and the decibel conversions
+├── compressor_settings.rs      `CompressorSettings`, the 0.9 and 1.0 presets and their checks
+├── crate_role.rs               `CRATE_ROLE`: what the crate is for, in one sentence
+├── error.rs                    `Error`, the `thiserror` enum, and `Result`
+├── lib.rs                      the crate root: module header, `mod` lines and re-exports
+├── prelude.rs                  the public API except `Error` and `Result`, for glob import
+└── tests/                      one unit test file per module
 ```
 
 ## How it works
 
-`lib.rs` declares the private modules `crate_role` and `error` and re-exports `CRATE_ROLE`, `Error`
-and `Result` at the crate root; `prelude.rs` re-exports `CRATE_ROLE` only, so a glob import never
-shadows `std`'s `Result`. `crate_role.rs` attaches its sibling test file `tests/crate_role.rs` with
-`#[path]`.
+`Compressor::new` checks the `CompressorSettings` and builds an `AttackReleaseEnvelope` from the
+attack and release time constants; `process_frame` turns the louder channel into a decibel excess
+over the threshold, runs it through the envelope against the compressor's own envelope state, and
+scales both channels by the resulting gain. `lib.rs` re-exports the public items at the crate root
+and `prelude.rs` the same items except `Error` and `Result`. Each module attaches its sibling test
+file in `tests/` with `#[path]`.
 
 ## Public surface
 
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
+- `Compressor`, `CompressorSettings`, `DC_OFFSET`, `CRATE_ROLE`, `Error`, `Result` and `prelude`,
+  re-exported at the crate root.
 
 ## Boundaries
 
-- Depends on: `thiserror`.
+- Depends on: `tfar_sample_buffer`, `thiserror`.
 - Used by: `tfar_client_state_0_9`, `tfar_client_state_1_0`, `tfar_voice_pipeline_0_9`,
   `tfar_voice_pipeline_1_0`.
 - Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests

@@ -16,9 +16,15 @@ tier = 1
 targets = "any"
 
 [dependencies]
+# RBJ high-pass and low-pass coefficients and the Direct Form II Transposed section every filter
+# runs on.
+biquad.workspace = true
+# Butterworth low-pass and band-pass design (`butter_dyn`) as second-order sections; `alloc` turns
+# on the dynamic-order design functions.
+sci-rs = { workspace = true, features = ["alloc"] }
 # Derives the crate's `Error`.
 thiserror.workspace = true
-# The shared sample frame type and saturating gain.
+# The shared stereo frame type and the `i16`/`f32` scales of the original filters.
 tfar_sample_buffer.workspace = true
 
 [lints]
