@@ -3,11 +3,16 @@
 /// Every failure `tfar_radio_effects_0_9` reports.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// The operation asked for is not offered by this crate.
-    #[error("tfar_radio_effects_0_9 does not offer the operation `{operation}`")]
-    UnsupportedOperation {
-        /// The name of the operation that was asked for.
-        operation: &'static str,
+    /// A filter of an effect could not be designed. The designs are fixed constants, so this
+    /// means the filter library refused one of them.
+    #[error("the {effect} radio effect cannot design its {filter} filter: {source}")]
+    FilterDesign {
+        /// The effect being built.
+        effect: &'static str,
+        /// Which of its filters failed.
+        filter: &'static str,
+        /// The filter library's error.
+        source: tfar_dsp_filters::Error,
     },
 }
 

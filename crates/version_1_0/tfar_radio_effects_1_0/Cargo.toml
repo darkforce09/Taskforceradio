@@ -15,11 +15,15 @@ tier = 2
 targets = "any"
 
 [dependencies]
+# The seeded generator behind the underwater sample dropouts.
+fastrand.workspace = true
 # Derives the crate's `Error`.
 thiserror.workspace = true
+# `StereoMode`: which ear a radio plays into.
+tfar_arma_values.workspace = true
 # The Butterworth and RBJ filters.
 tfar_dsp_filters.workspace = true
-# The shared sample frame type and saturating gain.
+# The shared sample frame type, saturating gain and the `f32` to `i16` conversion.
 tfar_sample_buffer.workspace = true
 
 [lints]
