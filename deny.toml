@@ -6,6 +6,11 @@ targets = ["x86_64-unknown-linux-gnu", "x86_64-pc-windows-gnu"]
 [advisories]
 # An ignore entry whose advisory no longer matches anything must be removed.
 unused-ignored-advisory = "deny"
+ignore = [
+    # `paste` is archived (unmaintained), not vulnerable. It reaches us only as a proc-macro of
+    # nalgebra through sci-rs, which designs filters at setup time. Exit: sci-rs leaves nalgebra 0.33.
+    { id = "RUSTSEC-2024-0436", reason = "unmaintained proc-macro behind sci-rs -> nalgebra; no runtime code" },
+]
 
 [licenses]
 allow = [
@@ -20,6 +25,11 @@ allow = [
     "CC0-1.0",
     "MPL-2.0",
     "BSL-1.0",
+    # webpki-roots (the rustls trust store behind ureq) ships the Mozilla CA list under this licence.
+    "CDLA-Permissive-2.0",
+    # egui's bundled default fonts (epaint_default_fonts) for the debug window.
+    "OFL-1.1",
+    "Ubuntu-font-1.0",
 ]
 confidence-threshold = 0.93
 # The allow-list is written for the external crates the library map plans, so an entry no crate in
