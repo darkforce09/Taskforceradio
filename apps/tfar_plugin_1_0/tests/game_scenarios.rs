@@ -1,7 +1,8 @@
 //! The built 1.0 plugin `.so` in the mock TeamSpeak host, driven by a real game link client:
 //! the full game scenario, the dormant plugin, the return to dormant after a game end, the mission
-//! end, needcfg, radio towers, the debug window without a display, the HRTF reset when a sender
-//! starts talking, and a shutdown that joins every thread within 2 s.
+//! end and the tangent release it cancels, needcfg, radio towers, the debug window without a
+//! display, the HRTF reset when a sender starts talking, and a shutdown that joins every thread
+//! within 2 s.
 //!
 //! The plugin reads its port and switches from the process environment, so each test re-runs its
 //! own binary as a child with `TFAR_GAME_LINK_PORT` set to a free port, the update check off and
@@ -581,6 +582,16 @@ mod scenarios {
         wait_for(&host, "the on sound", |calls| {
             played(calls, &folder, "radio-sounds/on")
         });
+        // A tangent let go with a 1.5 s release delay, still waiting when the mission ends.
+        send(&client, &frequencies("Alpha"));
+        send(&client, "SETCFG\ttangentReleaseDelay\t1500\tSCALAR");
+        let tangent = "TANGENT\tPRESSED\t30.0\t20000\tdigital\ttf_anprc152_1";
+        send(&client, tangent);
+        wait_for(&host, "the press broadcast", |calls| {
+            sent_command(calls, "TANGENT\tPRESSED")
+        });
+        send(&client, &tangent.replace("PRESSED", "RELEASED"));
+        let released = Instant::now();
         // The connect transition opens the 500 ms debounce window before the disconnect may follow.
         std::thread::sleep(Duration::from_millis(600));
         send(&client, "MISSIONEND");
@@ -588,6 +599,12 @@ mod scenarios {
             played(calls, &folder, "radio-sounds/off")
         });
         wait_until("needcfg after the game ended", || client.needcfg());
+        assert!(released.elapsed() < Duration::from_millis(1_500));
+        std::thread::sleep(Duration::from_millis(2_500).saturating_sub(released.elapsed()));
+        assert!(
+            !sent_command(&host.calls(), "TANGENT\tRELEASED"),
+            "the game end cancelled the waiting release"
+        );
         host.shutdown();
         assert!(host.leak_report().is_clean());
         let _ = std::fs::remove_dir_all(folder);

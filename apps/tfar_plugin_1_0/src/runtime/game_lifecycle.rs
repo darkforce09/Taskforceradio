@@ -108,9 +108,11 @@ impl PluginRuntime {
         }
     }
 
-    /// `onGameEnd`: back to the original channel and nickname, every mute lifted, and the
-    /// microphone and voice activation as they were before the last transmission.
+    /// `onGameEnd`: every tangent release still waiting cancelled, back to the original channel
+    /// and nickname, every mute lifted, and the microphone and voice activation as they were
+    /// before the last transmission.
     pub fn end_game(&self) {
+        self.push_to_talk.cancel_pending_releases();
         let server = self.ts().current_server();
         self.move_from_serious_channel(server);
         self.reset_own_nickname(server);

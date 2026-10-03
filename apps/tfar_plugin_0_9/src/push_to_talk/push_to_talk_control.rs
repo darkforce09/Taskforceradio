@@ -17,8 +17,10 @@
 //! interleave; no audio callback and no TeamSpeak event takes it, and no server lock is taken
 //! while it is held.
 //!
-//! **Invariants:** a release goes out at most once, never after a later press cancelled it, and
-//! a release still waiting at shutdown is sent before the thread ends.
+//! **Invariants:** a release goes out at most once, never after a later press cancelled it; a
+//! game end cancels a release still waiting, restoring voice activation and the microphone at
+//! once without the broadcast, so nothing is broadcast once the plugin is dormant; a release
+//! still waiting at shutdown is sent before the thread ends.
 
 use std::time::{Duration, Instant};
 
@@ -110,6 +112,22 @@ impl PushToTalk {
         }
     }
 
+    /// The game ended: a release still waiting is cancelled, so its broadcast never goes out
+    /// after the plugin is dormant again; voice activation and the microphone return at once to
+    /// what that release would have restored. Without a waiting release nothing happens.
+    pub fn cancel_pending_release(&self, team_speak: &dyn TeamSpeak) {
+        let mut state = self.state.lock();
+        if let Some(release) = state.take_any_release() {
+            restore_voice_activation_and_input(
+                team_speak,
+                release.server,
+                state.was_voice_activation_on(),
+            );
+        }
+        drop(state);
+        self.wake.notify_all();
+    }
+
     /// Asks the release thread to send what waits and end; the caller joins it.
     pub fn stop(&self) {
         self.state.lock().request_stop();
@@ -124,17 +142,21 @@ fn send_release(
     release: &PendingRelease,
     was_voice_activation_on: bool,
 ) {
-    if was_voice_activation_on
-        && let Err(error) = team_speak.set_voice_activation(release.server, true)
-    {
+    restore_voice_activation_and_input(team_speak, release.server, was_voice_activation_on);
+    broadcast(team_speak, release.server, &release.command);
+}
+
+/// Voice activation back on when it was on at the press, and the microphone off unless voice
+/// activation keeps it open.
+fn restore_voice_activation_and_input(
+    team_speak: &dyn TeamSpeak,
+    server: ServerConnectionHandlerId,
+    was_voice_activation_on: bool,
+) {
+    if was_voice_activation_on && let Err(error) = team_speak.set_voice_activation(server, true) {
         tracing::warn!(%error, "voice activation could not be switched back on");
     }
-    switch_input_and_broadcast(
-        team_speak,
-        release.server,
-        was_voice_activation_on,
-        &release.command,
-    );
+    switch_input(team_speak, server, was_voice_activation_on);
 }
 
 /// Switches the microphone to `is_active` and broadcasts `command` to the channel.
@@ -144,9 +166,19 @@ fn switch_input_and_broadcast(
     is_active: bool,
     command: &str,
 ) {
+    switch_input(team_speak, server, is_active);
+    broadcast(team_speak, server, command);
+}
+
+/// Switches the microphone to `is_active`.
+fn switch_input(team_speak: &dyn TeamSpeak, server: ServerConnectionHandlerId, is_active: bool) {
     if let Err(error) = team_speak.set_input_active(server, is_active) {
         tracing::warn!(%error, is_active, "the microphone could not be switched");
     }
+}
+
+/// Broadcasts the push-to-talk `command` to the channel.
+fn broadcast(team_speak: &dyn TeamSpeak, server: ServerConnectionHandlerId, command: &str) {
     if let Err(error) = team_speak.send_plugin_command(server, command) {
         tracing::warn!(%error, "the push-to-talk could not be broadcast");
     }

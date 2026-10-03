@@ -4,7 +4,9 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use super::*;
-use crate::fake_team_speak::{FakeAction, FakeTeamSpeak, core_over, plugin_commands};
+use crate::fake_team_speak::{
+    FakeAction, FakeTeamSpeak, SERVER, core_over, core_with_delay, plugin_commands,
+};
 use crate::plugin_core::PluginCore;
 
 const PRESS: &str = "TANGENT\tPRESSED\t100_alpha\t5000\tdigital";
@@ -128,4 +130,34 @@ fn voice_activation_is_switched_off_for_the_press_and_back_on_after_the_release(
             FakeAction::InputActive(true),
         ]
     );
+}
+
+#[test]
+fn a_game_end_cancels_a_waiting_release_so_a_dormant_plugin_never_broadcasts_it() {
+    let fake = FakeTeamSpeak::with_players(&[]);
+    let core = Arc::new(core_with_delay(&fake, Duration::from_secs(10)));
+    let worker = Arc::clone(&core);
+    let release_thread = std::thread::spawn(move || {
+        worker
+            .push_to_talk()
+            .run_release_thread(worker.team_speak());
+    });
+    core.handle_game_message(PRESS, Instant::now());
+    core.handle_game_message(RELEASE, Instant::now());
+    fake.take_actions();
+
+    core.end_game(SERVER, true);
+    let ended = fake.take_actions();
+    assert!(ended.contains(&FakeAction::InputActive(false)), "{ended:?}");
+    assert!(
+        !plugin_commands(&ended)
+            .iter()
+            .any(|command| command.starts_with("TANGENT\tRELEASED")),
+        "{ended:?}"
+    );
+
+    // The release thread would send a release still waiting at once when it stops.
+    core.push_to_talk().stop();
+    release_thread.join().unwrap();
+    assert_eq!(plugin_commands(&fake.take_actions()), Vec::<String>::new());
 }

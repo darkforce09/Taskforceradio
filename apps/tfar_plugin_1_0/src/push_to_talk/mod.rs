@@ -14,9 +14,15 @@
 //! held, which no audio callback and no TeamSpeak callback takes.
 //!
 //! **Invariants:** a release runs `push_to_talk_delay + tangentReleaseDelay` after the tangent is
-//! let go, unless a press came in between; the release thread is joined in `stop`.
+//! let go, unless a press came in between or the game ended first: a game end cancels every
+//! release still waiting, so none is broadcast once the plugin is dormant; the release thread is
+//! joined in `stop`.
 
 pub mod tangent_gate;
+
+#[cfg(test)]
+#[path = "tests/push_to_talk.rs"]
+mod tests;
 
 use std::sync::Arc;
 use std::thread::JoinHandle;
@@ -43,6 +49,8 @@ struct ReleaseJob {
     broadcast: String,
     /// How long to wait before releasing.
     delay: Duration,
+    /// The gate's release generation when the tangent was let go.
+    generation: u64,
 }
 
 /// The running release thread.
@@ -124,12 +132,13 @@ impl PushToTalk {
         broadcast: String,
         delay: Duration,
     ) {
-        self.gate.lock().begin_release();
+        let generation = self.gate.lock().begin_release();
         let job = ReleaseJob {
             ts,
             server,
             broadcast,
             delay,
+            generation,
         };
         let mut worker = self.worker.lock();
         if worker.is_none() {
@@ -165,6 +174,12 @@ impl PushToTalk {
         }
     }
 
+    /// The game ended: every release still waiting is cancelled, so none switches the microphone
+    /// or broadcasts after the plugin is dormant again (decision D25).
+    pub fn cancel_pending_releases(&self) {
+        self.gate.lock().cancel_releases();
+    }
+
     /// Stops the release thread, dropping releases still waiting, and joins it.
     pub fn stop(&self) {
         let worker = self.worker.lock().take();
@@ -181,7 +196,7 @@ impl PushToTalk {
 /// The release itself, under the gate (`process_tangent_off` after its sleep).
 fn run_release(gate: &Mutex<TangentGate>, job: &ReleaseJob) {
     let mut gate = gate.lock();
-    if !gate.finish_release() {
+    if !gate.finish_release(job.generation) {
         return;
     }
     if gate.was_voice_activation_enabled {

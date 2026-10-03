@@ -6,8 +6,9 @@
 //! plays it, and hand the block to the playback mixer's own-voice stream.
 //!
 //! **Position:** methods of `VoiceProcessor` and a free function; the plugin calls them from
-//! the captured-voice callback with the state locked, and appends the block to its
-//! `PlaybackMixer`.
+//! the captured-voice callback with the state locked, and pushes the block through the
+//! `StreamProducer` of its own-voice stream; `append_own_voice` serves callers off the audio
+//! thread.
 //!
 //! **Signals and state:** uses the processor's own-voice scratch buffer; advances the local
 //! player's sound state. TeamSpeak audio thread, inside the server lock.
@@ -59,6 +60,11 @@ impl VoiceProcessor {
 
 /// Appends `own_voice`, a block from [`VoiceProcessor::process_own_voice_for_speakers`], to the
 /// [`OWN_VOICE_STREAM_NAME`] stream of `mixer`.
+///
+/// For use off the audio thread only (tests, tools): it takes the mixer's stream lock and may
+/// allocate. The TeamSpeak captured-voice callback feeds the stream through a
+/// [`tfar_playback_mixer::StreamProducer`] from `PlaybackMixer::stream_producer` instead, which
+/// never blocks.
 ///
 /// # Errors
 ///

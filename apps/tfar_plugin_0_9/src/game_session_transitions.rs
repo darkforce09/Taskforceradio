@@ -41,11 +41,15 @@ impl PluginCore {
         self.publish_status_metadata(server);
     }
 
-    /// The game ends on `server`: the off sound when `plays_end_sound`, the local player dead
-    /// and outside any data frame, the way back from the serious channel, every mute this plugin
-    /// made lifted, the nickname given back, and the new status in the metadata.
+    /// The game ends on `server`: a push-to-talk release still waiting cancelled (voice
+    /// activation and the microphone restored, no broadcast), the off sound when
+    /// `plays_end_sound`, the local player dead and outside any data frame, the way back from the
+    /// serious channel, every mute this plugin made lifted, the nickname given back, and the new
+    /// status in the metadata.
     pub fn end_game(&self, server: ServerConnectionHandlerId, plays_end_sound: bool) {
         self.set_in_game(false);
+        self.push_to_talk()
+            .cancel_pending_release(self.team_speak());
         if plays_end_sound {
             self.play_sound(server, &self.sounds().game_end());
         }

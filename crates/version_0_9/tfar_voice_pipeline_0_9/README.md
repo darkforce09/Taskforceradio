@@ -111,7 +111,9 @@ the local player as sender (`ts3plugin_onEditCapturedVoiceDataEvent`, plugin.cpp
 direct voice is silent and their own radios are skipped, so only a loudspeaker of another player on
 the frequency they transmit on sounds. It returns nothing outside a game, for a dead local player or
 without current data; `append_own_voice` appends the block to the playback mixer's
-`my_radio_voice` stream. The captured frame itself is never changed.
+`my_radio_voice` stream off the audio thread only (it takes the stream lock); the plugin's
+captured-voice callback pushes the block through a `StreamProducer` for that stream instead. The
+captured frame itself is never changed.
 
 ### Memory on the audio path
 
