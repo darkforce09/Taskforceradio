@@ -86,7 +86,7 @@ impl TeamSpeakActions for RecordingTeamSpeak {
     fn channel_name(&self, _: ServerConnectionHandlerId, _: ChannelId) -> Option<String> {
         None
     }
-    fn plugin_path(&self) -> Option<PathBuf> {
+    fn plugin_folder(&self) -> Option<PathBuf> {
         None
     }
     fn config_path(&self) -> Option<PathBuf> {

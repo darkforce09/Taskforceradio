@@ -315,8 +315,8 @@ fn init_sees_the_installed_table_and_the_registered_id() {
         "{seen:?}"
     );
     assert_eq!(
-        Ts3::installed().unwrap().plugin_id(),
-        Some(c"dummy_plugin_id")
+        Ts3::installed().unwrap().plugin_id().as_deref(),
+        Some(&c"dummy_plugin_id".to_owned())
     );
     let shutdown: extern "C" fn() = ts3plugin_shutdown;
     shutdown();

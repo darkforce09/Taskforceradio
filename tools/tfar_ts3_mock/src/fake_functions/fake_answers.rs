@@ -154,3 +154,13 @@ pub(crate) fn write_path(folder: &Path, buffer: *mut c_char, max_len: usize) {
         buffer.add(length).write(0);
     }
 }
+
+/// Writes an empty path (a lone NUL) into the plugin's `buffer` of `max_len` bytes, as TeamSpeak
+/// answers `getPluginPath` for a plugin ID it does not know.
+pub(crate) fn write_empty_path(buffer: *mut c_char, max_len: usize) {
+    if buffer.is_null() || max_len == 0 {
+        return;
+    }
+    // SAFETY: the plugin owns `max_len >= 1` writable bytes at `buffer`.
+    unsafe { buffer.write(0) };
+}

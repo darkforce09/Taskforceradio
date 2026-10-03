@@ -8,7 +8,7 @@
 //! hidden, since a macro in another crate can reach only public items.
 //!
 //! **Signals and state:** all of these run on TeamSpeak's main thread. `set_function_pointers`
-//! writes the process-wide [`Ts3`]; `register_plugin_id` writes its plugin ID.
+//! writes the process-wide [`Ts3`]; `register_plugin_id` replaces its plugin ID with each new one.
 //!
 //! **Invariants:** nothing here panics; a missing function table makes `init` fail with
 //! [`InitStatus::Failure`] instead of calling the plugin.
@@ -81,7 +81,8 @@ pub fn shutdown<P: Ts3Plugin>(plugin: &'static P) {
     plugin.shutdown();
 }
 
-/// `ts3plugin_registerPluginID`: stores the ID in [`Ts3`] and tells the plugin.
+/// `ts3plugin_registerPluginID`: stores the ID in [`Ts3`], replacing the one an earlier load
+/// registered, and tells the plugin.
 ///
 /// # Safety
 ///

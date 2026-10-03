@@ -9,7 +9,7 @@ library. TeamSpeak 3 loads it from its plugins folder.
 apps/tfar_plugin_1_0/
 ├── Cargo.toml  the `tfar_plugin_1_0` package (cdylib + rlib): tier 6, workspace lints and dependencies
 ├── src/        the exports, the lifecycle, the runtime, the game link handler, events, audio, services
-└── tests/      the built `.so` in the mock TeamSpeak host, driven by a real game link client
+└── tests/      the built `.so` in the mock TeamSpeak host, driven by a real game link client, and through a reload
 ```
 
 ## How it works
@@ -36,6 +36,10 @@ The TeamSpeak plugin for the 1.0 mod, wiring the 1.0 library crates to TeamSpeak
   the radio sounds; all three only `try_lock`. A remote tangent sound is shaped by
   `render_remote_tangent_sound`. When TeamSpeak reports a sender starts talking, the sender's
   HRTF direction sources are reset, so an utterance never replays the last one's tail.
+- **Plugin folder.** `init` loads `radio-sounds/` and `tfar_hrir/` from `Ts3::plugin_folder`:
+  `getPluginPath` under the plugin ID TeamSpeak registered last (its "Reload" keeps the `.so`
+  loaded but registers a new ID, and the plugin commands go out under it too), else the folder of
+  the loaded `.so` (`tests/plugin_reload_in_mock_host.rs`).
 - **Push-to-talk.** A local tangent goes through `SessionState::apply_local_tangent`, then forces
   the microphone on and broadcasts to the channel; the release waits TeamSpeak's push-to-talk
   delay plus `tangentReleaseDelay` on its own thread.

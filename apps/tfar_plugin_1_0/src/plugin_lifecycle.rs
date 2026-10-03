@@ -101,7 +101,7 @@ impl TfarPlugin {
     /// Starts everything `init` starts.
     fn start(&self, ts3: &'static Ts3) -> InitStatus {
         let ts: &'static dyn TeamSpeakActions = ts3;
-        let (sounds, problems) = RadioSounds::load(ts.plugin_path());
+        let (sounds, problems) = RadioSounds::load(ts.plugin_folder());
         for problem in &problems {
             ts.print_to_current_tab(problem);
         }

@@ -428,6 +428,36 @@ fn the_plugin_path_uses_the_three_argument_form_with_the_plugin_id() {
 }
 
 #[test]
+fn a_new_plugin_id_replaces_the_old_one_in_every_call() {
+    let ts3 = ts3_with(|table| {
+        table.get_plugin_path = fake_plugin_path;
+        table.send_plugin_command = fake_send_plugin_command;
+    });
+    ts3.register_plugin_id(c"first_load_id");
+    let snapshot = ts3.plugin_id().unwrap();
+    ts3.register_plugin_id(c"reload_id");
+    assert_eq!(snapshot.as_c_str(), c"first_load_id");
+    assert_eq!(ts3.plugin_id().unwrap().as_c_str(), c"reload_id");
+    ts3.plugin_path().unwrap();
+    ts3.send_plugin_command(
+        ServerConnectionHandlerId(1),
+        "PING",
+        PluginCommandTarget::Server,
+    )
+    .unwrap();
+    assert_eq!(
+        take_calls(),
+        vec![
+            "getPluginPath 4096 reload_id".to_owned(),
+            format!(
+                "sendPluginCommand 1 reload_id PING {} None",
+                PluginCommandTarget::Server.mode()
+            ),
+        ]
+    );
+}
+
+#[test]
 fn an_empty_config_path_is_an_error() {
     let ts3 = ts3_with(|table| table.get_config_path = fake_empty_config_path);
     assert_eq!(

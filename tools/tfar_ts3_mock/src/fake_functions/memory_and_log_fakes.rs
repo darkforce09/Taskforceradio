@@ -18,7 +18,7 @@ use std::path::PathBuf;
 use tfar_ts3_host::{LogLevel, ServerConnectionHandlerId};
 use ts3plugin_sys::public_definitions as sdk;
 
-use super::fake_answers::{ERROR_OK, copied_text, hand_out_string, write_path};
+use super::fake_answers::{ERROR_OK, copied_text, hand_out_string, write_empty_path, write_path};
 use crate::fake_state::host_session::with_fake_teamspeak;
 use crate::{HostCall, HostQuery};
 
@@ -71,17 +71,22 @@ pub(crate) extern "C" fn print_message_to_current_tab(message: *const c_char) {
     with_fake_teamspeak(|fake| fake.record(call));
 }
 
-/// `getPluginPath(path, maxLen, pluginID)`: the session's plugin folder with a trailing `/`.
+/// `getPluginPath(path, maxLen, pluginID)`: the session's plugin folder with a trailing `/` for
+/// the registered plugin ID; an empty path for any other ID, as TeamSpeak answers a stale one.
 pub(crate) extern "C" fn get_plugin_path(
     path: *mut c_char,
     max_len: usize,
-    _plugin_id: *const c_char,
+    plugin_id: *const c_char,
 ) {
+    let plugin_id = copied_text(plugin_id);
     let folder = with_fake_teamspeak(|fake| {
         fake.record(HostCall::Query(HostQuery::PluginPath));
-        fake.plugin_path.clone()
+        (plugin_id == fake.registered_plugin_id).then(|| fake.plugin_path.clone())
     });
-    write_path(&folder, path, max_len);
+    match folder {
+        Some(folder) => write_path(&folder, path, max_len),
+        None => write_empty_path(path, max_len),
+    }
 }
 
 /// `getConfigPath`: the session's config folder with a trailing `/`.

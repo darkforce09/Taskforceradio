@@ -8,15 +8,19 @@
 //! installs the table and registers the ID) and by `logging`.
 //!
 //! **Signals and state:** one process-wide `OnceLock<Ts3>`, written on the TeamSpeak main thread
-//! by `ts3plugin_setFunctionPointers` and read from every thread afterwards; the plugin ID is a
-//! `OnceLock` inside it, written by `ts3plugin_registerPluginID`.
+//! by `ts3plugin_setFunctionPointers` and read from every thread afterwards; the plugin ID is an
+//! `ArcSwapOption` inside it, replaced by every `ts3plugin_registerPluginID`. TeamSpeak's
+//! "Reload" keeps the library loaded (so the table survives) but registers a new ID, which
+//! replaces the old one.
 //!
-//! **Invariants:** the table is set once and never changes; calling a function pointer needs no
-//! lock, so no TeamSpeak call ever runs under a lock of this crate.
+//! **Invariants:** the table is set once and never changes; the plugin ID is the last one
+//! TeamSpeak registered; calling a function pointer needs no lock, so no TeamSpeak call ever runs
+//! under a lock of this crate.
 
 use std::ffi::{CStr, CString, c_char, c_uint};
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
+use arc_swap::ArcSwapOption;
 use ts3plugin_sys::ts3functions::Ts3Functions;
 
 use crate::Ts3Error;
@@ -39,8 +43,8 @@ static INSTALLED: OnceLock<Ts3> = OnceLock::new();
 pub struct Ts3 {
     /// The table as TeamSpeak handed it over.
     pub(crate) functions: Ts3Functions,
-    /// The ID TeamSpeak gives the plugin in `ts3plugin_registerPluginID`.
-    plugin_id: OnceLock<CString>,
+    /// The ID TeamSpeak last gave the plugin in `ts3plugin_registerPluginID`.
+    plugin_id: ArcSwapOption<CString>,
 }
 
 impl Ts3 {
@@ -48,7 +52,7 @@ impl Ts3 {
     pub(crate) fn from_functions(functions: Ts3Functions) -> Self {
         Self {
             functions,
-            plugin_id: OnceLock::new(),
+            plugin_id: ArcSwapOption::const_empty(),
         }
     }
 
@@ -72,18 +76,20 @@ impl Ts3 {
         INSTALLED.get_or_init(|| Self::from_functions(functions))
     }
 
-    /// Records the plugin ID; the first ID TeamSpeak sends is kept.
+    /// Records the plugin ID; every ID TeamSpeak sends replaces the one before, so after a
+    /// "Reload" the calls carry the new ID.
     pub(crate) fn register_plugin_id(&self, plugin_id: &CStr) {
-        let _ = self.plugin_id.set(plugin_id.to_owned());
+        self.plugin_id.store(Some(Arc::new(plugin_id.to_owned())));
     }
 
-    /// The plugin ID TeamSpeak registered, if it has.
-    pub fn plugin_id(&self) -> Option<&CStr> {
-        self.plugin_id.get().map(CString::as_c_str)
+    /// The plugin ID TeamSpeak registered last, if it has registered one: a snapshot that stays
+    /// valid however often TeamSpeak registers a new ID afterwards.
+    pub fn plugin_id(&self) -> Option<Arc<CString>> {
+        self.plugin_id.load_full()
     }
 
     /// The plugin ID, or [`Ts3Error::PluginIdNotRegistered`] naming `function`.
-    pub(crate) fn plugin_id_for(&self, function: &'static str) -> Result<&CStr, Ts3Error> {
+    pub(crate) fn plugin_id_for(&self, function: &'static str) -> Result<Arc<CString>, Ts3Error> {
         self.plugin_id()
             .ok_or(Ts3Error::PluginIdNotRegistered { function })
     }

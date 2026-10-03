@@ -53,8 +53,8 @@ headers in `sdk_headers/` and checks the table offsets and every SDK value the c
 
 ## Boundaries
 
-- Depends on: `ts3plugin-sys`, `libc`, `tracing`, `tracing-subscriber`, `crossbeam-channel`,
-  `thiserror`; the TeamSpeak 3 client (plugin API 26) at run time.
+- Depends on: `ts3plugin-sys`, `libc`, `arc-swap`, `tracing`, `tracing-subscriber`,
+  `crossbeam-channel`, `thiserror`; the TeamSpeak 3 client (plugin API 26) at run time.
 - Used by: `tfar_plugin_0_9`, `tfar_plugin_1_0`.
 - Rules: `lib.rs` holds only the header, attributes, `mod` lines and re-exports
   (`cargo xtask verify crate-anatomy`); every `unsafe` block has a `// SAFETY:` comment naming the

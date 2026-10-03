@@ -51,7 +51,8 @@ the fakes answer with; the default pre-processor value is `vad=false`.
 ## Public surface
 
 - `MockHost` (`load`, `load_with_options`, `start`, the event and audio drivers, `info_data`,
-  `process_command`, `shutdown`, `calls`, `take_calls`, `leak_report`, `with_fake_teamspeak`),
+  `process_command`, `reload`, `registered_plugin_id`, `shutdown`, `calls`, `take_calls`,
+  `leak_report`, `with_fake_teamspeak`),
   `HostOptions`, `ServerSetup`, `InfoKind`, `CommandOutcome`, `VoiceBlockOutcome`,
   `CapturedVoiceOutcome`, `MOCK_PLUGIN_ID`, `HOSTED_API_VERSION`.
 - `PluginLibrary`, `PluginMetadata`, `PluginExports` and its function pointer types.

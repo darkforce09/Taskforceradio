@@ -303,6 +303,26 @@ fn paths_end_in_a_slash_and_are_truncated_to_the_buffer() {
 }
 
 #[test]
+fn the_plugin_path_is_empty_for_an_id_that_is_not_the_registered_one() {
+    let _session = session_with_one_server();
+    let table = fake_function_table();
+    let mut buffer = [0x55_u8; 64];
+    let stale_id = c"stale_plugin_id";
+    (table.get_plugin_path)(buffer.as_mut_ptr().cast(), buffer.len(), stale_id.as_ptr());
+    assert_eq!(read_text(buffer.as_ptr().cast()), "");
+    with_fake_teamspeak(|fake| "stale_plugin_id".clone_into(&mut fake.registered_plugin_id));
+    (table.get_plugin_path)(buffer.as_mut_ptr().cast(), buffer.len(), stale_id.as_ptr());
+    assert_eq!(read_text(buffer.as_ptr().cast()), "/plugins/");
+    assert_eq!(
+        calls(),
+        vec![
+            HostCall::Query(HostQuery::PluginPath),
+            HostCall::Query(HostQuery::PluginPath),
+        ]
+    );
+}
+
+#[test]
 fn requests_are_logged_with_their_arguments_and_mutes_change_the_state() {
     let _session = session_with_one_server();
     let table = fake_function_table();

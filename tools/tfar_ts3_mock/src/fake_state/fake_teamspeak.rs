@@ -20,7 +20,7 @@ use std::path::PathBuf;
 use tfar_ts3_host::{ChannelId, ClientId, ConnectStatus, ServerConnectionHandlerId};
 
 use super::allocation_ledger::AllocationLedger;
-use crate::HostCall;
+use crate::{HostCall, MOCK_PLUGIN_ID};
 
 /// The fake TeamSpeak client: its server tabs, settings, paths and records.
 #[derive(Debug)]
@@ -31,8 +31,12 @@ pub struct FakeTeamSpeak {
     pub current_server: ServerConnectionHandlerId,
     /// The capture pre-processor settings (`vad` and the rest), shared by every tab.
     pub preprocessor_values: BTreeMap<String, String>,
-    /// The folder `getPluginPath` answers with (written with a trailing `/`).
+    /// The folder `getPluginPath` answers with (written with a trailing `/`), for
+    /// [`registered_plugin_id`](Self::registered_plugin_id) only.
     pub plugin_path: PathBuf,
+    /// The plugin ID the host registered last. As in TeamSpeak, `getPluginPath` answers an empty
+    /// path for any other ID, such as the one a plugin kept from before a reload.
+    pub registered_plugin_id: String,
     /// The folder `getConfigPath` answers with (written with a trailing `/`).
     pub config_path: PathBuf,
     /// Every call the plugin made, in order.
@@ -123,16 +127,19 @@ impl FakeTeamSpeak {
             current_server: ServerConnectionHandlerId(0),
             preprocessor_values: BTreeMap::new(),
             plugin_path: PathBuf::new(),
+            registered_plugin_id: String::new(),
             config_path: PathBuf::new(),
             calls: Vec::new(),
             ledger: AllocationLedger::empty(),
         }
     }
 
-    /// A fresh client answering with `plugin_path` and `config_path`, voice activation off.
+    /// A fresh client answering with `plugin_path` (for [`MOCK_PLUGIN_ID`]) and `config_path`,
+    /// voice activation off.
     pub(crate) fn fresh(plugin_path: PathBuf, config_path: PathBuf) -> Self {
         let mut fake = Self::empty();
         fake.plugin_path = plugin_path;
+        MOCK_PLUGIN_ID.clone_into(&mut fake.registered_plugin_id);
         fake.config_path = config_path;
         fake.preprocessor_values
             .insert("vad".to_owned(), "false".to_owned());

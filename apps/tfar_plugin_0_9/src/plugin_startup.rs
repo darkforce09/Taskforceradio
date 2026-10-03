@@ -58,9 +58,11 @@ pub fn push_to_talk_delay(config_folder: Option<&Path>) -> Duration {
     }
 }
 
-/// The resources of a plugin started by TeamSpeak through `ts3`.
+/// The resources of a plugin started by TeamSpeak through `ts3`. The plugin folder is the one
+/// `getPluginPath` names for the current plugin ID, or else the folder of the loaded `.so`
+/// ([`Ts3::plugin_folder`]).
 pub fn gather_resources(ts3: &Ts3, team_speak: &dyn TeamSpeakActions) -> PluginResources {
-    let plugin_folder = ts3.plugin_path().unwrap_or_else(|error| {
+    let plugin_folder = ts3.plugin_folder().unwrap_or_else(|error| {
         tracing::warn!(%error, "TeamSpeak named no plugin folder; the radio sounds are off");
         PathBuf::new()
     });

@@ -19,7 +19,8 @@ targets = "any"
 thiserror.workspace = true
 # The raw `#[repr(C)]` `TS3Functions` table and SDK enums of plugin API 26.
 ts3plugin-sys.workspace = true
-# `malloc`/`free`: the `infoData` text TeamSpeak hands back to `ts3plugin_freeMemory`.
+# `malloc`/`free`: the `infoData` text TeamSpeak hands back to `ts3plugin_freeMemory`; `dladdr`:
+# the folder of the loaded plugin library when `getPluginPath` names none.
 libc.workspace = true
 # The events the logging layer forwards to TeamSpeak's `logMessage`.
 tracing = { workspace = true, features = ["std"] }
@@ -27,6 +28,9 @@ tracing = { workspace = true, features = ["std"] }
 tracing-subscriber = { workspace = true, features = ["std", "registry"] }
 # The bounded queue between threads that log (audio threads included) and the logger thread.
 crossbeam-channel = { workspace = true, features = ["std"] }
+# The plugin ID, replaced by every `ts3plugin_registerPluginID` (a "Reload" registers a new one)
+# and read lock-free by every call that passes it.
+arc-swap.workspace = true
 
 [lints]
 workspace = true

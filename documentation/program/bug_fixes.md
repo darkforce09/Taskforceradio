@@ -77,6 +77,18 @@ keeps its id, and a new bug takes the next free one.
 | F-071 | `reference/tfar_0_9_12/ts/src/plugin.cpp:1703`, `reference/tfar_0_9_12/ts/src/plugin.cpp:1854` | The delayed push-to-talk release runs on a thread per release, coordinated by the flags `skip_tangent_off` and `waiting_tangent_off`; the skip is one bool, so with press, release, press, release, press inside the delay the two skips merge, the first release thread consumes it, and the second release goes out while the third press is held | A press cancels the waiting release for good; only the last release is sent, after its own delay | `tfar_plugin_0_9` | M6 | `press_release_press_release_within_the_delay_sends_only_the_last_release`, `a_press_while_a_release_waits_cancels_it_for_good` |
 | F-091 | `reference/tfar_0_9_12/ts/src/plugin.cpp:347`, `reference/tfar_0_9_12/ts/src/plugin.cpp:593`, `reference/tfar_0_9_12/ts/src/plugin.cpp:2004` | A client entry made before any POS starts at data frame 0, so while the game is at frame 0 or 1 a client never positioned counts as current at the origin; outside a game the current frame is `INVALID_DATA_FRAME`, so a killed player's entry (also `INVALID_DATA_FRAME`) is within one frame and counts as current | An entry starts at `INVALID_DATA_FRAME`, and an entry at that frame is never current, in or outside a game; a POS makes it current | `tfar_client_state_0_9` | M8 | `an_entry_without_a_position_is_not_current_in_or_outside_a_game`, `a_killed_players_invalid_frame_is_not_current_outside_a_game` |
 
+## Found in live runs
+
+Defects the owner's live runs exposed. F-101 is a defect of the port itself: both originals
+replace the plugin ID on every `ts3plugin_registerPluginID`, the port kept the first one. F-102
+hardens a weakness both originals share: they take `getPluginPath` as it comes, so an empty answer
+leaves every plugin file relative to TeamSpeak's working directory.
+
+| Id | Reference (file:line) | Original behaviour | Fixed behaviour | Owning crate | Milestone | Test |
+|---|---|---|---|---|---|---|
+| F-101 | `reference/tfar_0_9_12/ts/src/plugin.cpp:2320`, `reference/tfar_1_0/ts/src/Teamspeak.cpp:825`; the port's `crates/teamspeak/tfar_ts3_host/src/ts3_functions/handle.rs` | The originals store each ID TeamSpeak registers. The port kept the first ID in a `OnceLock`; TeamSpeak's "Reload" keeps the `.so` loaded but registers a new ID, so after a reload `getPluginPath` answered an empty path (no radio sounds, the HRIR sphere looked up as a relative path) and `sendPluginCommand` carried the stale ID. Found in the owner's first live run (0.9 plugin, Flatpak TeamSpeak 3.6.2) | The plugin ID sits in an `ArcSwapOption`, replaced by every registration, and every call passes the ID registered last | `tfar_ts3_host` | M8 | `a_new_plugin_id_replaces_the_old_one_in_every_call` (`tfar_ts3_host`), `reload_shuts_down_then_registers_the_new_id_then_runs_init` (`tfar_ts3_mock`), `after_a_reload_the_plugin_finds_its_folder_and_sends_under_the_new_id` (`tfar_plugin_0_9`, `tfar_plugin_1_0`) |
+| F-102 | `reference/tfar_0_9_12/ts/src/plugin.cpp:2222`, `reference/tfar_1_0/ts/src/plugin.cpp:294` | The plugin folder is whatever `getPluginPath` writes; an empty answer turns `radio-sounds/` and `tfar_hrir/` into paths relative to TeamSpeak's working directory | `Ts3::plugin_folder` takes `getPluginPath` first and, when it is empty or fails, the canonical folder of the loaded plugin `.so` (`dladdr`), logging which one answered; both apps load their files from it | `tfar_ts3_host` | M8 | `an_empty_plugin_path_falls_back_to_the_folder_of_the_loaded_library`, `without_a_registered_id_the_folder_of_the_loaded_library_answers` |
+
 ## Counts
 
 | Group | Entries |
@@ -84,3 +96,4 @@ keeps its id, and a new bug takes the next free one.
 | Both versions | 6 (F-001–F-006) |
 | 1.0 only | 27 (F-007–F-018, F-029–F-031, F-041–F-047, F-061–F-063, F-081, F-082) |
 | 0.9 only | 15 (F-019–F-028, F-032, F-033, F-051, F-071, F-091) |
+| Found in live runs | 2 (F-101, F-102) |

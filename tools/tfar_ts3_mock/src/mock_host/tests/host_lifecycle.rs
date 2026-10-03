@@ -1,5 +1,6 @@
 //! Unit tests for starting, querying and shutting down a plugin, on the in-process plugin.
 
+use std::ffi::CStr;
 use std::path::Path;
 
 use super::*;
@@ -233,4 +234,55 @@ fn hosts_given_folders_answer_with_them() {
 fn a_nested_use_of_the_fake_state_fails_at_once_instead_of_deadlocking() {
     let host = start_in_process_host();
     host.with_fake_teamspeak(|_| host.current_server());
+}
+
+/// What the fake `getPluginPath` writes for `plugin_id`.
+fn plugin_path_for(plugin_id: &CStr) -> String {
+    let mut buffer = [0x55_u8; 256];
+    (fake_function_table().get_plugin_path)(
+        buffer.as_mut_ptr().cast(),
+        buffer.len(),
+        plugin_id.as_ptr(),
+    );
+    copied_text(buffer.as_ptr().cast())
+}
+
+#[test]
+fn reload_shuts_down_then_registers_the_new_id_then_runs_init() {
+    let mut host = start_in_process_host();
+    let folder = format!("{}/", host.plugin_path().display());
+    assert_eq!(plugin_path_for(c"mock_plugin_id"), folder);
+    take_events();
+    host.reload("reloaded_plugin_id").unwrap();
+    let config_path = format!("{}/", host.config_path().display());
+    assert_eq!(
+        take_events(),
+        vec![
+            PluginEvent::Shutdown,
+            PluginEvent::RegisteredPluginId("reloaded_plugin_id".to_owned()),
+            PluginEvent::Init { config_path },
+        ]
+    );
+    assert_eq!(host.registered_plugin_id(), "reloaded_plugin_id");
+    assert_eq!(plugin_path_for(c"reloaded_plugin_id"), folder);
+    assert_eq!(
+        plugin_path_for(c"mock_plugin_id"),
+        "",
+        "the ID of the first load is stale after the reload"
+    );
+    host.shutdown();
+    host.shutdown();
+    assert_eq!(take_events(), vec![PluginEvent::Shutdown]);
+}
+
+#[test]
+fn reload_refuses_an_id_with_a_nul_byte_before_touching_the_plugin() {
+    let mut host = start_in_process_host();
+    take_events();
+    assert!(matches!(
+        host.reload("bad\0id"),
+        Err(Error::InteriorNul { .. })
+    ));
+    assert_eq!(take_events(), Vec::new());
+    assert_eq!(host.registered_plugin_id(), MOCK_PLUGIN_ID);
 }

@@ -1,9 +1,10 @@
 //! [`MockHost`]: a started plugin inside the fake TeamSpeak, from load to shutdown.
 //!
 //! **Role:** starts a [`PluginLibrary`] the way TeamSpeak does (`setFunctionPointers`, then
-//! `registerPluginID("mock_plugin_id")`, then `init`), owns the host session while the plugin
-//! runs, answers the call log and the leak report, drives `infoData` and `processCommand`, and
-//! shuts the plugin down exactly once.
+//! `registerPluginID("mock_plugin_id")`, then `init`), reloads it the way TeamSpeak's "Reload"
+//! does (`shutdown`, then the same three calls with a new plugin ID, the library kept loaded),
+//! owns the host session while the plugin runs, answers the call log and the leak report, drives
+//! `infoData` and `processCommand`, and shuts the plugin down exactly once per start.
 //!
 //! **Position:** the entry point of the crate; the event and audio drivers are `impl MockHost`
 //! blocks in the sibling files. Used by the plugin apps' integration tests and the binary.
@@ -12,8 +13,8 @@
 //! fake state; every plugin call runs on the caller's thread with no lock held.
 //!
 //! **Invariants:** at most one `MockHost` is alive per process (others wait in
-//! [`MockHost::start`]); `ts3plugin_shutdown` runs once, before the library unloads; an
-//! `infoData` block is handed back to the plugin's `ts3plugin_freeMemory`.
+//! [`MockHost::start`]); `ts3plugin_shutdown` runs once per start or reload, before the library
+//! unloads; an `infoData` block is handed back to the plugin's `ts3plugin_freeMemory`.
 
 use std::ffi::{CStr, CString, c_char, c_int};
 use std::path::{Path, PathBuf};
@@ -120,25 +121,37 @@ impl MockHost {
             });
         }
         let session = HostSession::begin(options.plugin_path.clone(), options.config_path.clone())?;
-        let exports = *plugin.exports();
-        // SAFETY: the table is fully initialised with `extern "C"` fakes that live for the whole
-        // process; the plugin copies it.
-        unsafe { (exports.set_function_pointers)(fake_function_table()) };
-        if let Some(register_plugin_id) = exports.register_plugin_id {
-            let plugin_id = MOCK_PLUGIN_ID_C_STRING;
-            // SAFETY: the ID is NUL-terminated and outlives the call; the plugin copies it.
-            unsafe { register_plugin_id(plugin_id.as_ptr()) };
-        }
-        // SAFETY: `init` takes no argument; the table and ID it may use are installed.
-        let code = unsafe { (exports.init)() };
-        if code != 0 {
-            return Err(Error::InitFailed { code });
-        }
+        initialise(plugin.exports(), MOCK_PLUGIN_ID_C_STRING)?;
         Ok(Self {
             is_shut_down: false,
             plugin,
             _session: session,
         })
+    }
+
+    /// Presses TeamSpeak's "Reload" on the plugin: the library stays loaded (its statics
+    /// survive), and TeamSpeak calls `shutdown` (unless it already ran), `setFunctionPointers`,
+    /// `registerPluginID` with the new `plugin_id`, then `init`. From here on `getPluginPath`
+    /// answers only `plugin_id`; the ID registered before gets an empty path, as in TeamSpeak.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::InteriorNul`] when `plugin_id` holds a NUL byte; [`Error::InitFailed`] when
+    /// `init` answers non-zero, after which the plugin counts as shut down.
+    pub fn reload(&mut self, plugin_id: &str) -> Result<()> {
+        let plugin_id_c_string = CString::new(plugin_id).map_err(|_| Error::InteriorNul {
+            argument: "plugin ID",
+        })?;
+        self.shutdown();
+        with_fake_teamspeak(|fake| plugin_id.clone_into(&mut fake.registered_plugin_id));
+        initialise(self.plugin.exports(), &plugin_id_c_string)?;
+        self.is_shut_down = false;
+        Ok(())
+    }
+
+    /// The plugin ID registered last: [`MOCK_PLUGIN_ID`] until a [`MockHost::reload`].
+    pub fn registered_plugin_id(&self) -> String {
+        with_fake_teamspeak(|fake| fake.registered_plugin_id.clone())
     }
 
     /// The plugin's metadata.
@@ -257,6 +270,24 @@ impl MockHost {
         // SAFETY: `shutdown` takes no argument; the plugin stops its threads before returning.
         unsafe { (self.exports().shutdown)() };
     }
+}
+
+/// TeamSpeak's start of a loaded plugin: `setFunctionPointers`, `registerPluginID(plugin_id)`
+/// (when exported), then `init`.
+fn initialise(exports: &PluginExports, plugin_id: &CStr) -> Result<()> {
+    // SAFETY: the table is fully initialised with `extern "C"` fakes that live for the whole
+    // process; the plugin copies it.
+    unsafe { (exports.set_function_pointers)(fake_function_table()) };
+    if let Some(register_plugin_id) = exports.register_plugin_id {
+        // SAFETY: the ID is NUL-terminated and outlives the call; the plugin copies it.
+        unsafe { register_plugin_id(plugin_id.as_ptr()) };
+    }
+    // SAFETY: `init` takes no argument; the table and ID it may use are installed.
+    let code = unsafe { (exports.init)() };
+    if code != 0 {
+        return Err(Error::InitFailed { code });
+    }
+    Ok(())
 }
 
 impl Drop for MockHost {

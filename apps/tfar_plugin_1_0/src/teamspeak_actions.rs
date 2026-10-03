@@ -73,8 +73,9 @@ pub trait TeamSpeakActions: Send + Sync {
     /// `channel`'s name.
     fn channel_name(&self, server: ServerConnectionHandlerId, channel: ChannelId)
     -> Option<String>;
-    /// TeamSpeak's plugins folder.
-    fn plugin_path(&self) -> Option<PathBuf>;
+    /// The folder holding the plugin's files: TeamSpeak's plugins folder for the current plugin
+    /// ID, or else the folder of the loaded `.so`.
+    fn plugin_folder(&self) -> Option<PathBuf>;
     /// TeamSpeak's configuration folder.
     fn config_path(&self) -> Option<PathBuf>;
     /// Whether voice activation is on (`vad` is `true`).
@@ -229,8 +230,11 @@ impl TeamSpeakActions for Ts3 {
         )
     }
 
-    fn plugin_path(&self) -> Option<PathBuf> {
-        logged("getPluginPath", Ts3::plugin_path(self))
+    fn plugin_folder(&self) -> Option<PathBuf> {
+        logged(
+            "getPluginPath (and the loaded library's folder)",
+            Ts3::plugin_folder(self),
+        )
     }
 
     fn config_path(&self) -> Option<PathBuf> {

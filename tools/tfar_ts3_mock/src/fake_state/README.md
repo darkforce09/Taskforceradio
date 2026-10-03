@@ -19,7 +19,8 @@ tools/tfar_ts3_mock/src/fake_state/
 context, so the fakes reach it globally) behind a re-entrant `parking_lot` mutex over a
 `RefCell`. `HostSession::begin` waits on a condition variable until no other session is active,
 then replaces the state with a fresh one whose plugin and config paths are new temporary folders
-(or the ones given); its drop frees every block still handed out and wakes the next waiter. The
+(or the ones given) and whose registered plugin ID is `mock_plugin_id` (a reload replaces it);
+its drop frees every block still handed out and wakes the next waiter. The
 ledger in `allocation_ledger.rs` maps each outstanding block's address to the function that
 handed it out; a free of an unknown or already freed address is recorded, never passed to
 `free`.

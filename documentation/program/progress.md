@@ -360,6 +360,17 @@ slice that does it), NOTE (recorded, no change needed now) or CLOSE (resolved).
   longer calls it (`crates/version_1_0/tfar_voice_pipeline_1_0/src/voice_processor.rs:102`); like
   `append_own_voice` of 0.9 (documented by C1 as off-audio-thread only), it needs the same
   documentation or a `StreamProducer` parameter. Reported by C1.
+- **OF-033 (CLOSE): after TeamSpeak's "Reload" the plugin found no plugin folder.** Found in the
+  owner's first live run (the 0.9 plugin in the Flatpak TeamSpeak 3.6.2): the first load was fine;
+  after Reload the log said "TeamSpeak named no plugin folder; the radio sounds are off" with
+  `getPluginPath` returning an empty path, and the HRIR sphere failed as a relative path. TeamSpeak
+  keeps the `.so` loaded on Reload but registers a new plugin ID; `tfar_ts3_host` kept the first ID
+  in a `OnceLock`, so `getPluginPath` (and `sendPluginCommand`) went out under the stale one. Fixed
+  by H5 as [F-101 and F-102](/documentation/program/bug_fixes.md#found-in-live-runs): the latest ID
+  wins, and `Ts3::plugin_folder` falls back to the loaded library's folder when `getPluginPath`
+  names none. The mock host now has `MockHost::reload` and answers a stale ID with an empty path;
+  each app's `after_a_reload_the_plugin_finds_its_folder_and_sends_under_the_new_id` fails on the
+  old code with the owner's empty-path error and holds on the new.
 
 ## Handoff
 

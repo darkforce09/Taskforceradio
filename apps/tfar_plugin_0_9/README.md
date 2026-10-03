@@ -9,7 +9,7 @@ shared library. TeamSpeak 3 loads it from its plugins folder.
 apps/tfar_plugin_0_9/
 ├── Cargo.toml  the `tfar_plugin_0_9` package (cdylib + rlib): tier 6, workspace lints and dependencies
 ├── src/        the exports, the shared core, the game messages, the events, the voice callbacks
-└── tests/      the `.so` in the mock host: game session, dormancy, game end, HRTF reset, shutdown
+└── tests/      the `.so` in the mock host: game session, dormancy, game end, HRTF reset, reload, shutdown
 ```
 
 ## How it works
@@ -41,6 +41,10 @@ service thread   ──▶ game timeout, 4 s sweep and metadata, finished sounds
   0.9 and 1.0 plugins can both stay installed
   ([D25](/documentation/decisions/game_link.md#2026-10-03--a-plugin-returns-to-dormant-after-its-game-end-handling-d25)).
   The game link stays bound and answers while dormant.
+- **Plugin folder.** `init` loads `radio-sounds/` and `tfar_hrir/` from `Ts3::plugin_folder`:
+  `getPluginPath` under the plugin ID TeamSpeak registered last (its "Reload" keeps the `.so`
+  loaded but registers a new ID, and the plugin commands go out under it too), else the folder of
+  the loaded `.so` (`tests/plugin_reload_in_mock_host.rs`).
 - **Own voice and remote sounds.** The captured-voice callback pushes the own voice into the
   mixer's `my_radio_voice` stream through a `StreamProducer` that never blocks or allocates; a
   remote push-to-talk sound is shaped by `render_remote_tangent_sound` of the voice pipeline. When

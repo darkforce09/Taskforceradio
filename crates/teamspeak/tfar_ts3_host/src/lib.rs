@@ -8,9 +8,10 @@
 //! **Position:** `crates/teamspeak`, tier 0, depending on no workspace crate; used by
 //! `tfar_plugin_0_9`, `tfar_plugin_1_0`.
 //!
-//! **Signals and state:** the function table and plugin ID, set once on TeamSpeak's main thread
-//! (`OnceLock`); the log queue and its logger thread. Audio callbacks arrive on TeamSpeak's audio
-//! threads and touch neither.
+//! **Signals and state:** the function table, set once on TeamSpeak's main thread (`OnceLock`),
+//! and the plugin ID, replaced by every `ts3plugin_registerPluginID` (`ArcSwapOption`); the log
+//! queue and its logger thread. Audio callbacks arrive on TeamSpeak's audio threads and touch
+//! neither.
 //!
 //! **Invariants:** no panic or unwind crosses into TeamSpeak; every C string handed over stays
 //! alive for the call; every TeamSpeak allocation is copied and freed with its `freeMemory`; the

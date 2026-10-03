@@ -5,6 +5,7 @@ mod client_variables;
 mod connection_queries;
 mod handle;
 pub(crate) mod owned_memory;
+mod plugin_folder;
 mod sound_and_paths;
 
 pub use handle::Ts3;

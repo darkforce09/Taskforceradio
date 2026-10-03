@@ -36,8 +36,9 @@ cargo test -p tfar_ts3_host sdk_layout  # only the checks against the SDK header
 
 ## Configuration
 
-None: the crate reads no setting. TeamSpeak's own paths come from `Ts3::plugin_path` and
-`Ts3::config_path`.
+None: the crate reads no setting. TeamSpeak's own paths come from `Ts3::plugin_path` (the raw
+`getPluginPath`), `Ts3::plugin_folder` (`getPluginPath`, else the folder of the loaded plugin
+library; what the apps use) and `Ts3::config_path`.
 
 ## Public surface
 
@@ -52,7 +53,8 @@ None: the crate reads no setting. TeamSpeak's own paths come from `Ts3::plugin_p
 ## Boundaries
 
 - Depends on: no workspace crate; `ts3plugin-sys` (the raw table and SDK enums), `libc` (`malloc`
-  and `free` for `infoData`), `tracing`, `tracing-subscriber`, `crossbeam-channel`, `thiserror`.
+  and `free` for `infoData`, `dladdr` for the plugin folder), `arc-swap` (the plugin ID),
+  `tracing`, `tracing-subscriber`, `crossbeam-channel`, `thiserror`.
 - Used by: `tfar_plugin_0_9`, `tfar_plugin_1_0`.
 - Rules: no panic or unwind crosses into TeamSpeak; every C string handed over stays alive for the
   call; the `ts3plugin-sys` layout matches the SDK headers (`src/tests/sdk_layout.rs`). Tier 0 in
