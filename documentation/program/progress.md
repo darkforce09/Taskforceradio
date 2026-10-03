@@ -280,14 +280,20 @@ slice that does it), NOTE (recorded, no change needed now) or CLOSE (resolved).
 
 ## Handoff
 
-M0 is closing; M1 to M5 are code-complete, with their live checks deferred by the owner; M6 and M7
-have their command crates and radio effects. Committed up to 6bb81ef (E1, G1 and the V4/W4 and
-V5/W6 briefs included). R1 (this records and tooling pass) is uncommitted; V3 and W3 are running.
-The next session:
-1. Reviews the R1 diff and commits it with explicit paths.
-2. Reviews and commits V3 and W3 as each reports; W3 or a later slice takes OF-020.
-3. Launches V4/W4 and V5/W6 from their briefs once their inputs are committed.
-4. Runs `cargo xtask ci ci-local` on a quiet tree; when it holds, records the first green commit
-   above and closes M0 from the [roadmap](/documentation/roadmap.md#m0--workspace-skeleton-reference-archive-gates)
-   (the Windows cross-build included).
-5. Fixes OF-026 in CLAUDE.md and brings the owner OF-021 and OF-022.
+All code is written: every library crate, both extensions, both full plugin apps (0.9 at f41e744, 1.0
+at 166bb66), the mock host, the probe and the golden-vector oracle. The owner paused the program after
+W6 and deferred every live check (no Arma, Proton or TeamSpeak runs yet). The next session:
+1. Records the slice reports since c5e77ed in this file and in the
+   [bug fixes](/documentation/program/bug_fixes.md): F-032 and F-033 (V3), F-041 to F-047 (W3),
+   F-051 (V4), F-061 to F-063 (W4), F-071 (V5), F-081 and F-082 (W6), each with its test name;
+   the new manifest edges (W3, W4, V5, W6) in the crate catalogue and the shared brief; the
+   corrected 1.0 attenuation curve `10^(-1.5·d/maxD)` and the +4 dB HRTF makeup gain in the audio
+   pipeline document.
+2. Runs R2: allocation-free `is_over_radio` in both routing crates and the voice pipelines; the
+   library gaps V5 and W6 filled privately (positional remote sounds, a local-tangent apply, an
+   async-queue entry on the game-link server, a talk-status callback in tfar_ts3_host, cancellable
+   update and track threads, a non-blocking mixer stream append, `Option` vectors for
+   `system_set_3d_listener_attributes`, the frame-0 default of a client without POS).
+3. Runs `cargo xtask ci ci-local` on a quiet tree (with a `target-*` dir, see the shared brief),
+   records the first green commit and closes M0 to M7 code items in the roadmap.
+4. M8: `cargo xtask dist`, the runbook pass, then the owner's live checks.
