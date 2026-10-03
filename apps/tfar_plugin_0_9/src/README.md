@@ -9,6 +9,7 @@ and the service thread.
 ```text
 apps/tfar_plugin_0_9/src/
 ├── audio_callbacks.rs           the post-process, captured, mixed-playback and rolloff callbacks
+├── background_web_requests.rs   the running update check and Piwik requests, joined at shutdown
 ├── channel_snapshot.rs          our channel read from TeamSpeak in one pass; the voice facts it leaves
 ├── crate_role.rs                `CRATE_ROLE`: what the crate is for, in one sentence
 ├── error.rs                     `Error`, the `thiserror` enum, and `Result`
@@ -16,7 +17,7 @@ apps/tfar_plugin_0_9/src/
 ├── game_session_transitions.rs  game start and end: on/off sounds, serious-mode move, nickname back
 ├── incoming_plugin_commands.rs  other players' TANGENT, RELEASE_ALL_TANGENTS and VOLUME commands
 ├── lib.rs                       the crate root: module header, `mod` lines and re-exports
-├── listen_port.rs               the game link port from `TFAR_GAME_LINK_DEBUG` and `TFAR_GAME_LINK_PORT`
+├── listen_port.rs               the game link's two spec ports, or the test port of `TFAR_GAME_LINK_PORT`
 ├── plugin_core.rs               `PluginCore`: the shared runtime, its flags, locks and helpers
 ├── plugin_exports.rs            the `PLUGIN` static and the `ts3_plugin!` expansion over it
 ├── plugin_lifecycle.rs          `TfarPlugin`: the metadata, `init`, `shutdown`, the callbacks
@@ -24,13 +25,12 @@ apps/tfar_plugin_0_9/src/
 ├── prelude.rs                   the plugin, the core, the TeamSpeak traits and the port choice
 ├── push_to_talk/                the local push-to-talk: state machine, VAD, microphone, release thread
 ├── radio_sounds.rs              the `radio-sounds/` and `tfar_hrir/` paths by subtype and moment
-├── remote_sounds.rs             a remote push-to-talk sound placed and filtered for the mixer
 ├── running_plugin.rs            `RunningPlugin`: what `init` starts and the order `shutdown` stops it
 ├── server_connection.rs         `ServerConnection` and `ServerState`: one connection behind one lock
-├── service_thread.rs            the 100 ms tick: game timeout, 4 s sweep, metadata, finished sounds
+├── service_thread.rs            the 100 ms tick: game timeout and dormancy, 4 s sweep, metadata, sounds
 ├── status_metadata.rs           the `<TFAR>` status in our metadata, and the disabled text
 ├── team_speak/                  the `TeamSpeak` traits and their function-table implementation
-├── team_speak_events.rs         connection, channel and client events, the talking flag, info panel
+├── team_speak_events.rs         connection, channel, client and talk events, the talking flag, info panel
 └── tests/                       unit tests per module and the recording fake of TeamSpeak
 ```
 
@@ -49,21 +49,26 @@ one follows the same pattern: read TeamSpeak through the `TeamSpeak` traits, loc
 `ServerState` to apply and decide with the library crates, unlock, then call TeamSpeak
 (`send_mute_decision` forgets a mute TeamSpeak refused). The voice callbacks read
 `TeamSpeakFacts`, which `channel_snapshot.rs` fills on every channel or client event and sweep.
+A remote push-to-talk sound is shaped by the voice pipeline's `render_remote_tangent_sound`; the
+own voice reaches the mixer through the `StreamProducer` each `ServerState` holds.
 
 Threads: TeamSpeak's main thread (lifecycle, events, plugin commands), its audio threads (voice
-callbacks), the game link server's session thread (game messages), `tfar-service` and
-`tfar-push-to-talk-release`. The unit tests drive the core over `tests/fake_team_speak.rs`, a
-recording fake of both traits; each module attaches its sibling test file with `#[path]`.
+callbacks), the game link server's accept and session threads (game messages), `tfar-service`,
+`tfar-push-to-talk-release`, the web request threads (`tfar-update-check`, `tfar-piwik-track`)
+and the log forwarder. The unit tests drive the core over `tests/fake_team_speak.rs`, a recording
+fake of both traits, and the service tick with the time injected (`ServiceSchedule`); each module
+attaches its sibling test file with `#[path]`.
 
 ## Public surface
 
 - `plugin_exports::PLUGIN` and `TfarPlugin`, `FLAVOUR`, `LOG_CHANNEL`; `RunningPlugin`,
-  `StartError`, `SKIP_UPDATE_CHECK_VARIABLE`; `listen_port` (`server_config`,
-  `server_config_from_environment`, `DEBUG_PORT_VARIABLE`, `PORT_OVERRIDE_VARIABLE`).
-- `PluginCore` with its handlers (`handle_game_message`, `handle_plugin_command`, the event, audio
-  and service methods), `PluginResources`, `MuteFacts`; `ServerConnection`, `ServerState`;
+  `StartError`, `SKIP_UPDATE_CHECK_VARIABLE`, `SHUTDOWN_BUDGET`, `WEB_REQUEST_JOIN_DEADLINE`;
+  `listen_port` (`server_config`, `server_config_from_environment`, `PORT_OVERRIDE_VARIABLE`).
+- `PluginCore` with its handlers (`handle_game_message`, `handle_plugin_command`,
+  `handle_talk_status_change`, the event, audio and service methods, `record_game_activity`,
+  `return_to_dormant`), `PluginResources`, `MuteFacts`; `ServerConnection`, `ServerState`;
   `ChannelSnapshot`, `TeamSpeakFacts`; `PushToTalk`, `PushToTalkState`; `RadioSounds`;
-  `RemoteSoundPlan`, `render_remote_sound`; `ServiceThread`.
+  `PlannedRemoteSound`; `BackgroundWebRequests`; `ServiceThread`, `ServiceSchedule`.
 - `team_speak` (`TeamSpeak`, `TeamSpeakQueries`, `TeamSpeakActions`, `Ts3TeamSpeak`).
 - `CRATE_ROLE`, `Error`, `Result` and `prelude`; the C exports `ts3plugin_*`, for TeamSpeak.
 
@@ -74,6 +79,9 @@ recording fake of both traits; each module attaches its sibling test file with `
 - Rules: no TeamSpeak call under a server lock and none on an audio thread (the audio paths take
   only `try_` locks and read `TeamSpeakFacts`); a dormant plugin sends nothing
   (`version_alone_keeps_the_plugin_dormant_and_writes_nothing`,
-  `a_dormant_plugin_takes_in_remote_commands_without_any_request`); production files hold no
+  `a_dormant_plugin_takes_in_remote_commands_without_any_request`), also for 10 s of ticks after
+  a game end (`after_a_game_times_out_the_plugin_is_dormant_for_ten_seconds_of_ticks_until_the_game_resumes`);
+  a shutdown never waits past its deadline for a web request
+  (`a_request_in_flight_never_holds_the_shutdown_past_its_deadline`); production files hold no
   `unwrap`, `expect`, `panic` or indexing (clippy deny list); the only `unsafe` is the code
   `ts3_plugin!` expands.

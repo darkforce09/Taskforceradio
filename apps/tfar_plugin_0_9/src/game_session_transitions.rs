@@ -6,15 +6,16 @@
 //! decisions `tfar_client_state_0_9` makes (`ServerRadioData::start_game`, `end_game`).
 //!
 //! **Position:** methods of `PluginCore`; the game link thread starts a game after the first
-//! message that counts as game activity, the service thread ends it on the 4 s timeout, and
-//! `ts3plugin_shutdown` ends a running one.
+//! message that counts as game activity, the service thread ends it on the 4 s timeout and
+//! puts the plugin back to dormant, and `ts3plugin_shutdown` ends a running one.
 //!
 //! **Signals and state:** writes the in-game flag and the connection's serious-mode return
 //! channel; every TeamSpeak call is made with no lock held.
 //!
 //! **Invariants:** serious mode moves only into a channel of exactly the mission's name, and only
 //! when the player is not in it already; the way back goes to the channel the move left; the
-//! nickname given back is the player's own, saved at the first rename of the session.
+//! nickname given back is the player's own, saved at the first rename of the session; after a
+//! game timed out, every side effect of its end is done before the plugin is dormant again.
 
 use tfar_client_state_0_9::SeriousChannel;
 use tfar_radio_routing_0_9::is_other_radio_plugin_channel;
@@ -78,12 +79,14 @@ impl PluginCore {
         self.publish_status_metadata(server);
     }
 
-    /// The game went silent for 4 s: a running game ends with the off sound; without one, the
-    /// mutes this plugin made are lifted unless the local player sits in another radio plugin's
-    /// channel, where that plugin owns the mutes.
+    /// The game went silent for 4 s: a running game ends with the off sound and the plugin
+    /// returns to dormant until the next game activity; without one, the mutes this plugin made
+    /// are lifted unless the local player sits in another radio plugin's channel, where that
+    /// plugin owns the mutes.
     pub fn time_out_game(&self, server: ServerConnectionHandlerId, ended_a_game: bool) {
         if ended_a_game {
             self.end_game(server, true);
+            self.return_to_dormant();
             return;
         }
         let is_in_other_radio_channel = self

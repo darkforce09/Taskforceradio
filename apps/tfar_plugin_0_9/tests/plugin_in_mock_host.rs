@@ -88,7 +88,6 @@ fn the_plugin_loads_answers_the_ping_and_shuts_down() {
         .env(CHILD_MARKER, "1")
         .env("TFAR_SKIP_UPDATE_CHECK", "1")
         .env("TFAR_GAME_LINK_PORT", free_port().to_string())
-        .env_remove("TFAR_GAME_LINK_DEBUG")
         .status()
         .unwrap();
     assert!(

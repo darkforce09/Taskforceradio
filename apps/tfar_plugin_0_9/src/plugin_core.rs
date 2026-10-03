@@ -2,8 +2,8 @@
 //! thread the plugin runs on.
 //!
 //! **Role:** hold TeamSpeak, the server connections, the game session, the dormant, in-game and
-//! link flags, the radio sounds with the decoded WAV library, the HRIR sphere and the local
-//! push-to-talk; and give the command paths their few shared helpers (lock a server's state,
+//! link flags, the radio sounds with the decoded WAV library, the HRIR sphere, the local
+//! push-to-talk and the running web requests; and give the command paths their few shared helpers (lock a server's state,
 //! refresh a channel, send mute requests, play a sound).
 //!
 //! **Position:** behind an `Arc` in `TfarPlugin`'s running state; the game link bridge, the
@@ -15,8 +15,10 @@
 //! and released before any other. No TeamSpeak call is made while the server map or a state
 //! lock is held. The audio callbacks only `try_read` the map and `try_lock` a state.
 //!
-//! **Invariants:** a dormant plugin (no game activity yet this session) sends no mute, nickname,
-//! metadata, channel move or plugin command; the flags are atomics, read without a lock.
+//! **Invariants:** a dormant plugin (no game activity since the session began or since its last
+//! game end) sends no mute, nickname, metadata, channel move or plugin command; the flags are
+//! atomics, read without a lock; waking and returning to dormant are decided under the game
+//! session lock, so a game message never races the return to dormant.
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -31,6 +33,7 @@ use tfar_playback_mixer::WaveLibrary;
 use tfar_radio_routing_0_9::{MuteDecision, is_serious_mode};
 use tfar_ts3_host::{ClientId, ServerConnectionHandlerId};
 
+use crate::background_web_requests::BackgroundWebRequests;
 use crate::channel_snapshot::{ChannelSnapshot, host_client_id, read_channel_snapshot};
 use crate::push_to_talk::PushToTalk;
 use crate::radio_sounds::RadioSounds;
@@ -64,13 +67,14 @@ pub struct PluginCore {
     team_speak: Arc<dyn TeamSpeak>,
     servers: RwLock<BTreeMap<ServerConnectionHandlerId, Arc<ServerConnection>>>,
     session: Mutex<GameSession>,
-    has_had_game_activity: AtomicBool,
+    is_awake: AtomicBool,
     is_in_game: AtomicBool,
     is_link_connected: AtomicBool,
     sounds: RadioSounds,
     waves: WaveLibrary,
     hrir: Option<Arc<HrirLibrary>>,
     push_to_talk: PushToTalk,
+    web_requests: BackgroundWebRequests,
 }
 
 impl core::fmt::Debug for PluginCore {
@@ -97,14 +101,20 @@ impl PluginCore {
             team_speak,
             servers: RwLock::new(BTreeMap::new()),
             session: Mutex::new(GameSession::new(now)),
-            has_had_game_activity: AtomicBool::new(false),
+            is_awake: AtomicBool::new(false),
             is_in_game: AtomicBool::new(false),
             is_link_connected: AtomicBool::new(false),
             sounds,
             waves,
             hrir: resources.hrir,
             push_to_talk: PushToTalk::new(resources.push_to_talk_delay),
+            web_requests: BackgroundWebRequests::new(),
         }
+    }
+
+    /// The update check and the tracking requests still to join at shutdown.
+    pub fn web_requests(&self) -> &BackgroundWebRequests {
+        &self.web_requests
     }
 
     /// TeamSpeak.
@@ -112,15 +122,37 @@ impl PluginCore {
         &*self.team_speak
     }
 
-    /// Whether no game activity has reached the plugin yet this session.
+    /// Whether the plugin is dormant: no game activity has reached it since the session began or
+    /// since its last game end.
     pub fn is_dormant(&self) -> bool {
-        !self.has_had_game_activity.load(Ordering::Acquire)
+        !self.is_awake.load(Ordering::Acquire)
     }
 
     /// Marks the plugin awake: a message that counts as game activity arrived.
     pub fn wake_up(&self) {
-        if !self.has_had_game_activity.swap(true, Ordering::AcqRel) {
+        if !self.is_awake.swap(true, Ordering::AcqRel) {
             tracing::info!("the game is active; the plugin leaves its dormant state");
+        }
+    }
+
+    /// Records game activity at `now` under the game session lock: wakes the plugin and stamps
+    /// the session; true when this starts a game. A message that does not count as game activity
+    /// changes nothing and returns false.
+    pub fn record_game_activity(&self, counts_as_game_activity: bool, now: Instant) -> bool {
+        let mut session = self.session.lock();
+        if counts_as_game_activity {
+            self.wake_up();
+        }
+        session.record_message(counts_as_game_activity, now)
+    }
+
+    /// Puts the plugin back to dormant after its game-end handling, unless game activity has
+    /// started a new game meanwhile; decided under the game session lock, so a message that
+    /// wakes the plugin is never lost.
+    pub fn return_to_dormant(&self) {
+        let session = self.session.lock();
+        if !session.is_in_game() && self.is_awake.swap(false, Ordering::AcqRel) {
+            tracing::info!("the game has ended; the plugin is dormant until the next game");
         }
     }
 

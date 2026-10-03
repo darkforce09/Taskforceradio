@@ -25,8 +25,8 @@ use tfar_game_link_server::prelude::Flavour;
 use tfar_ts3_host::{
     CapturedVoiceData, ChannelId, ClientId, ClientMove, CommandHandling, ConnectStatus,
     ErrorDisplay, InfoItem, InitStatus, Invoker, LoggingGuard, MixedPlaybackVoiceData,
-    PluginCommand, PostProcessVoiceData, ServerConnectionHandlerId, ServerError, Ts3, Ts3Plugin,
-    install_logging, print_to_current_tab,
+    PluginCommand, PostProcessVoiceData, ServerConnectionHandlerId, ServerError, TalkStatus, Ts3,
+    Ts3Plugin, install_logging, print_to_current_tab,
 };
 
 use crate::plugin_core::PluginCore;
@@ -238,6 +238,18 @@ impl Ts3Plugin for TfarPlugin {
     ) {
         if let Some(core) = self.core() {
             core.handle_own_variable_update(server, flag, new_value);
+        }
+    }
+
+    fn on_talk_status_change(
+        &self,
+        server: ServerConnectionHandlerId,
+        status: TalkStatus,
+        _is_received_whisper: bool,
+        client: ClientId,
+    ) {
+        if let Some(core) = self.core() {
+            core.handle_talk_status_change(server, status, client);
         }
     }
 

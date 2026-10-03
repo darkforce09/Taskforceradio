@@ -30,26 +30,95 @@ pub(crate) fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+/// What a scenario child's environment adds to the defaults.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct ChildEnvironment {
+    /// Runs the plugin's update check instead of skipping it.
+    pub(crate) checks_for_updates: bool,
+    /// The `127.0.0.1` port every web request of the child goes through as its HTTP proxy
+    /// (`ALL_PROXY`), so none leaves the machine.
+    pub(crate) proxy_port: Option<u16>,
+}
+
+/// The proxy variables the child's web requests read; all are cleared before the child starts.
+const PROXY_VARIABLES: [&str; 8] = [
+    "ALL_PROXY",
+    "all_proxy",
+    "HTTPS_PROXY",
+    "https_proxy",
+    "HTTP_PROXY",
+    "http_proxy",
+    "NO_PROXY",
+    "no_proxy",
+];
+
 /// Runs `scenario` in a child process of this test binary when this process is not already
 /// that child: the child gets a free game link port, no update check and its own plugin folder.
 /// In the child itself, `scenario` runs here.
 pub(crate) fn run_in_child(test_name: &str, scenario: impl FnOnce()) {
+    run_in_child_with(test_name, &ChildEnvironment::default(), scenario);
+}
+
+/// [`run_in_child`] with the child's environment changed as `environment` says.
+pub(crate) fn run_in_child_with(
+    test_name: &str,
+    environment: &ChildEnvironment,
+    scenario: impl FnOnce(),
+) {
     if std::env::var(CHILD_MARKER).as_deref() == Ok(test_name) {
         scenario();
         return;
     }
-    let status = Command::new(std::env::current_exe().unwrap())
+    let mut command = Command::new(std::env::current_exe().unwrap());
+    command
         .args([test_name, "--exact", "--nocapture", "--test-threads=1"])
         .env(CHILD_MARKER, test_name)
-        .env("TFAR_GAME_LINK_PORT", free_port().to_string())
-        .env("TFAR_SKIP_UPDATE_CHECK", "1")
-        .env_remove("TFAR_GAME_LINK_DEBUG")
-        .status()
-        .unwrap();
+        .env("TFAR_GAME_LINK_PORT", free_port().to_string());
+    if environment.checks_for_updates {
+        command.env_remove("TFAR_SKIP_UPDATE_CHECK");
+    } else {
+        command.env("TFAR_SKIP_UPDATE_CHECK", "1");
+    }
+    for variable in PROXY_VARIABLES {
+        command.env_remove(variable);
+    }
+    if let Some(port) = environment.proxy_port {
+        command.env("ALL_PROXY", format!("http://127.0.0.1:{port}"));
+    }
+    let status = command.status().unwrap();
     assert!(
         status.success(),
         "the scenario failed in the child: {status}"
     );
+}
+
+/// The names of this process's threads that the plugin or its libraries started: every name
+/// starts with `tfar-` (Linux keeps the first 15 bytes).
+pub(crate) fn plugin_thread_names() -> Vec<String> {
+    let mut names: Vec<String> = std::fs::read_dir("/proc/self/task")
+        .unwrap()
+        .filter_map(|task| std::fs::read_to_string(task.ok()?.path().join("comm")).ok())
+        .map(|name| name.trim_end().to_owned())
+        .filter(|name| name.starts_with("tfar-"))
+        .collect();
+    names.sort_unstable();
+    names
+}
+
+/// Waits up to `timeout` for `holds` to be true of the host's call log.
+pub(crate) fn wait_for_calls_within(
+    host: &MockHost,
+    timeout: Duration,
+    holds: impl Fn(&[HostCall]) -> bool,
+) -> Vec<HostCall> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        let calls = host.calls();
+        if holds(&calls) || Instant::now() > deadline {
+            return calls;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
 }
 
 /// A port nothing listens on right now: bound once, then released.
@@ -141,14 +210,7 @@ pub(crate) fn wait_for_calls(
     host: &MockHost,
     holds: impl Fn(&[HostCall]) -> bool,
 ) -> Vec<HostCall> {
-    let deadline = Instant::now() + Duration::from_secs(2);
-    loop {
-        let calls = host.calls();
-        if holds(&calls) || Instant::now() > deadline {
-            return calls;
-        }
-        std::thread::sleep(Duration::from_millis(10));
-    }
+    wait_for_calls_within(host, Duration::from_secs(2), holds)
 }
 
 /// The plugin commands in `calls`.

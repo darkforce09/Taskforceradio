@@ -248,20 +248,9 @@ impl TeamSpeakActions for Ts3TeamSpeak {
     }
 
     fn centre_listener(&self, server: ServerConnectionHandlerId) -> Result<(), Ts3Error> {
-        // The original passes no orientation (NULL); the safe call needs one, so it gives
-        // TeamSpeak's default facing. With every voice at the origin the orientation is moot.
-        let forward = Ts3Vector {
-            x: 0.0,
-            y: 0.0,
-            z: 1.0,
-        };
-        let up = Ts3Vector {
-            x: 0.0,
-            y: 1.0,
-            z: 0.0,
-        };
+        // No orientation (NULL forward and up), as the original passes; TeamSpeak keeps its own.
         self.ts3
-            .system_set_3d_listener_attributes(server, Ts3Vector::default(), forward, up)
+            .system_set_3d_listener_attributes(server, Ts3Vector::default(), None, None)
     }
 
     fn centre_client(

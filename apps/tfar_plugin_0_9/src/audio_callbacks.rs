@@ -3,9 +3,9 @@
 //!
 //! **Role:** `onEditPostProcessVoiceDataEvent` (copy to stereo, the 0.9 voice chain through
 //! `VoiceProcessor::process_sender`, write back), `onEditCapturedVoiceDataEvent` (our voice
-//! through the chain for other players' loudspeakers, appended to the mixer's `my_radio_voice`
-//! stream; the captured samples stay as they are), `onEditMixedPlaybackVoiceDataEvent`
-//! (`PlaybackMixer::mix_into`) and `onCustom3dRolloffCalculationClientEvent` (gain 1, so
+//! through the chain for other players' loudspeakers, pushed into the mixer's `my_radio_voice`
+//! stream through its non-blocking producer; the captured samples stay as they are),
+//! `onEditMixedPlaybackVoiceDataEvent` (`PlaybackMixer::mix_into`) and `onCustom3dRolloffCalculationClientEvent` (gain 1, so
 //! TeamSpeak's own 3D attenuation stays neutral), as
 //! `reference/tfar_0_9_12/ts/src/plugin.cpp:2600-2895` does them.
 //!
@@ -28,7 +28,7 @@ use tfar_ts3_host::{
     CapturedVoiceData, ClientId, MixedPlaybackVoiceData, PostProcessVoiceData,
     ServerConnectionHandlerId,
 };
-use tfar_voice_pipeline_0_9::{OwnVoiceContext, VoiceFrameContext, VoiceOutcome, append_own_voice};
+use tfar_voice_pipeline_0_9::{OwnVoiceContext, VoiceFrameContext, VoiceOutcome};
 
 use crate::channel_snapshot::state_client_id;
 use crate::plugin_core::PluginCore;
@@ -81,7 +81,7 @@ impl PluginCore {
     }
 
     /// A block of our own microphone: in game and while it is sent, our voice through the chain
-    /// as its own sender, appended to the own-voice stream for loudspeakers of other players.
+    /// as its own sender, pushed into the own-voice stream for loudspeakers of other players.
     pub fn process_captured_voice(&self, data: &mut CapturedVoiceData<'_>) {
         if self.is_dormant() || !self.is_in_game() || *data.edited & CAPTURED_BLOCK_IS_SENT == 0 {
             return;
@@ -100,9 +100,11 @@ impl PluginCore {
             voice,
             facts,
             captured_scratch,
+            own_voice_stream,
             ..
         } = &mut *guard;
-        let Some(me) = facts.my_client else {
+        let (Some(me), Some(own_voice_stream)) = (facts.my_client, own_voice_stream.as_mut())
+        else {
             return;
         };
         if copy_to_stereo(data.samples, data.channels, data.frames, captured_scratch).is_err() {
@@ -117,8 +119,8 @@ impl PluginCore {
         if let Some(own_voice) =
             voice.process_own_voice_for_speakers(radio, &context, captured_scratch, Instant::now())
         {
-            // A full stream table drops the block; the next one tries again.
-            let _ = append_own_voice(&connection.mixer, own_voice);
+            // The producer never blocks or allocates; past 500 ms it drops the oldest frames.
+            own_voice_stream.push(own_voice.as_slice());
         }
     }
 

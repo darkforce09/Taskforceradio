@@ -17,6 +17,7 @@
 //! and plays no sound; a remote push-to-talk plays its sound only on a flip of the sender's held
 //! state; a phone or unknown subtype plays nothing.
 
+use std::path::PathBuf;
 use std::time::Instant;
 
 use tfar_arma_values::RadioSubtype;
@@ -28,13 +29,24 @@ use tfar_radio_routing_0_9::{
     set_game_client_mute_status,
 };
 use tfar_ts3_host::{ClientId, PluginCommand, ServerConnectionHandlerId};
-use tfar_voice_pipeline_0_9::radio_volume_multiplier;
+use tfar_voice_pipeline_0_9::{
+    ListenerView, RemoteSoundPlan, radio_volume_multiplier, render_remote_tangent_sound,
+};
 
 use crate::game_messages::game_tangent_kind;
 use crate::plugin_core::{MuteFacts, PluginCore};
 use crate::radio_sounds::{RadioSounds, TangentMoment};
-use crate::remote_sounds::{ListenerView, RemoteSoundPlan, render_remote_sound};
 use crate::server_connection::ServerState;
+
+/// One remote push-to-talk sound to play: the WAV file, decoded at init, and how the voice
+/// pipeline shapes it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PlannedRemoteSound {
+    /// The WAV file in `radio-sounds/`.
+    pub path: PathBuf,
+    /// The gain, place and filters `render_remote_tangent_sound` applies.
+    pub plan: RemoteSoundPlan,
+}
 
 #[cfg(test)]
 #[path = "tests/incoming_plugin_commands.rs"]
@@ -170,8 +182,8 @@ impl PluginCore {
             return;
         };
         self.send_mute_decision(server, &decision);
-        for plan in &sounds {
-            self.queue_remote_sound(server, plan);
+        for sound in &sounds {
+            self.queue_remote_sound(server, sound);
         }
     }
 
@@ -210,16 +222,16 @@ impl PluginCore {
         }
     }
 
-    /// Renders `plan` from its decoded WAV and queues it in the mixer of `server`.
-    fn queue_remote_sound(&self, server: ServerConnectionHandlerId, plan: &RemoteSoundPlan) {
+    /// Renders `sound` from its decoded WAV and queues it in the mixer of `server`.
+    fn queue_remote_sound(&self, server: ServerConnectionHandlerId, sound: &PlannedRemoteSound) {
         let Some(connection) = self.connection(server) else {
             return;
         };
-        let Some(wave) = self.waves().cached(&plan.path) else {
-            tracing::debug!(path = %plan.path.display(), "a remote radio sound is not loaded");
+        let Some(wave) = self.waves().cached(&sound.path) else {
+            tracing::debug!(path = %sound.path.display(), "a remote radio sound is not loaded");
             return;
         };
-        match render_remote_sound(&wave, plan, self.hrir()) {
+        match render_remote_tangent_sound(&wave, &sound.plan, self.hrir()) {
             Ok(playback) => {
                 if let Err(error) = connection.mixer.add(playback) {
                     tracing::debug!(%error, "a remote radio sound was dropped");
@@ -255,7 +267,7 @@ fn plan_remote_sound(
     reception: &HeardVia,
     subtype: &RadioSubtype,
     sound: TangentSound,
-) -> Option<RemoteSoundPlan> {
+) -> Option<PlannedRemoteSound> {
     let moment = match sound {
         TangentSound::Start => TangentMoment::RemoteStart,
         TangentSound::End => TangentMoment::RemoteEnd,
@@ -269,14 +281,16 @@ fn plan_remote_sound(
             vehicle_isolation: VehicleMuffling::between(&listener.vehicle, &reception.vehicle)
                 .muffling_isolation(),
         });
-    Some(RemoteSoundPlan {
+    Some(PlannedRemoteSound {
         path,
-        gain: radio_volume_multiplier(reception.volume) * radio.global_volume,
-        position: reception.position,
-        is_on_loudspeaker: reception.on == HeardOn::Loudspeaker,
-        radio_volume: reception.volume,
-        is_under_water: reception.is_under_water(),
-        speaker_distance: radio.speaker_distance,
-        listener,
+        plan: RemoteSoundPlan {
+            gain: radio_volume_multiplier(reception.volume) * radio.global_volume,
+            position: reception.position,
+            is_on_loudspeaker: reception.on == HeardOn::Loudspeaker,
+            radio_volume: reception.volume,
+            is_under_water: reception.is_under_water(),
+            speaker_distance: radio.speaker_distance,
+            listener,
+        },
     })
 }

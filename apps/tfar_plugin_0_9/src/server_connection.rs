@@ -21,11 +21,11 @@
 use parking_lot::Mutex;
 use tfar_client_state_0_9::{ClientId as StateClientId, ServerRadioData};
 use tfar_hrtf::HrirLibrary;
-use tfar_playback_mixer::PlaybackMixer;
+use tfar_playback_mixer::{PlaybackMixer, StreamProducer};
 use tfar_radio_routing_0_9::{MuteTracker, dsp_requirements};
 use tfar_sample_buffer::StereoBuffer;
 use tfar_ts3_host::{ChannelId, ServerConnectionHandlerId};
-use tfar_voice_pipeline_0_9::{DEFAULT_MAX_FRAMES, VoiceProcessor};
+use tfar_voice_pipeline_0_9::{DEFAULT_MAX_FRAMES, OWN_VOICE_STREAM_NAME, VoiceProcessor};
 
 use crate::channel_snapshot::{ChannelSnapshot, TeamSpeakFacts};
 
@@ -48,6 +48,9 @@ pub struct ServerState {
     pub voice_scratch: StereoBuffer,
     /// The stereo copy of a captured block.
     pub captured_scratch: StereoBuffer,
+    /// The writing end of the mixer's own-voice stream, which the captured-voice callback pushes
+    /// into without blocking; `None` when the mixer had no stream slot left.
+    pub own_voice_stream: Option<StreamProducer>,
     /// The channel the local player sat in before serious mode moved them; `None` when serious
     /// mode moved nobody.
     pub channel_before_serious_mode: Option<ChannelId>,
@@ -67,6 +70,7 @@ impl ServerState {
             facts: TeamSpeakFacts::default(),
             voice_scratch: StereoBuffer::with_frames(DEFAULT_MAX_FRAMES),
             captured_scratch: StereoBuffer::with_frames(DEFAULT_MAX_FRAMES),
+            own_voice_stream: None,
             channel_before_serious_mode: None,
             is_serious_move_pending: false,
         }
@@ -107,6 +111,36 @@ impl ServerState {
         }
     }
 
+    /// Clears the HRTF direction sources of every entry of `client` (direct speech and each
+    /// radio), so the tail of their last utterance never replays when they start talking again;
+    /// the sources stay made. Returns how many sources were reset.
+    pub fn reset_direction_sources_of(&mut self, client: StateClientId) -> usize {
+        let mut reset = 0;
+        for sender in self
+            .radio
+            .clients
+            .values_mut()
+            .filter(|sender| sender.client_id == client)
+        {
+            if let Some(source) = sender.dsp.direct_voice_mut().hrtf_source_mut() {
+                source.reset();
+                reset += 1;
+            }
+            let radio_ids: Vec<String> = sender.dsp.radio_ids().map(str::to_owned).collect();
+            for radio_id in &radio_ids {
+                if let Some(source) = sender
+                    .dsp
+                    .radio_mut(radio_id)
+                    .and_then(|radio| radio.hrtf_source_mut())
+                {
+                    source.reset();
+                    reset += 1;
+                }
+            }
+        }
+        reset
+    }
+
     /// Our own client id on the connection, as the state names it.
     pub fn my_client(&self) -> Option<StateClientId> {
         self.facts.my_client
@@ -125,12 +159,20 @@ pub struct ServerConnection {
 }
 
 impl ServerConnection {
-    /// A connection `server` on which the local player is `my_nickname`.
+    /// A connection `server` on which the local player is `my_nickname`, with the mixer's
+    /// own-voice stream opened for the captured-voice callback. Allocates: call it off the audio
+    /// thread.
     pub fn new(server: ServerConnectionHandlerId, my_nickname: String) -> Self {
+        let mixer = PlaybackMixer::new();
+        let mut state = ServerState::new(my_nickname);
+        state.own_voice_stream = mixer
+            .stream_producer(OWN_VOICE_STREAM_NAME)
+            .map_err(|error| tracing::warn!(%error, "the own-voice stream could not be opened"))
+            .ok();
         Self {
             server,
-            state: Mutex::new(ServerState::new(my_nickname)),
-            mixer: PlaybackMixer::new(),
+            state: Mutex::new(state),
+            mixer,
         }
     }
 }

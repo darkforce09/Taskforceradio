@@ -9,7 +9,7 @@ shared library. TeamSpeak 3 loads it from its plugins folder.
 apps/tfar_plugin_0_9/
 ├── Cargo.toml  the `tfar_plugin_0_9` package (cdylib + rlib): tier 6, workspace lints and dependencies
 ├── src/        the exports, the shared core, the game messages, the events, the voice callbacks
-└── tests/      the built `.so` in the mock TeamSpeak host: a game session, a dormant plugin, a ping
+└── tests/      the `.so` in the mock host: game session, dormancy, game end, HRTF reset, shutdown
 ```
 
 ## How it works
@@ -19,9 +19,11 @@ side effects. `ts3plugin_init` builds one `PluginCore` behind an `Arc`: TeamSpea
 `TeamSpeak` trait), one `ServerConnection` per established server connection (the
 `ServerRadioData`, the `MuteTracker`, the `VoiceProcessor` with its scratch and the channel's
 voice facts behind one `parking_lot::Mutex`, beside a `PlaybackMixer`), the `GameSession`, the
-radio sounds with the decoded remote sounds, the HRIR sphere and the local push-to-talk. Then it
-starts the game link server for the 0.9 flavour with the `GameLinkBridge`, the 100 ms service
-thread, the push-to-talk release thread and the update check.
+radio sounds with the decoded remote sounds, the HRIR sphere, the local push-to-talk and the
+running web requests. Then it starts the game link server for the 0.9 flavour on both its ports,
+47810 and the `-tfdebug` port 47811 (the newest valid `HELLO` on either holds the session), with
+the `GameLinkBridge`, the 100 ms service thread, the push-to-talk release thread and the update
+check.
 
 ```text
 Arma ──game link──▶ GameLinkBridge ──▶ parse (tfar_game_commands_0_9) ──▶ lock, apply, decide
@@ -31,9 +33,19 @@ TeamSpeak audio  ──▶ try_lock ──▶ VoiceProcessor / PlaybackMixer ─
 service thread   ──▶ game timeout, 4 s sweep and metadata, finished sounds freed
 ```
 
-- **Dormant until the game.** Until a message that counts as game activity arrives (anything but
+- **Dormant outside a game.** Until a message that counts as game activity arrives (anything but
   `VERSION`), the plugin writes no metadata, nickname, mute, channel move or plugin command, and
-  every audio callback passes through.
+  every audio callback passes through. When the game times out (4 s without game activity) the
+  plugin ends it (every mute lifted, the off sound, the channel and nickname given back, the
+  metadata set to "not in game" once) and is dormant again until the next game activity, so the
+  0.9 and 1.0 plugins can both stay installed
+  ([D25](/documentation/decisions/game_link.md#2026-10-03--a-plugin-returns-to-dormant-after-its-game-end-handling-d25)).
+  The game link stays bound and answers while dormant.
+- **Own voice and remote sounds.** The captured-voice callback pushes the own voice into the
+  mixer's `my_radio_voice` stream through a `StreamProducer` that never blocks or allocates; a
+  remote push-to-talk sound is shaped by `render_remote_tangent_sound` of the voice pipeline. When
+  a client starts talking (`onTalkStatusChangeEvent`), its HRTF direction sources are reset, so the
+  tail of its last utterance never replays.
 - **Locks.** Outermost first: the push-to-talk lock, the server map, one connection's state; the
   game session mutex alone. No TeamSpeak call runs under the map or a state lock: each command reads
   TeamSpeak, locks to decide, unlocks, then calls TeamSpeak. The voice callbacks only `try_read` and
@@ -42,9 +54,13 @@ service thread   ──▶ game timeout, 4 s sweep and metadata, finished sounds
 - **Sound state** is made on the command threads with `ensure_dsp(dsp_requirements(..))` after
   every `POS`, `FREQ`, `SPEAKERS`, push-to-talk, `VOLUME` and game start; the audio thread only
   borrows it.
-- **Shutdown** stops the link server, the service and release threads first, then ends a running
-  game (way back from the serious channel, nickname given back), writes the disabled status, lifts
-  every mute, clears the state, and drops the log forwarder last.
+- **Shutdown** stays within TeamSpeak's 2 s: it stops the link server and cancels the web
+  requests, joins the service and release threads, then ends a running game (way back from the
+  serious channel, nickname given back), writes the disabled status when awake, lifts every mute,
+  clears the state, joins the web requests until 1.5 s after the start, and drops the log
+  forwarder last. A web request whose network call is still in flight then cannot be interrupted:
+  it is cancelled (its answer is dropped), logged, and ends within its own timeout (10 s for the
+  update check, 5 s for a tracking request) after `ts3plugin_shutdown` returned.
 
 ## Getting started
 
@@ -60,11 +76,10 @@ cargo run -p tfar_ts3_mock -- target/debug/libtfar_plugin_0_9.so  # load it by h
 
 Environment variables of the TeamSpeak process, read once in `ts3plugin_init`:
 
-- `TFAR_GAME_LINK_DEBUG`: `1` makes the plugin listen on the debug port 47811, the one a
-  `-tfdebug` Arma instance connects to; unset or any other value keeps 47810 (`src/listen_port.rs`).
-- `TFAR_GAME_LINK_PORT`: for tests only. A port from 1 to 65535 overrides the port choice, so test
-  suites that load the plugin never fight over the fixed ports; any other value is ignored with a
-  warning in TeamSpeak's log.
+- `TFAR_GAME_LINK_PORT`: for tests only. A port from 1 to 65535 makes the plugin listen on that one
+  port alone, with no debug port, so test suites that load the plugin never fight over the fixed
+  ports; any other value is ignored with a warning in TeamSpeak's log, and the plugin listens on
+  both 47810 and 47811 (`src/listen_port.rs`).
 - `TFAR_SKIP_UPDATE_CHECK`: for tests only. `1` skips the update check, so no test reaches the
   network (`src/running_plugin.rs`).
 
@@ -99,9 +114,14 @@ ILD, and the chat tab says so.
 - Used by: TeamSpeak 3, which loads the shared library; `tools/tfar_ts3_mock` in the plugin test
   suites.
 - Rules: a dormant plugin writes nothing to TeamSpeak and passes audio through
-  (`tests/plugin_scenario_in_mock_host.rs`, `without_game_activity_the_plugin_stays_dormant`); no
-  thread outlives `ts3plugin_shutdown` and no TeamSpeak memory leaks (`leak_report` in both host
-  tests). Tier 6 in `apps`: every workspace dependency has a lower tier and follows the edge matrix
+  (`tests/plugin_scenario_in_mock_host.rs`, `without_game_activity_the_plugin_stays_dormant`), and
+  is dormant again for 10 s of service ticks after a game end until the game resumes
+  (`tests/plugin_game_end_and_shutdown_in_mock_host.rs`,
+  `after_the_game_ends_the_plugin_stays_dormant_until_the_game_resumes`; with the time injected in
+  `src/tests/service_thread.rs`); `ts3plugin_shutdown` returns within 2 s with every plugin thread
+  joined (`shutdown_joins_every_plugin_thread_within_two_seconds`), only a web request still in
+  flight outlives it (`a_web_request_in_flight_never_holds_the_shutdown_past_two_seconds`), and no
+  TeamSpeak memory leaks (`leak_report` in the host tests). Tier 6 in `apps`: every workspace dependency has a lower tier and follows the edge matrix
   in `crates/README.md` (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export
   glue only (`cargo xtask verify unsafe-allowlist`).
 

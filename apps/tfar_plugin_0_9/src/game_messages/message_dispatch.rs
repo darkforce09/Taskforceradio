@@ -10,7 +10,8 @@
 //! session thread; the position, push-to-talk and frequency messages have their own files.
 //!
 //! **Signals and state:** locks one server state at a time for each decision; the game session
-//! mutex only for `record_message`.
+//! mutex only in `record_game_activity`, before the command is applied; a `TRACK` request is
+//! kept in the core's web requests for shutdown to join.
 //!
 //! **Invariants:** every message gets exactly one reply; a malformed or short message is `FAIL`
 //! with a log line, never a crash; a message that counts as game activity wakes a dormant plugin
@@ -26,7 +27,7 @@ use tfar_game_commands_0_9::{GameCommand, TsInfoQuery, message_counts_as_game_ac
 use tfar_plugin_commands_0_9::PluginCommand;
 use tfar_radio_routing_0_9::{MuteDecision, is_serious_mode, set_mute_for_dead_players};
 use tfar_ts3_host::ServerConnectionHandlerId;
-use tfar_web_requests::{build_track_request_0_9, spawn_track};
+use tfar_web_requests::{build_track_request_0_9, spawn_cancellable_track};
 
 use crate::channel_snapshot::read_channel_snapshot;
 use crate::plugin_core::PluginCore;
@@ -38,10 +39,7 @@ mod tests;
 impl PluginCore {
     /// Handles the game message `text` at `now` on the current server and returns the reply.
     pub fn handle_game_message(&self, text: &str, now: Instant) -> String {
-        let counts_as_game_activity = message_counts_as_game_activity(text);
-        if counts_as_game_activity {
-            self.wake_up();
-        }
+        let starts_a_game = self.record_game_activity(message_counts_as_game_activity(text), now);
         let server = self.team_speak().current_server();
         let reply = match GameCommand::parse(text) {
             Ok(command) => self.apply_game_command(server, command, now),
@@ -50,7 +48,6 @@ impl PluginCore {
                 error.reply().to_owned()
             }
         };
-        let starts_a_game = self.session().record_message(counts_as_game_activity, now);
         if starts_a_game {
             self.start_game(server);
         }
@@ -95,7 +92,7 @@ impl PluginCore {
                 OK.to_owned()
             }
             GameCommand::Track { path } => {
-                send_tracking_request(&path);
+                self.send_tracking_request(&path);
                 OK.to_owned()
             }
             GameCommand::Position(update) => self.apply_position_message(server, &update, now),
@@ -211,10 +208,13 @@ pub const fn speaking_reply(is_speaking: bool) -> &'static str {
     if is_speaking { SPEAKING } else { NOT_SPEAKING }
 }
 
-/// `TRACK`: the Piwik request for `path`, sent on its own thread; a failure is logged.
-fn send_tracking_request(path: &str) {
-    let sent = build_track_request_0_9(path).and_then(spawn_track);
-    if let Err(error) = sent {
-        tracing::debug!(%error, "the tracking request was not sent");
+impl PluginCore {
+    /// `TRACK`: the Piwik request for `path`, sent on its own thread and kept for shutdown to
+    /// cancel and join; a failure is logged.
+    fn send_tracking_request(&self, path: &str) {
+        match build_track_request_0_9(path).and_then(spawn_cancellable_track) {
+            Ok(request) => self.web_requests().keep(request),
+            Err(error) => tracing::debug!(%error, "the tracking request was not sent"),
+        }
     }
 }

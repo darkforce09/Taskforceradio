@@ -15,18 +15,22 @@
 //!
 //! **Signals and state:** the plugin instance TeamSpeak loads ([`PLUGIN`], in
 //! [`plugin_exports`]); the shared [`plugin_core::PluginCore`]; the threads `init` starts and
-//! `shutdown` joins: the game link server's, `tfar-service` and `tfar-push-to-talk-release`;
-//! TeamSpeak's main and audio threads call in. Lock order: push-to-talk, then the server map,
-//! then one connection's state; no TeamSpeak call under the latter two.
+//! `shutdown` joins: the game link server's, `tfar-service`, `tfar-push-to-talk-release`, the
+//! web requests and the log forwarder; TeamSpeak's main and audio threads call in. Lock order:
+//! push-to-talk, then the server map, then one connection's state; no TeamSpeak call under the
+//! latter two.
 //!
-//! **Invariants:** a plugin with no game activity this session stays dormant: it writes nothing
-//! to TeamSpeak and passes audio through untouched; no audio callback waits for a lock; no
-//! thread outlives `ts3plugin_shutdown`.
+//! **Invariants:** a plugin with no game activity since the session began or since its last game
+//! end is dormant: it writes nothing to TeamSpeak and passes audio through untouched; no audio
+//! callback waits for a lock; `ts3plugin_shutdown` returns within 2 s, and the only thread that
+//! may outlive it is a cancelled web request still waiting for the network, which ends within its
+//! own timeout.
 
 // The `ts3plugin_*` exports TeamSpeak calls are written in this crate by `ts3_plugin!`.
 #![allow(unsafe_code)]
 
 pub mod audio_callbacks;
+pub mod background_web_requests;
 pub mod channel_snapshot;
 mod crate_role;
 mod error;
@@ -41,7 +45,6 @@ pub mod plugin_startup;
 pub mod prelude;
 pub mod push_to_talk;
 pub mod radio_sounds;
-pub mod remote_sounds;
 pub mod running_plugin;
 pub mod server_connection;
 pub mod service_thread;

@@ -20,12 +20,14 @@ apps/tfar_plugin_0_9/src/game_messages/
 
 `GameLinkBridge::sync_request` decodes the text lossily and calls
 `PluginCore::handle_game_message` on the link's session thread. A message that counts as game
-activity wakes a dormant plugin first; `GameCommand::parse` types it (a refused message is `FAIL`);
-the command is applied to the current server's `ServerState` under its lock with the library's
-`apply_*` methods, and the TeamSpeak side effects follow with the lock released; then
-`GameSession::record_message` starts the game on the first activity. `VERSION` that names a serious
-channel after the game started makes the serious-mode move once, and a new addon version reaches
-the metadata at once.
+activity first wakes a dormant plugin and stamps the game session, both under the session lock
+(`PluginCore::record_game_activity`), so it never races the service thread's return to dormant
+after a game end; `GameCommand::parse` types it (a refused message is `FAIL`); the command is
+applied to the current server's `ServerState` under its lock with the library's `apply_*`
+methods, and the TeamSpeak side effects follow with the lock released; then the game starts when
+this activity began one. `VERSION` that names a serious channel after the game started makes the
+serious-mode move once, and a new addon version reaches the metadata at once. `TRACK` starts a
+cancellable Piwik request kept in the core's `BackgroundWebRequests` for shutdown to join.
 
 ## Boundaries
 

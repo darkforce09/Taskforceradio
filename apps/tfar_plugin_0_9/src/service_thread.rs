@@ -1,8 +1,8 @@
 //! The service thread: the plugin's 100 ms tick.
 //!
 //! **Role:** the original's `ServiceThread` (`reference/tfar_0_9_12/ts/src/plugin.cpp:1977-2019`):
-//! every tick the game timeout (4 s without game activity ends the game, or lifts the plugin's
-//! mutes); every 4 s the sweep (expired players removed, the nickname list and voice facts read
+//! every tick the game timeout (4 s without game activity ends the game and puts the plugin back
+//! to dormant, or lifts the plugin's mutes); every 4 s the sweep (expired players removed, the nickname list and voice facts read
 //! again, and in game the players without current data muted in serious mode) and the status
 //! metadata; every tick the finished radio sounds freed off the audio thread.
 //!
@@ -25,6 +25,10 @@ use tfar_ts3_host::ServerConnectionHandlerId;
 
 use crate::channel_snapshot::read_channel_snapshot;
 use crate::plugin_core::PluginCore;
+
+#[cfg(test)]
+#[path = "tests/service_thread.rs"]
+mod tests;
 
 /// The time between two ticks.
 pub const SERVICE_TICK: Duration = Duration::from_millis(100);
@@ -67,32 +71,52 @@ impl ServiceThread {
 
 /// The tick loop until a stop arrives or the sender goes.
 fn run_service(core: &PluginCore, stopped: &Receiver<()>) {
-    let started = Instant::now();
-    let mut last_sweep = started;
-    let mut last_metadata = started;
+    let mut schedule = ServiceSchedule::new(Instant::now());
     loop {
         match stopped.recv_timeout(SERVICE_TICK) {
             Err(RecvTimeoutError::Timeout) => {}
             Ok(()) | Err(RecvTimeoutError::Disconnected) => return,
         }
-        let now = Instant::now();
-        let server = core.team_speak().current_server();
-        core.check_game_timeout(server, now);
-        if now.saturating_duration_since(last_sweep) >= SWEEP_INTERVAL {
-            last_sweep = now;
-            core.sweep(server, now);
-        }
-        if now.saturating_duration_since(last_metadata) >= SWEEP_INTERVAL {
-            last_metadata = now;
-            core.publish_status_metadata(server);
-        }
-        for connection in core.connections() {
-            connection.mixer.release_finished();
+        core.service_tick(&mut schedule, Instant::now());
+    }
+}
+
+/// When the service tick last swept and last wrote the status metadata.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ServiceSchedule {
+    last_sweep: Instant,
+    last_metadata: Instant,
+}
+
+impl ServiceSchedule {
+    /// A schedule whose first sweep and metadata update fall [`SWEEP_INTERVAL`] after `now`.
+    pub const fn new(now: Instant) -> Self {
+        Self {
+            last_sweep: now,
+            last_metadata: now,
         }
     }
 }
 
 impl PluginCore {
+    /// One service tick at `now`: the game timeout, the sweep and the metadata when `schedule`
+    /// says they are due, and the finished radio sounds freed. The service thread calls it every
+    /// [`SERVICE_TICK`]; tests call it with a made-up `now`.
+    pub fn service_tick(&self, schedule: &mut ServiceSchedule, now: Instant) {
+        let server = self.team_speak().current_server();
+        self.check_game_timeout(server, now);
+        if now.saturating_duration_since(schedule.last_sweep) >= SWEEP_INTERVAL {
+            schedule.last_sweep = now;
+            self.sweep(server, now);
+        }
+        if now.saturating_duration_since(schedule.last_metadata) >= SWEEP_INTERVAL {
+            schedule.last_metadata = now;
+            self.publish_status_metadata(server);
+        }
+        for connection in self.connections() {
+            connection.mixer.release_finished();
+        }
+    }
     /// Ends the game, or lifts the mutes, when the game has been silent for 4 s at `now`.
     pub fn check_game_timeout(&self, server: ServerConnectionHandlerId, now: Instant) {
         let timeout = self.session().check_timeout(now);

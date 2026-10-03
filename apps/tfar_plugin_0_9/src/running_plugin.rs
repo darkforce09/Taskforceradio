@@ -3,27 +3,30 @@
 //!
 //! **Role:** start the plugin: the core with its resources and the connections already up, the
 //! game link server with the bridge, the service thread, the push-to-talk release thread and the
-//! update check; and stop it within TeamSpeak's patience: no more game messages, the threads
-//! joined, the running game ended, the disabled status written, every mute lifted, the state
-//! cleared.
+//! update check; and stop it within TeamSpeak's patience (`SHUTDOWN_BUDGET`, 2 s): no more game
+//! messages, the web requests cancelled, the threads joined, the running game ended, the
+//! disabled status written, every mute lifted, the state cleared, the web requests joined until
+//! `WEB_REQUEST_JOIN_DEADLINE`.
 //!
 //! **Position:** owned by `TfarPlugin` behind its mutex, made in `init` and consumed in
 //! `shutdown`, both on TeamSpeak's main thread.
 //!
 //! **Signals and state:** the thread handles and the server; the core is shared with every
-//! thread through its `Arc`.
+//! thread through its `Arc` and keeps the web request handles.
 //!
 //! **Invariants:** after `stop` the link server's threads, the service thread and the release
-//! thread are joined, so no plugin thread still runs code of the library; the threads stop
-//! before the end-of-game side effects run, so those never race a tick or a game message.
+//! thread are joined, and so is every web request that ended by the deadline; a request whose
+//! network call is still in flight then (it cannot be interrupted) is cancelled, logged and ends
+//! within its own timeout, 10 s for the update check and 5 s for a tracking request. The threads
+//! stop before the end-of-game side effects run, so those never race a tick or a game message.
 
 use std::sync::Arc;
 use std::thread::JoinHandle;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use tfar_game_link_server::prelude::GameLinkServer;
 use tfar_ts3_host::{Ts3, print_to_current_tab};
-use tfar_web_requests::{UPDATE_AVAILABLE_MESSAGE, spawn_update_check};
+use tfar_web_requests::{UPDATE_AVAILABLE_MESSAGE, spawn_cancellable_update_check};
 
 use crate::game_messages::GameLinkBridge;
 use crate::listen_port::server_config_from_environment;
@@ -40,6 +43,14 @@ pub const SKIP_UPDATE_CHECK_VARIABLE: &str = "TFAR_SKIP_UPDATE_CHECK";
 
 /// The name of the push-to-talk release thread.
 const RELEASE_THREAD_NAME: &str = "tfar-push-to-talk-release";
+
+/// How long TeamSpeak may wait in `ts3plugin_shutdown`.
+pub const SHUTDOWN_BUDGET: Duration = Duration::from_secs(2);
+
+/// How long after the start of the shutdown the web requests may still be joined; past it, a
+/// request still in flight is logged and left to end within its own timeout, so the shutdown
+/// stays within [`SHUTDOWN_BUDGET`].
+pub const WEB_REQUEST_JOIN_DEADLINE: Duration = Duration::from_millis(1_500);
 
 /// Why the plugin did not start.
 #[derive(Debug, thiserror::Error)]
@@ -58,14 +69,14 @@ pub enum StartError {
     },
 }
 
-/// What `init` started; see the module header.
+/// What `init` started; see the module header. The update check and the tracking requests are
+/// kept in the core's web requests.
 #[derive(Debug)]
 pub struct RunningPlugin {
     core: Arc<PluginCore>,
     server: GameLinkServer,
     service: ServiceThread,
     release_thread: JoinHandle<()>,
-    update_check: Option<JoinHandle<()>>,
 }
 
 impl RunningPlugin {
@@ -89,7 +100,11 @@ impl RunningPlugin {
         let config = server_config_from_environment(FLAVOUR);
         let server =
             GameLinkServer::start(config, Arc::new(GameLinkBridge::new(Arc::clone(&core))))?;
-        tracing::info!(port = config.port, "started; the game link listens");
+        tracing::info!(
+            port = config.port,
+            debug_port = ?config.debug_port,
+            "started; the game link listens"
+        );
         let service = match ServiceThread::start(Arc::clone(&core)) {
             Ok(service) => service,
             Err(source) => {
@@ -118,12 +133,12 @@ impl RunningPlugin {
                 });
             }
         };
+        start_update_check(&core);
         Ok(Self {
             core,
             server,
             service,
             release_thread,
-            update_check: start_update_check(),
         })
     }
 
@@ -132,16 +147,17 @@ impl RunningPlugin {
         &self.core
     }
 
-    /// Stops everything `start` started; see the module header.
+    /// Stops everything `start` started, within [`SHUTDOWN_BUDGET`]; see the module header.
     pub fn stop(self) {
+        let started = Instant::now();
         let Self {
             core,
             server,
             service,
             release_thread,
-            update_check,
         } = self;
         server.shutdown();
+        core.web_requests().cancel_all();
         service.stop();
         core.push_to_talk().stop();
         if release_thread.join().is_err() {
@@ -156,27 +172,25 @@ impl RunningPlugin {
             core.unmute_everyone(connection.server);
         }
         core.clear_connections();
-        if let Some(update_check) = update_check {
-            if update_check.is_finished() {
-                let _ = update_check.join();
-            } else {
-                tracing::warn!(
-                    "the update check is still waiting for the network; it is left to end alone"
-                );
-            }
-        }
+        let web_request_deadline = started
+            .checked_add(WEB_REQUEST_JOIN_DEADLINE)
+            .unwrap_or(started);
+        core.web_requests().cancel_and_join(web_request_deadline);
+        tracing::debug!(elapsed = ?started.elapsed(), "the plugin's threads are stopped");
     }
 }
 
-/// Starts the update check unless [`SKIP_UPDATE_CHECK_VARIABLE`] is `1`; a newer published
-/// version prints the original's notice in the chat tab.
-fn start_update_check() -> Option<JoinHandle<()>> {
+/// Starts the update check unless [`SKIP_UPDATE_CHECK_VARIABLE`] is `1`, kept in the core's web
+/// requests for shutdown to cancel and join; a newer published version prints the original's
+/// notice in the chat tab.
+fn start_update_check(core: &PluginCore) {
     if std::env::var(SKIP_UPDATE_CHECK_VARIABLE).as_deref() == Ok("1") {
-        return None;
+        return;
     }
-    spawn_update_check(PLUGIN_VERSION, || {
+    match spawn_cancellable_update_check(PLUGIN_VERSION, || {
         let _ = print_to_current_tab(UPDATE_AVAILABLE_MESSAGE);
-    })
-    .map_err(|error| tracing::warn!(%error, "the update check did not start"))
-    .ok()
+    }) {
+        Ok(update_check) => core.web_requests().keep(update_check),
+        Err(error) => tracing::warn!(%error, "the update check did not start"),
+    }
 }

@@ -4,8 +4,9 @@
 //! **Role:** `onConnectStatusChangeEvent` (state made on established, with TeamSpeak's own 3D
 //! neutralised, and dropped on disconnect), the channel and client events that refresh the
 //! nickname list (`reference/tfar_0_9_12/ts/src/plugin.cpp:2398-2460`), a client leaving (its
-//! mute forgotten), our talking flag (the `VOLUME` broadcast, plugin.cpp:2897), `infoData`
-//! (the `<TFAR>` block of a client's metadata) and `onServerErrorEvent`.
+//! mute forgotten), our talking flag (the `VOLUME` broadcast, plugin.cpp:2897), a client starting
+//! to talk (`onTalkStatusChangeEvent`: their HRTF direction sources reset), `infoData` (the
+//! `<TFAR>` block of a client's metadata) and `onServerErrorEvent`.
 //!
 //! **Position:** methods of `PluginCore`, called from the `Ts3Plugin` event methods of
 //! `TfarPlugin` on TeamSpeak's main thread.
@@ -19,8 +20,8 @@
 
 use tfar_plugin_commands_0_9::{PluginCommand, info_data_text};
 use tfar_ts3_host::{
-    ChannelId, ClientMove, ClientProperty, ConnectStatus, ErrorDisplay, InfoItem,
-    ServerConnectionHandlerId, ServerError,
+    ChannelId, ClientId, ClientMove, ClientProperty, ConnectStatus, ErrorDisplay, InfoItem,
+    ServerConnectionHandlerId, ServerError, TalkStatus,
 };
 
 use crate::channel_snapshot::state_client_id;
@@ -46,6 +47,22 @@ impl PluginCore {
             ConnectStatus::Disconnected => self.remove_connection(server),
             _ => {}
         }
+    }
+
+    /// `client` on `server` started or stopped talking (`onTalkStatusChangeEvent`): when they
+    /// start, their HRTF direction sources are reset, so the tail of their last utterance never
+    /// replays. No TeamSpeak call is made.
+    pub fn handle_talk_status_change(
+        &self,
+        server: ServerConnectionHandlerId,
+        status: TalkStatus,
+        client: ClientId,
+    ) {
+        if !status.is_talking() {
+            return;
+        }
+        let client = state_client_id(client);
+        self.with_state(server, |state| state.reset_direction_sources_of(client));
     }
 
     /// A channel or client changed on `server`: the nickname list and the voice facts are read
