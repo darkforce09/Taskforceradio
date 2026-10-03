@@ -8,4 +8,5 @@ pub use crate::playback_mixer::{
     MAX_ACTIVE_PLAYBACKS, MAX_STREAMS, PLAYBACK_QUEUE_CAPACITY, PlaybackMixer,
 };
 pub use crate::playback_stream::STREAM_CAPACITY_FRAMES;
+pub use crate::stream_producer::StreamProducer;
 pub use crate::wave_library::WaveLibrary;

@@ -4,11 +4,12 @@
 //! the current session and the async queue's sending side, and orders the session callbacks.
 //!
 //! **Position:** created by [`GameLinkServer::start`](crate::GameLinkServer::start), shared by
-//! `Arc` with the accept thread, the session threads and the async worker.
+//! `Arc` with the accept threads, the session threads and the async worker.
 //!
-//! **Signals and state:** atomics for the flags and the mission generation; `parking_lot` locks,
-//! each held only for a copy or a swap, for the current session, the last game message time and the
-//! bound address; `session_order`, held across `session_opened` and `session_closed` only.
+//! **Signals and state:** atomics for the flags, the mission generation and the connection counter;
+//! `parking_lot` locks, each held only for a copy or a swap, for the current session, the last game
+//! message time and the bound address of each listen port; `session_order`, held across
+//! `session_opened` and `session_closed` only.
 //!
 //! **Invariants:** at most one session is current; `session_closed` follows its `session_opened`
 //! and comes before the next session's; the 0.9 server always reports needcfg false; no lock but
@@ -23,7 +24,7 @@ use crossbeam_channel::Sender;
 use parking_lot::Mutex;
 use tfar_game_link_protocol::Flavour;
 
-use crate::async_worker::AsyncMessage;
+use crate::async_worker::{AsyncMessage, is_mission_end};
 use crate::game_link_handler::GameLinkHandler;
 use crate::server_config::ServerConfig;
 use crate::session_link::{SessionLink, SessionWriter};
@@ -46,8 +47,11 @@ pub(crate) struct LinkState {
     current_session: Mutex<Option<Arc<SessionLink>>>,
     /// When the last `SYNC_REQ` or non-`MISSIONEND` `ASYNC` arrived; `MISSIONEND` clears it.
     last_game_message: Mutex<Option<Instant>>,
-    /// The address the listener is bound to, once a bind succeeded.
-    local_addr: Mutex<Option<SocketAddr>>,
+    /// The address each listen port is bound to, in [`ServerConfig::listen_ports`] order; `None`
+    /// until that port's bind succeeds.
+    bound_addresses: Mutex<Vec<Option<SocketAddr>>>,
+    /// The number the next accepted connection gets, shared by every accept thread.
+    next_connection_id: AtomicU64,
     /// Orders the session callbacks and the session swaps.
     session_order: Mutex<()>,
     /// The sending side of the async worker's FIFO queue.
@@ -70,7 +74,8 @@ impl LinkState {
             mission_generation: AtomicU64::new(0),
             current_session: Mutex::new(None),
             last_game_message: Mutex::new(None),
-            local_addr: Mutex::new(None),
+            bound_addresses: Mutex::new(config.listen_ports().map(|_| None).collect()),
+            next_connection_id: AtomicU64::new(1),
             session_order: Mutex::new(()),
             async_queue,
         }
@@ -139,19 +144,47 @@ impl LinkState {
             .wrapping_add(1)
     }
 
-    /// Queues one async message for the worker; false once the worker has stopped.
-    pub(crate) fn queue_async(&self, message: AsyncMessage) -> bool {
-        self.async_queue.send(message).is_ok()
+    /// Handles the text of one async message as an `ASYNC` frame is handled: a `MISSIONEND` starts
+    /// a new mission generation, anything else records a game message; then the text joins the
+    /// worker's FIFO queue under the current generation. False once the worker has stopped.
+    pub(crate) fn queue_async_text(&self, text: Vec<u8>) -> bool {
+        let generation = if is_mission_end(&text) {
+            self.end_mission()
+        } else {
+            self.record_game_message();
+            self.mission_generation()
+        };
+        self.async_queue
+            .send(AsyncMessage { generation, text })
+            .is_ok()
     }
 
-    /// The address the listener is bound to.
-    pub(crate) fn local_addr(&self) -> Option<SocketAddr> {
-        *self.local_addr.lock()
+    /// The number of the next accepted connection, unique across every listen port.
+    pub(crate) fn next_connection_id(&self) -> u64 {
+        self.next_connection_id.fetch_add(1, Ordering::SeqCst)
     }
 
-    /// Records the address the listener is bound to.
-    pub(crate) fn set_local_addr(&self, address: SocketAddr) {
-        *self.local_addr.lock() = Some(address);
+    /// The address the listen port at `slot` (its place in [`ServerConfig::listen_ports`]) is
+    /// bound to.
+    pub(crate) fn bound_address(&self, slot: usize) -> Option<SocketAddr> {
+        self.bound_addresses.lock().get(slot).copied().flatten()
+    }
+
+    /// The addresses of every listen port bound so far, in listen port order.
+    pub(crate) fn bound_addresses(&self) -> Vec<SocketAddr> {
+        self.bound_addresses
+            .lock()
+            .iter()
+            .flatten()
+            .copied()
+            .collect()
+    }
+
+    /// Records the address the listen port at `slot` is bound to.
+    pub(crate) fn set_bound_address(&self, slot: usize, address: SocketAddr) {
+        if let Some(bound) = self.bound_addresses.lock().get_mut(slot) {
+            *bound = Some(address);
+        }
     }
 
     /// Makes `session` the current one after its `HELLO` passed: closes and reports the session it

@@ -58,6 +58,13 @@ pub(crate) enum PluginEvent {
         invoker_name: String,
         invoker_unique_identifier: String,
     },
+    TalkStatus {
+        server: u64,
+        status: c_int,
+        is_received_whisper: c_int,
+        client: u16,
+        flag_talking_seen: Option<c_int>,
+    },
 }
 
 /// The table the mock handed over.
@@ -248,6 +255,25 @@ extern "C" fn on_plugin_command(
         invoker_unique_identifier: text(invoker_unique_identifier),
     });
 }
+extern "C" fn on_talk_status_change(
+    server: u64,
+    status: c_int,
+    is_received_whisper: c_int,
+    client: u16,
+) {
+    let get_int = slot(|table| table.get_client_variable_as_int);
+    let mut flag_talking: c_int = 0;
+    let flag = sdk::ClientProperties::FlagTalking as usize;
+    let flag_talking_seen =
+        (get_int(server, client, flag, &raw mut flag_talking) == 0).then_some(flag_talking);
+    record(PluginEvent::TalkStatus {
+        server,
+        status,
+        is_received_whisper,
+        client,
+        flag_talking_seen,
+    });
+}
 extern "C" fn on_post_process_voice(
     _server: u64,
     _client: u16,
@@ -345,6 +371,7 @@ pub(crate) fn in_process_exports() -> PluginExports {
         on_server_permission_error_event: None,
         on_client_self_variable_update_event: None,
         on_plugin_command_event: Some(on_plugin_command),
+        on_talk_status_change_event: Some(on_talk_status_change),
         on_edit_post_process_voice_data_event: Some(on_post_process_voice),
         on_edit_mixed_playback_voice_data_event: Some(on_mixed_playback),
         on_edit_captured_voice_data_event: Some(on_captured_voice),

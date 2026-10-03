@@ -26,7 +26,8 @@ the 32 typed fakes over their slots from the one `faked_functions!` list, which 
 `fake_answers.rs`, takes the fake-state lock once, logs a `HostCall` and answers as TeamSpeak
 does: `ERROR_not_connected` for an unknown server, `ERROR_client_invalid_id` or
 `ERROR_channel_invalid_id` for an unknown ID, `ERROR_parameter_invalid` for a flag or setting it
-does not model. Strings and lists go out `malloc`ed and recorded in the ledger; `freeMemory`
+does not model. A null vector argument (the listener's forward and up, which the plugins pass as
+null) is logged as `None`. Strings and lists go out `malloc`ed and recorded in the ledger; `freeMemory`
 takes them back.
 
 The 32 faked functions: `getErrorMessage`, `freeMemory`, `logMessage`, `playWaveFile`,

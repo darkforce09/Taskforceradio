@@ -1,7 +1,8 @@
 //! `PlaybackMixer`: the playbacks and streams added into TeamSpeak's mixed-playback block.
 //!
 //! **Role:** takes processed playbacks from any thread and named stream samples from the
-//! captured-voice callback, and adds them into channels 0 and 1 of each mixed-playback block,
+//! captured-voice callback (through `append_stream`, or wait-free through a [`StreamProducer`]),
+//! and adds them into channels 0 and 1 of each mixed-playback block,
 //! saturating, with TeamSpeak's channel fill mask.
 //!
 //! **Position:** a module of `tfar_playback_mixer`, tier 1 of crates/audio; one mixer per server
@@ -11,17 +12,22 @@
 //! `ts3plugin_onEditMixedPlaybackVoiceDataEvent` in
 //! `reference/tfar_0_9_12/ts/src/plugin.cpp:2600-2651`.
 //!
-//! **Signals and state:** three locks. The hand-off lock is taken briefly by `add` and
+//! **Signals and state:** four locks. The hand-off lock is taken briefly by `add` and
 //! `release_finished` on non-audio threads; it guards the producer of the `rtrb` queue of new
 //! playbacks and the consumer of the queue of finished ones, which `add` drops there, off the
 //! audio thread. The mixing lock guards the audio thread's side (the other queue ends and the
 //! active playbacks); `mix_into` takes it with `try_lock`, so it never waits. The stream lock
 //! guards the named streams: `append_stream` (captured-voice thread) holds it for one block's
-//! copy, and `mix_into` takes it with `try_lock` and leaves the streams queued on contention.
+//! copy, and `mix_into` takes it with `try_lock` and leaves the streams queued on contention. The
+//! producer-stream lock guards the list of [`StreamProducer`] rings: `stream_producer` and
+//! `release_finished` change it off the audio thread, and `mix_into` takes it with `try_lock`; a
+//! producer pushes into its ring without touching any mixer lock.
 //!
 //! **Invariants:** `mix_into` never allocates and never touches samples past `channels * frames`
 //! or channels 2 and up; at most [`MAX_ACTIVE_PLAYBACKS`] playbacks are active; a finished
 //! playback is removed in the block it finishes in.
+
+use std::sync::Arc;
 
 use parking_lot::Mutex;
 use rtrb::{Consumer, Producer, PushError, RingBuffer};
@@ -31,6 +37,7 @@ use crate::error::{Error, Result};
 use crate::output_block::{checked_block, silence_unfilled_channels, written_channel_bits};
 use crate::playback::{Playback, PlaybackId};
 use crate::playback_stream::PlaybackStream;
+use crate::stream_producer::{ProducerStream, StreamProducer};
 
 #[cfg(test)]
 #[path = "tests/playback_mixer.rs"]
@@ -40,7 +47,8 @@ mod tests;
 pub const MAX_ACTIVE_PLAYBACKS: usize = 64;
 /// The most playbacks waiting for the audio thread; `add` refuses beyond.
 pub const PLAYBACK_QUEUE_CAPACITY: usize = 64;
-/// The most named streams a mixer holds.
+/// The most named streams a mixer holds through [`PlaybackMixer::append_stream`], and, apart
+/// from those, the most it holds through [`PlaybackMixer::stream_producer`].
 pub const MAX_STREAMS: usize = 8;
 /// The finished playbacks the queue back from the audio thread holds before the audio thread has
 /// to drop one itself: every active and queued playback can finish before the next `add`.
@@ -64,6 +72,7 @@ pub struct PlaybackMixer {
     hand_off: Mutex<HandOff>,
     mixing: Mutex<MixingState>,
     streams: Mutex<Vec<PlaybackStream>>,
+    producer_streams: Mutex<Vec<Arc<ProducerStream>>>,
 }
 
 impl Default for PlaybackMixer {
@@ -97,6 +106,7 @@ impl PlaybackMixer {
                 active: Vec::with_capacity(MAX_ACTIVE_PLAYBACKS),
             }),
             streams: Mutex::new(Vec::with_capacity(MAX_STREAMS)),
+            producer_streams: Mutex::new(Vec::with_capacity(MAX_STREAMS)),
         }
     }
 
@@ -120,7 +130,9 @@ impl PlaybackMixer {
 
     /// Drops the playbacks that have finished since the last call, off the audio thread; returns
     /// how many. The plugin's service tick calls it so finished sounds are freed without an `add`.
+    /// It also forgets the producer streams whose [`StreamProducer`] is gone and fully mixed.
     pub fn release_finished(&self) -> usize {
+        self.forget_spent_producer_streams();
         let mut hand_off = self.hand_off.lock();
         let mut released = 0_usize;
         while hand_off.finished_playbacks.pop().is_ok() {
@@ -132,6 +144,10 @@ impl PlaybackMixer {
     /// Appends interleaved stereo samples to the stream called `name`, creating it on first use;
     /// beyond 500 ms the oldest frames are dropped. The first append for a name allocates the
     /// stream once; later ones never allocate.
+    ///
+    /// For callers off the audio threads: it takes the stream lock with a blocking `lock`, so it
+    /// waits while `mix_into` mixes the streams. An audio callback pushes through a
+    /// [`StreamProducer`] from [`stream_producer`](Self::stream_producer) instead.
     ///
     /// # Errors
     ///
@@ -192,6 +208,11 @@ impl PlaybackMixer {
                 wrote |= stream.mix_front_into(block, channels);
             }
         }
+        if let Some(producer_streams) = self.producer_streams.try_lock() {
+            for stream in producer_streams.iter() {
+                wrote |= stream.mix_front_into(block, channels);
+            }
+        }
         if wrote {
             *channel_fill_mask |= written_channel_bits(channels);
         }
@@ -204,13 +225,54 @@ impl PlaybackMixer {
         self.mixing.lock().active.len()
     }
 
-    /// The frames queued in the stream called `name`, or `None` when there is no such stream.
+    /// The frames queued in the stream called `name`, or `None` when there is no such stream: an
+    /// [`append_stream`](Self::append_stream) stream first, else a producer stream. Takes the
+    /// locks; not for the audio thread.
     pub fn stream_queued_frames(&self, name: &str) -> Option<usize> {
-        self.streams
+        let appended = self
+            .streams
             .lock()
             .iter()
             .find(|stream| stream.name() == name)
-            .map(PlaybackStream::queued_frames)
+            .map(PlaybackStream::queued_frames);
+        appended.or_else(|| {
+            self.producer_streams
+                .lock()
+                .iter()
+                .find(|stream| stream.name() == name)
+                .map(|stream| stream.queued_frames())
+        })
+    }
+
+    /// A [`StreamProducer`] for a new stream called `name`: the audio-thread way to feed a stream.
+    /// Its [`push`](StreamProducer::push) never blocks or allocates, even while another thread
+    /// holds the mixer, and `mix_into` drains what it pushed in order, after the
+    /// [`append_stream`](Self::append_stream) streams. A producer stream already called `name` is
+    /// replaced: its frames are no longer mixed. Allocates the 500 ms ring; call it outside the
+    /// audio callbacks.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::TooManyStreams`] when [`MAX_STREAMS`] producer streams exist.
+    pub fn stream_producer(&self, name: &str) -> Result<StreamProducer> {
+        let mut producer_streams = self.producer_streams.lock();
+        producer_streams.retain(|stream| stream.name() != name && !stream.is_spent());
+        if producer_streams.len() >= MAX_STREAMS {
+            return Err(Error::TooManyStreams {
+                name: name.to_owned(),
+                maximum: MAX_STREAMS,
+            });
+        }
+        let (producer, stream) = StreamProducer::new(name);
+        producer_streams.push(stream);
+        Ok(producer)
+    }
+
+    /// Forgets the producer streams whose producer is gone and whose frames were all mixed.
+    fn forget_spent_producer_streams(&self) {
+        self.producer_streams
+            .lock()
+            .retain(|stream| !stream.is_spent());
     }
 }
 

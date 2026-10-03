@@ -1,8 +1,10 @@
 //! The event half of [`ts3_plugin!`](crate::ts3_plugin): one `extern "C"` shell per TeamSpeak
 //! event TFAR handles, forwarding to `$crate::export_glue`.
 //!
-//! **Role:** the connection, channel, client, error and plugin-command exports, with the argument
-//! lists of `reference/tfar_1_0/ts/src/plugin.h` at API 26.
+//! **Role:** the connection, channel, client, error, plugin-command and talk-status exports, with
+//! the argument lists of `reference/tfar_1_0/ts/src/plugin.h` at API 26; the talk-status export,
+//! which neither original declares, has the SDK `plugin.h` list
+//! `(uint64 serverConnectionHandlerID, int status, int isReceivedWhisper, anyID clientID)`.
 //!
 //! **Position:** expanded only by [`ts3_plugin!`](crate::ts3_plugin); hidden from the docs.
 //!
@@ -289,6 +291,23 @@ macro_rules! __ts3_plugin_events {
                     &$plugin, server, flag, old_value, new_value,
                 )
             }
+        }
+
+        #[unsafe(no_mangle)]
+        #[allow(non_snake_case, reason = "the SDK export name")]
+        extern "C" fn ts3plugin_onTalkStatusChangeEvent(
+            server: u64,
+            status: ::std::ffi::c_int,
+            is_received_whisper: ::std::ffi::c_int,
+            client: u16,
+        ) {
+            $crate::export_glue::talk_status_change(
+                &$plugin,
+                server,
+                status,
+                is_received_whisper,
+                client,
+            );
         }
 
         #[unsafe(no_mangle)]

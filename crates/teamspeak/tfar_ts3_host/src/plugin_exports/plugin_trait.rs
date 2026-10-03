@@ -22,7 +22,7 @@ use super::event_arguments::{
     PostProcessVoiceData, ServerError, ServerPermissionError,
 };
 use super::plugin_answers::{CommandHandling, ErrorDisplay, InfoItem, InitStatus};
-use crate::{ChannelId, ClientId, ConnectStatus, ServerConnectionHandlerId, Ts3};
+use crate::{ChannelId, ClientId, ConnectStatus, ServerConnectionHandlerId, TalkStatus, Ts3};
 
 /// A TeamSpeak plugin: metadata as constants and one method per callback TFAR handles.
 pub trait Ts3Plugin: Sync + 'static {
@@ -182,6 +182,17 @@ pub trait Ts3Plugin: Sync + 'static {
 
     /// `onPluginCommandEvent`: a plugin command from another client (API 26 form).
     fn on_plugin_command(&self, _command: PluginCommand<'_>) {}
+
+    /// `onTalkStatusChangeEvent`: `client` (our own included) started or stopped talking;
+    /// `is_received_whisper` is true when the voice reaches us as a whisper.
+    fn on_talk_status_change(
+        &self,
+        _server: ServerConnectionHandlerId,
+        _status: TalkStatus,
+        _is_received_whisper: bool,
+        _client: ClientId,
+    ) {
+    }
 
     /// `onEditPostProcessVoiceDataEvent` (audio thread): a speaker's voice after TeamSpeak's
     /// processing.

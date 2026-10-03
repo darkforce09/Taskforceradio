@@ -484,3 +484,70 @@ fn property_flags_reach_teamspeak_unchanged() {
     assert_eq!(ChannelProperty::Name.flag(), 0);
     assert_eq!(ServerProperty::Name.flag(), 1);
 }
+
+extern "C" fn fake_listener_null_aware(
+    _server: u64,
+    position: *const ts3plugin_sys::public_definitions::Ts3Vector,
+    forward: *const ts3plugin_sys::public_definitions::Ts3Vector,
+    up: *const ts3plugin_sys::public_definitions::Ts3Vector,
+) -> c_uint {
+    let describe = |vector: *const ts3plugin_sys::public_definitions::Ts3Vector| {
+        if vector.is_null() {
+            "null".to_owned()
+        } else {
+            // SAFETY: a non-null vector argument points at a readable vector for the call.
+            let vector = unsafe { &*vector };
+            format!("{} {} {}", vector.x, vector.y, vector.z)
+        }
+    };
+    record(format!(
+        "listener [{}] [{}] [{}]",
+        describe(position),
+        describe(forward),
+        describe(up)
+    ));
+    0
+}
+
+#[test]
+fn absent_listener_orientation_vectors_reach_teamspeak_as_null() {
+    let ts3 = ts3_with(|table| table.systemset3d_listener_attributes = fake_listener_null_aware);
+    let position = Ts3Vector {
+        x: 1.0,
+        y: 2.0,
+        z: 3.0,
+    };
+    ts3.system_set_3d_listener_attributes(ServerConnectionHandlerId(1), position, None, None)
+        .unwrap();
+    assert_eq!(
+        take_calls(),
+        vec!["listener [1 2 3] [null] [null]".to_owned()]
+    );
+}
+
+#[test]
+fn listener_vectors_may_be_given_bare_or_as_options_and_mixed_with_null() {
+    let ts3 = ts3_with(|table| table.systemset3d_listener_attributes = fake_listener_null_aware);
+    let origin = Ts3Vector::default();
+    let forward = Ts3Vector {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+    };
+    ts3.system_set_3d_listener_attributes(ServerConnectionHandlerId(1), origin, forward, None)
+        .unwrap();
+    ts3.system_set_3d_listener_attributes(
+        ServerConnectionHandlerId(1),
+        origin,
+        None,
+        Some(forward),
+    )
+    .unwrap();
+    assert_eq!(
+        take_calls(),
+        vec![
+            "listener [0 0 0] [0 1 0] [null]".to_owned(),
+            "listener [0 0 0] [null] [0 1 0]".to_owned(),
+        ]
+    );
+}

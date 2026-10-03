@@ -27,7 +27,11 @@ hands finished playbacks back through a second ring buffer so `add` or `release_
 them off the audio thread. It takes its locks with `try_lock` and never allocates. The
 `my_radio_voice` stream of the player's own radio voice is a named FIFO filled by `append_stream`
 and bounded to 500 ms, dropping the oldest frames so a stalled playback side never grows memory
-or delay.
+or delay. `append_stream` takes a blocking lock, so it is for callers off the audio threads; the
+captured-voice callback feeds a stream through a `StreamProducer` from
+`PlaybackMixer::stream_producer` instead: an `rtrb` ring of the same 500 ms whose `push` never
+blocks or allocates, even while another thread holds the mixer, drops the oldest frames when the
+ring is full, and is drained in order by `mix_into`.
 
 ## Getting started
 
@@ -46,9 +50,10 @@ None: the crate reads no setting. The plugins pass the WAV paths under their plu
 - `WaveLibrary`: `new`, `load`, `preload`, `cached`, `len`, `is_empty`.
 - `Playback`: `new`, `from_stereo`, `id`, `frames`, `remaining_frames`, `is_finished`,
   `samples`; `PlaybackId`: `next`, `value`.
-- `PlaybackMixer`: `new`, `add`, `release_finished`, `append_stream`, `mix_into`,
-  `active_playback_count`, `stream_queued_frames`; `MAX_ACTIVE_PLAYBACKS`,
+- `PlaybackMixer`: `new`, `add`, `release_finished`, `append_stream` (non-audio callers),
+  `stream_producer`, `mix_into`, `active_playback_count`, `stream_queued_frames`; `MAX_ACTIVE_PLAYBACKS`,
   `PLAYBACK_QUEUE_CAPACITY`, `MAX_STREAMS`, `STREAM_CAPACITY_FRAMES`.
+- `StreamProducer`: `name`, `push` (audio thread: never blocks or allocates).
 - `Error`, `Result`, `CRATE_ROLE` and `prelude`.
 
 ## Boundaries
@@ -59,8 +64,9 @@ None: the crate reads no setting. The plugins pass the WAV paths under their plu
 - Used by: `tfar_plugin_0_9`, `tfar_plugin_1_0`, `tfar_voice_pipeline_0_9`,
   `tfar_voice_pipeline_1_0`.
 - Rules: a playback's filters and buffers are freed when it ends, off the audio thread;
-  `mix_into` never waits, never allocates and never writes past `channels * frames` samples or into
-  channels 2 and up. Tier 1 in `crates/audio`: every workspace dependency has a lower tier and
+  `mix_into` and `StreamProducer::push` never wait and never allocate
+  (`a_producer_push_succeeds_while_another_thread_holds_every_mixer_lock`), and `mix_into` never
+  writes past `channels * frames` samples or into channels 2 and up. Tier 1 in `crates/audio`: every workspace dependency has a lower tier and
   follows the edge matrix in `crates/README.md` (`cargo xtask verify crate-tiers`).
 
 ## Related documentation

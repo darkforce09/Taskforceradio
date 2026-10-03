@@ -146,6 +146,23 @@ impl Ts3Plugin for DummyPlugin {
         self.record(server.0, format!("status {status:?} {error}"));
     }
 
+    fn on_talk_status_change(
+        &self,
+        server: ServerConnectionHandlerId,
+        status: crate::TalkStatus,
+        is_received_whisper: bool,
+        client: crate::ClientId,
+    ) {
+        self.record(
+            server.0,
+            format!(
+                "talk {} {status:?} talking={} whisper={is_received_whisper}",
+                client.0,
+                status.is_talking()
+            ),
+        );
+    }
+
     fn on_edit_post_process_voice_data(&self, data: PostProcessVoiceData<'_>) {
         self.record(
             data.server.0,
@@ -600,5 +617,25 @@ fn print_to_current_tab_and_install_logging_use_the_installed_table() {
             .ends_with("logged through the global subscriber clients=3"),
         "{}",
         line.1
+    );
+}
+
+#[test]
+fn a_talk_status_change_arrives_with_the_status_the_whisper_flag_and_the_client() {
+    let talk: extern "C" fn(u64, c_int, c_int, u16) = ts3plugin_onTalkStatusChangeEvent;
+    talk(111, 1, 0, 7);
+    talk(111, 0, 0, 7);
+    talk(111, 1, 1, 8);
+    talk(111, 2, 0, 1);
+    talk(111, 9, 3, 9);
+    assert_eq!(
+        seen_for(111),
+        [
+            "talk 7 Talking talking=true whisper=false",
+            "talk 7 NotTalking talking=false whisper=false",
+            "talk 8 Talking talking=true whisper=true",
+            "talk 1 TalkingWhileDisabled talking=false whisper=false",
+            "talk 9 Other(9) talking=false whisper=true",
+        ]
     );
 }

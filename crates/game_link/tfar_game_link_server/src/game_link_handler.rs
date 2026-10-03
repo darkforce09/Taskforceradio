@@ -6,9 +6,10 @@
 /// [`focus_changed`](Self::focus_changed), [`session_opened`](Self::session_opened) and
 /// [`session_closed`](Self::session_closed) on a session thread, and
 /// [`async_message`](Self::async_message) on the async worker. A callback may call
-/// [`GameLinkServer::set_needcfg`](crate::GameLinkServer::set_needcfg) and the read-only
-/// accessors, but never [`GameLinkServer::shutdown`](crate::GameLinkServer::shutdown), which waits
-/// for these threads.
+/// [`GameLinkServer::set_needcfg`](crate::GameLinkServer::set_needcfg),
+/// [`GameLinkServer::queue_async`](crate::GameLinkServer::queue_async) and the read-only accessors,
+/// but never [`GameLinkServer::shutdown`](crate::GameLinkServer::shutdown), which waits for these
+/// threads.
 pub trait GameLinkHandler: Send + Sync {
     /// Answers one `SYNC_REQ`: `text` is the call exactly as Arma passed it, the return value the
     /// reply exactly as the extension hands it back. Runs on the session thread, which reads no

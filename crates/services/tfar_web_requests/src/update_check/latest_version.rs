@@ -1,17 +1,20 @@
 //! Fetching the published version and the background update check the plugins start at load.
 //!
-//! **Role:** `fetch_latest_version` reads `current_version.txt`; `spawn_update_check` does that
-//! on its own thread and calls back only when a newer version is published, so the plugin can
-//! print [`UPDATE_AVAILABLE_MESSAGE`] (where the originals showed a message box).
+//! **Role:** `fetch_latest_version` reads `current_version.txt`; `spawn_update_check` and
+//! `spawn_cancellable_update_check` do that on their own thread and call back only when a newer
+//! version is published, so the plugin can print [`UPDATE_AVAILABLE_MESSAGE`] (where the
+//! originals showed a message box).
 //!
 //! **Position:** inside `update_check`; uses `http_client` and `version_comparison`; called by
 //! the plugin apps from `ts3plugin_init`.
 //!
 //! **Signals and state:** one short-lived thread, `tfar-update-check`, per check; it holds the
-//! callback until it returns, at most [`UPDATE_CHECK_TIMEOUT`] later.
+//! callback until it returns, at most [`UPDATE_CHECK_TIMEOUT`] later. The cancellable check shares
+//! a cancel flag with its [`BackgroundRequest`] handle.
 //!
 //! **Invariants:** the callback runs at most once, on the check thread, and only after a fetch
-//! that succeeded with a strictly newer version; every failure is logged and swallowed.
+//! that succeeded with a strictly newer version, and never after the check was cancelled; every
+//! failure is logged and swallowed.
 
 #[cfg(test)]
 #[path = "tests/latest_version.rs"]
@@ -21,6 +24,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use super::version_comparison::is_update_available;
+use crate::background_request::{BackgroundRequest, CancelFlag};
 use crate::http_client::{HttpClient, ProxyChoice};
 use crate::{Error, Result};
 
@@ -54,7 +58,9 @@ pub fn fetch_latest_version(url: &str, timeout: Duration) -> Result<String> {
 /// [`UPDATE_CHECK_TIMEOUT`], and calls `on_update` there when the published version is newer
 /// than `current`. A failed fetch is logged at debug level and calls nothing.
 ///
-/// The returned handle may be dropped to detach the check, or joined.
+/// The returned handle may be dropped to detach the check, or joined; the check cannot be
+/// cancelled. A plugin that must stop and join it within a deadline at shutdown uses
+/// [`spawn_cancellable_update_check`] instead.
 ///
 /// # Errors
 ///
@@ -98,4 +104,57 @@ pub(crate) fn spawn_update_check_with(
             thread: UPDATE_CHECK_THREAD_NAME,
             source,
         })
+}
+
+/// Starts the update check of [`spawn_update_check`] as a [`BackgroundRequest`] the plugin can
+/// cancel and join at shutdown: against [`UPDATE_CHECK_URL`], with [`UPDATE_CHECK_TIMEOUT`],
+/// calling `on_update` on the check thread when the published version is newer than `current`.
+///
+/// The worker checks the cancel flag before the fetch and after it, so a check cancelled in time
+/// sends nothing, and a cancelled check never calls `on_update`, even when the answer arrives.
+///
+/// # Errors
+///
+/// [`Error::ThreadSpawn`] when the thread cannot start.
+pub fn spawn_cancellable_update_check(
+    current: &str,
+    on_update: impl FnOnce() + Send + 'static,
+) -> Result<BackgroundRequest> {
+    spawn_cancellable_update_check_with(
+        HttpClient::new(UPDATE_CHECK_TIMEOUT, ProxyChoice::FromEnvironment),
+        UPDATE_CHECK_URL.to_owned(),
+        current,
+        on_update,
+        CancelFlag::new(),
+    )
+}
+
+/// [`spawn_cancellable_update_check`] with a given client, URL and cancel flag.
+pub(crate) fn spawn_cancellable_update_check_with(
+    client: HttpClient,
+    url: String,
+    current: &str,
+    on_update: impl FnOnce() + Send + 'static,
+    cancel: CancelFlag,
+) -> Result<BackgroundRequest> {
+    let current = current.to_owned();
+    BackgroundRequest::spawn(UPDATE_CHECK_THREAD_NAME, cancel, move |cancel| {
+        if cancel.is_cancelled() {
+            tracing::debug!("the update check was cancelled before it started");
+            return;
+        }
+        let fetched = fetch_latest_version_with(&client, &url);
+        if cancel.is_cancelled() {
+            tracing::debug!("the update check was cancelled; its answer is dropped");
+            return;
+        }
+        match fetched {
+            Ok(latest) if is_update_available(&current, &latest) => {
+                tracing::info!(%current, %latest, "a newer TFAR version is published");
+                on_update();
+            }
+            Ok(latest) => tracing::debug!(%current, %latest, "no newer TFAR version is published"),
+            Err(error) => tracing::debug!(%error, "the update check failed"),
+        }
+    })
 }

@@ -11,7 +11,7 @@ crates/services/tfar_web_requests/src/piwik_tracking/
 ├── tests/                hand-derived URLs, the parser cases and the sender against the responder
 ├── track_request_0_9.rs  `build_track_request_0_9` and `PIWIK_HOST`
 ├── track_request_1_0.rs  `build_track_request_1_0` and `PIWIK_BETA_HOST`
-└── track_sender.rs       `spawn_track` and `TRACK_TIMEOUT`
+└── track_sender.rs       `spawn_track`, `spawn_cancellable_track` and `TRACK_TIMEOUT`
 ```
 
 ## How it works
@@ -23,6 +23,7 @@ crates/services/tfar_web_requests/src/piwik_tracking/
                                                &cvar={"<id>":["<name>","<value>"],...}
      host and site: piwik.dedmen.de for action "beta"; else nkey.piwik.pro and radio.task-force.ru
 spawn_track(url) → thread "tfar-piwik-track": GET (5 s), body read and dropped, failure logged
+spawn_cancellable_track(url) → BackgroundRequest: the same, never sent once cancelled before it
 ```
 
 `parse_custom_variables` reads `[[1,"name","value"],...]` the way the original's character
@@ -36,13 +37,14 @@ failed request is a debug log line and nothing else.
 
 ## Boundaries
 
-- Depends on: `http_client` (`HttpClient`, `ProxyChoice`); `url`, `tracing`.
+- Depends on: `http_client` (`HttpClient`, `ProxyChoice`), `background_request`; `url`, `tracing`.
 - Used by: the crate root re-exports, so the plugin apps' `TRACK` command handlers.
 - Rules: the 1.0 query matches the hand derivation from the C++
   (`a_session_tracker_message_builds_the_originals_query`,
   `the_beta_action_goes_to_the_beta_host_and_names_it_as_the_site`); the 0.9 path goes out as the
   game sent it (`the_game_path_goes_to_the_piwik_host_over_plain_http`); a dead host fails quietly
-  within the timeout (`a_dead_host_fails_quietly_within_the_timeout`).
+  within the timeout (`a_dead_host_fails_quietly_within_the_timeout`); a request cancelled before
+  it starts is never sent (`a_request_cancelled_before_it_starts_is_never_sent`).
 
 ## Related documentation
 

@@ -30,6 +30,13 @@ sends the path the game formatted, 1.0 builds `piwik.php?idsite=2&rec=1&url="…
 to `nkey.piwik.pro` (or `piwik.dedmen.de` for the 1.0 action `beta`). Those hosts may be gone:
 every failure is logged at debug level and goes no further.
 
+`spawn_cancellable_update_check` and `spawn_cancellable_track` run the same requests behind a
+`BackgroundRequest` handle, so a plugin can stop them at shutdown: `cancel()` sets a flag the
+worker checks before its request (a request cancelled in time is never sent) and after it (a
+cancelled check never calls back); `join_timeout(budget)` waits for the worker up to a deadline;
+dropping the handle cancels and never blocks. A request already in flight is not interrupted; its
+`ureq` timeout ends it. `spawn_update_check` and `spawn_track` stay as they were, detached.
+
 ## Getting started
 
 Run from the repository root:
@@ -46,10 +53,13 @@ None: the crate reads no setting. The timeouts are constants (`UPDATE_CHECK_TIME
 ## Public surface
 
 - Update check: `fetch_latest_version`, `is_update_available`, `is_version_string`,
-  `spawn_update_check`, `UPDATE_CHECK_URL`, `UPDATE_CHECK_TIMEOUT`, `UPDATE_AVAILABLE_MESSAGE`.
+  `spawn_update_check`, `spawn_cancellable_update_check`, `UPDATE_CHECK_URL`, `UPDATE_CHECK_TIMEOUT`, `UPDATE_AVAILABLE_MESSAGE`.
 - Piwik tracking: `build_track_request_0_9`, `build_track_request_1_0`, `spawn_track`,
+  `spawn_cancellable_track`,
   `parse_custom_variables`, `CustomVariable`, `PIWIK_HOST`, `PIWIK_BETA_HOST`, `TRACK_TIMEOUT`, and
   `Url` (re-exported from `url`).
+- `BackgroundRequest`: `cancel`, `is_cancelled`, `is_finished`, `join_timeout`; dropping it
+  cancels without waiting.
 - `Error`, `Result`, `CRATE_ROLE` and `prelude`.
 
 ## Boundaries

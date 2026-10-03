@@ -229,3 +229,55 @@ fn a_second_server_becomes_current_and_tabs_can_switch_and_disconnect() {
         assert!(disconnected.clients.is_empty());
     });
 }
+
+#[test]
+fn a_talk_status_change_sets_the_flag_before_the_callback_reports_it() {
+    let host = start_in_process_host();
+    host.connect_server(&ServerSetup::default()).unwrap();
+    let client = host.client_joins("Radio Operator", ChannelId(1)).unwrap();
+    take_events();
+    host.talk_status_change(client, true).unwrap();
+    host.talk_status_change(client, false).unwrap();
+    let own = ClientId(1);
+    host.talk_status_change(own, true).unwrap();
+    let talk =
+        |status: tfar_ts3_host::TalkStatus, client: ClientId, flag: i32| PluginEvent::TalkStatus {
+            server: 1,
+            status: status.to_raw(),
+            is_received_whisper: 0,
+            client: client.0,
+            flag_talking_seen: Some(flag),
+        };
+    assert_eq!(
+        take_events(),
+        vec![
+            talk(tfar_ts3_host::TalkStatus::Talking, client, 1),
+            talk(tfar_ts3_host::TalkStatus::NotTalking, client, 0),
+            talk(tfar_ts3_host::TalkStatus::Talking, own, 1),
+        ]
+    );
+    let server = host.current_server();
+    let is_talking = host.with_fake_teamspeak(|fake| fake.client(server, own).unwrap().is_talking);
+    assert!(is_talking);
+    assert!(host.leak_report().is_clean());
+}
+
+#[test]
+fn a_talk_status_change_for_an_unknown_client_or_without_a_server_is_an_error() {
+    let host = start_in_process_host();
+    assert!(matches!(
+        host.talk_status_change(ClientId(2), true),
+        Err(Error::NoCurrentServer)
+    ));
+    host.connect_server(&ServerSetup::default()).unwrap();
+    take_events();
+    assert!(matches!(
+        host.talk_status_change(ClientId(77), true),
+        Err(Error::UnknownClient { .. })
+    ));
+    assert_eq!(
+        take_events(),
+        Vec::new(),
+        "no callback for a refused change"
+    );
+}

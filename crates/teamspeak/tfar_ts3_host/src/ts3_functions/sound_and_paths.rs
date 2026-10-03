@@ -11,10 +11,13 @@
 //! queues audio-thread events for its own thread instead.
 //!
 //! **Invariants:** a path is read from a zeroed buffer up to its first NUL; text with a NUL byte is
-//! refused before TeamSpeak sees it.
+//! refused before TeamSpeak sees it; an absent listener vector reaches TeamSpeak as a null pointer,
+//! and a present one stays alive for the call.
 
 use std::ffi::c_char;
 use std::path::PathBuf;
+
+use ts3plugin_sys::public_definitions as sdk;
 
 use super::handle::Ts3;
 use super::owned_memory::path_from_buffer;
@@ -41,6 +44,10 @@ impl Ts3 {
 
     /// `systemset3DListenerAttributes`: our listening position and orientation.
     ///
+    /// `forward` and `up` take a [`Ts3Vector`] or an `Option`: `None` passes a null pointer, which
+    /// leaves that vector as TeamSpeak has it, as the originals do with
+    /// `systemset3DListenerAttributes(server, &position, NULL, NULL)`.
+    ///
     /// # Errors
     ///
     /// [`Ts3Error::Call`] with TeamSpeak's code and text when TeamSpeak refuses the call.
@@ -48,15 +55,17 @@ impl Ts3 {
         &self,
         server: ServerConnectionHandlerId,
         position: Ts3Vector,
-        forward: Ts3Vector,
-        up: Ts3Vector,
+        forward: impl Into<Option<Ts3Vector>>,
+        up: impl Into<Option<Ts3Vector>>,
     ) -> Result<(), Ts3Error> {
-        let (position, forward, up) = (position.to_sdk(), forward.to_sdk(), up.to_sdk());
+        let position = position.to_sdk();
+        let forward = forward.into().map(Ts3Vector::to_sdk);
+        let up = up.into().map(Ts3Vector::to_sdk);
         let code = (self.functions.systemset3d_listener_attributes)(
             server.0,
             &raw const position,
-            &raw const forward,
-            &raw const up,
+            optional_vector_pointer(forward.as_ref()),
+            optional_vector_pointer(up.as_ref()),
         );
         self.check("systemset3DListenerAttributes", code)
     }
@@ -198,4 +207,9 @@ fn non_empty_path(function: &'static str, buffer: &[u8]) -> Result<PathBuf, Ts3E
         return Err(Ts3Error::EmptyPath { function });
     }
     Ok(path)
+}
+
+/// The `const TS3_VECTOR*` argument for an optional vector: the vector's address, or null.
+fn optional_vector_pointer(vector: Option<&sdk::Ts3Vector>) -> *const sdk::Ts3Vector {
+    vector.map_or(std::ptr::null(), std::ptr::from_ref)
 }

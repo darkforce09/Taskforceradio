@@ -10,8 +10,8 @@
 //!
 //! **Signals and state:** the WAV cache (`WaveLibrary`), and per mixer the queued and active
 //! playbacks and the named streams. Playbacks are built and queued on non-audio threads, streams
-//! are appended by the captured-voice callback, and `PlaybackMixer::mix_into` runs on the
-//! mixed-playback callback without waiting or allocating.
+//! are fed by the captured-voice callback, wait-free through a `StreamProducer` ring, and
+//! `PlaybackMixer::mix_into` runs on the mixed-playback callback without waiting or allocating.
 //!
 //! **Invariants:** a playback's processing, filters included, runs and is freed before it is
 //! queued; finished playbacks are freed off the audio thread; nothing is mixed past
@@ -24,6 +24,7 @@ mod playback;
 mod playback_mixer;
 mod playback_stream;
 pub mod prelude;
+mod stream_producer;
 mod wave_library;
 
 pub use crate_role::CRATE_ROLE;
@@ -33,4 +34,5 @@ pub use playback_mixer::{
     MAX_ACTIVE_PLAYBACKS, MAX_STREAMS, PLAYBACK_QUEUE_CAPACITY, PlaybackMixer,
 };
 pub use playback_stream::STREAM_CAPACITY_FRAMES;
+pub use stream_producer::StreamProducer;
 pub use wave_library::WaveLibrary;

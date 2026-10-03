@@ -3,6 +3,7 @@
 use std::time::{Duration, Instant};
 
 use super::*;
+use crate::background_request::CancelFlag;
 use crate::local_responder::{LocalResponder, ScriptedReply};
 
 #[test]
@@ -49,4 +50,58 @@ fn an_error_status_fails_quietly() {
 #[test]
 fn the_tracking_timeout_is_five_seconds() {
     assert_eq!(TRACK_TIMEOUT, Duration::from_secs(5));
+}
+
+#[test]
+fn a_cancellable_request_reaches_the_server_and_joins() {
+    let responder = LocalResponder::start(vec![ScriptedReply::Body("GIF89a")]);
+    let url = Url::parse(&responder.url("/piwik.php?idsite=5")).expect("a loopback URL");
+    let mut request = spawn_cancellable_track_with(
+        HttpClient::new(TRACK_TIMEOUT, ProxyChoice::Direct),
+        url,
+        CancelFlag::new(),
+    )
+    .expect("the tracking thread starts");
+    assert!(request.join_timeout(Duration::from_secs(2)));
+    assert_eq!(
+        responder.next_request_line(),
+        "GET /piwik.php?idsite=5 HTTP/1.1"
+    );
+}
+
+#[test]
+fn a_request_cancelled_before_it_starts_is_never_sent() {
+    let responder = LocalResponder::start(vec![ScriptedReply::Body("GIF89a")]);
+    let url = Url::parse(&responder.url("/piwik.php")).expect("a loopback URL");
+    let cancel = CancelFlag::new();
+    cancel.cancel();
+    let mut request = spawn_cancellable_track_with(
+        HttpClient::new(TRACK_TIMEOUT, ProxyChoice::Direct),
+        url,
+        cancel,
+    )
+    .expect("the tracking thread starts");
+    assert!(request.join_timeout(Duration::from_secs(2)));
+    assert_eq!(
+        responder.try_next_request_line(Duration::from_millis(300)),
+        None
+    );
+}
+
+#[test]
+fn a_cancelled_request_on_a_slow_server_joins_within_its_timeout() {
+    let responder = LocalResponder::start(vec![ScriptedReply::Silence(Duration::from_secs(5))]);
+    let url = Url::parse(&responder.url("/piwik.php")).expect("a loopback URL");
+    let mut request = spawn_cancellable_track_with(
+        HttpClient::new(Duration::from_millis(400), ProxyChoice::Direct),
+        url,
+        CancelFlag::new(),
+    )
+    .expect("the tracking thread starts");
+    responder.next_request_line();
+    request.cancel();
+    let started = Instant::now();
+    assert!(!request.join_timeout(Duration::from_millis(50)));
+    assert!(request.join_timeout(Duration::from_secs(2)));
+    assert!(started.elapsed() < Duration::from_secs(2));
 }

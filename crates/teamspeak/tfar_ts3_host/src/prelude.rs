@@ -7,7 +7,7 @@ pub use crate::error::Ts3Error;
 pub use crate::host_ids::{ChannelId, ClientId, ServerConnectionHandlerId};
 pub use crate::host_values::{
     ChannelProperty, ClientProperty, ConnectStatus, LogLevel, PluginCommandTarget, ServerProperty,
-    Ts3Vector, Visibility,
+    TalkStatus, Ts3Vector, Visibility,
 };
 pub use crate::logging::{LoggingGuard, install_logging, install_logging_at, print_to_current_tab};
 pub use crate::plugin_exports::{

@@ -33,7 +33,7 @@ pub use error::{Error, Result, Ts3Error};
 pub use host_ids::{ChannelId, ClientId, ServerConnectionHandlerId};
 pub use host_values::{
     ChannelProperty, ClientProperty, ConnectStatus, LogLevel, PluginCommandTarget, ServerProperty,
-    Ts3Vector, Visibility,
+    TalkStatus, Ts3Vector, Visibility,
 };
 pub use logging::{
     LoggingGuard, TeamSpeakLogLayer, install_logging, install_logging_at, print_to_current_tab,

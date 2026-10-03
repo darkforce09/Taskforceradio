@@ -10,7 +10,7 @@ crates/teamspeak/tfar_ts3_host/src/plugin_exports/
 ├── audio_exports_macro.rs  the voice-data and rolloff exports of the macro
 ├── audio_glue.rs           sample pointers and counts into bounded slices, then the trait call
 ├── event_arguments.rs      the argument bundles: invoker, client move, errors, command, voice data
-├── event_exports_macro.rs  the connection, channel, client, error and plugin-command exports
+├── event_exports_macro.rs  the connection, channel, client, error, plugin-command and talk-status exports
 ├── event_glue.rs           raw event arguments into newtypes and `&str`, then the trait call
 ├── export_glue.rs          the hidden `$crate::export_glue` path the macro expansion calls
 ├── export_macro.rs         `ts3_plugin!`: metadata, lifecycle, command and info-panel exports
@@ -57,8 +57,9 @@ with `frames == 0`, and a null mask, `edited` or `volume` pointer a local value.
 - Used by: the plugin apps `tfar_plugin_0_9` and `tfar_plugin_1_0`, which implement `Ts3Plugin`
   and expand `ts3_plugin!`.
 - Rules: every export signature matches the SDK prototypes at API 26 in
-  `reference/tfar_1_0/ts/src/plugin.h` (`tests/export_macro.rs` calls each one through a function
-  pointer); a slice never exceeds `channels * frames` and null becomes empty
+  `reference/tfar_1_0/ts/src/plugin.h`, and `ts3plugin_onTalkStatusChangeEvent`, which neither
+  original declares, the SDK `plugin.h` prototype (`tests/export_macro.rs` calls each one through a
+  function pointer); a slice never exceeds `channels * frames` and null becomes empty
   (`post_process_voice_gets_a_slice_bounded_by_the_counts`,
   `null_or_negative_voice_arguments_become_empty_slices`); `infoData` memory is `malloc`ed and
   freed by `ts3plugin_freeMemory` (`tests/plugin_memory.rs`).

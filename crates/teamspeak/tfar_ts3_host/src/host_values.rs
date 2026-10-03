@@ -1,5 +1,5 @@
 //! The SDK values `tfar_ts3_host` passes to TeamSpeak or reads from it: connection status,
-//! visibility, log level, property flags, plugin command targets and 3D vectors.
+//! visibility, talk status, log level, property flags, plugin command targets and 3D vectors.
 //!
 //! **Role:** typed stand-ins for the C enums, so no caller passes a bare integer flag, and so no
 //! integer from TeamSpeak is ever transmuted into a Rust enum (an unknown value stays representable).
@@ -78,6 +78,47 @@ impl Visibility {
             2 => Self::Leave,
             other => Self::Other(other),
         }
+    }
+}
+
+/// `enum TalkStatus`: whether a client is talking, as `onTalkStatusChangeEvent` reports it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TalkStatus {
+    /// `STATUS_NOT_TALKING`.
+    NotTalking,
+    /// `STATUS_TALKING`.
+    Talking,
+    /// `STATUS_TALKING_WHILE_DISABLED`: talking with the microphone muted (own client only).
+    TalkingWhileDisabled,
+    /// A value the SDK of plugin API 26 does not define.
+    Other(i32),
+}
+
+impl TalkStatus {
+    /// The status for TeamSpeak's integer value.
+    pub fn from_raw(value: i32) -> Self {
+        match value {
+            0 => Self::NotTalking,
+            1 => Self::Talking,
+            2 => Self::TalkingWhileDisabled,
+            other => Self::Other(other),
+        }
+    }
+
+    /// TeamSpeak's integer value of this status.
+    pub fn to_raw(self) -> i32 {
+        match self {
+            Self::NotTalking => sdk::TalkStatus::NotTalking as i32,
+            Self::Talking => sdk::TalkStatus::Talking as i32,
+            Self::TalkingWhileDisabled => sdk::TalkStatus::TalkingWhileDisabled as i32,
+            Self::Other(value) => value,
+        }
+    }
+
+    /// True for [`Talking`](Self::Talking) only: a client talking while its microphone is
+    /// disabled sends no voice.
+    pub fn is_talking(self) -> bool {
+        matches!(self, Self::Talking)
     }
 }
 

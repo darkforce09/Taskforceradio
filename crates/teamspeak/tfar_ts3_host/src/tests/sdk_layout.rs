@@ -10,7 +10,7 @@ use ts3plugin_sys::ts3functions::Ts3Functions;
 
 use crate::{
     ChannelProperty, ClientProperty, ConnectStatus, InfoItem, LogLevel, PluginCommandTarget,
-    ServerProperty, Visibility,
+    ServerProperty, TalkStatus, Visibility,
 };
 
 /// Every `TS3Functions` slot TFAR calls: the SDK name and the `ts3plugin-sys` field offset.
@@ -374,6 +374,26 @@ fn connect_status_and_visibility_read_the_header_values() {
         let raw = i32::try_from(value(&values, enumerator)).unwrap();
         assert_eq!(Visibility::from_raw(raw), visibility, "{enumerator}");
     }
+}
+
+#[test]
+fn talk_status_reads_and_writes_the_header_values() {
+    let values = enum_values();
+    let statuses = [
+        (TalkStatus::NotTalking, "STATUS_NOT_TALKING"),
+        (TalkStatus::Talking, "STATUS_TALKING"),
+        (
+            TalkStatus::TalkingWhileDisabled,
+            "STATUS_TALKING_WHILE_DISABLED",
+        ),
+    ];
+    for (status, enumerator) in statuses {
+        let raw = i32::try_from(value(&values, enumerator)).unwrap();
+        assert_eq!(TalkStatus::from_raw(raw), status, "{enumerator}");
+        assert_eq!(status.to_raw(), raw, "{enumerator}");
+    }
+    assert_eq!(TalkStatus::from_raw(3), TalkStatus::Other(3));
+    assert_eq!(TalkStatus::Other(3).to_raw(), 3);
 }
 
 #[test]

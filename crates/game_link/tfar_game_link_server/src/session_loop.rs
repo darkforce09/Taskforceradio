@@ -23,7 +23,6 @@ use std::time::{Duration, Instant};
 
 use tfar_game_link_protocol::{Frame, FrameDecoder, Hello};
 
-use crate::async_worker::{AsyncMessage, is_mission_end};
 use crate::link_state::LinkState;
 use crate::session_link::SessionLink;
 
@@ -223,13 +222,7 @@ fn handle_frame(state: &LinkState, session: &SessionLink, frame: Frame) -> bool 
             session.send(&Frame::SyncResponse { id, text: reply })
         }
         Frame::Async { text } => {
-            let generation = if is_mission_end(&text) {
-                state.end_mission()
-            } else {
-                state.record_game_message();
-                state.mission_generation()
-            };
-            if !state.queue_async(AsyncMessage { generation, text }) {
+            if !state.queue_async_text(text) {
                 tracing::debug!("game link: async worker stopped; message dropped");
             }
             true

@@ -20,8 +20,8 @@ each of the 32 functions the two TFAR plugins call and a recording stub in each 
 198 slots. The fakes answer from one process-global `FakeTeamSpeak` (servers, channels, clients,
 pre-processor values, plugin and config folders), log every call as a `HostCall`, and hand out
 strings and lists with `malloc`, which the plugin returns through `freeMemory`; `leak_report()`
-lists what it did not. The drivers (`connect_server`, `client_joins`, `deliver_plugin_command`,
-`post_process_voice` and the rest) change the fake state and raise the callbacks TeamSpeak would.
+lists what it did not. The drivers (`connect_server`, `client_joins`, `talk_status_change`,
+`deliver_plugin_command`, `post_process_voice` and the rest) change the fake state and raise the callbacks TeamSpeak would.
 One host at a time owns the fake state, so parallel tests take turns. A plugin app's integration
 test finds its own build with `locate_cdylib("tfar_plugin_1_0")`.
 

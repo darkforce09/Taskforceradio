@@ -293,3 +293,120 @@ fn stream_errors_are_reported() {
     ));
     mixer.append_stream("stream_0", &[1, 1]).unwrap();
 }
+
+#[test]
+fn a_producer_push_succeeds_while_another_thread_holds_every_mixer_lock() {
+    use std::sync::{Arc, Barrier};
+    use std::time::{Duration, Instant};
+
+    let mixer = Arc::new(PlaybackMixer::new());
+    let mut producer = mixer.stream_producer("my_radio_voice").unwrap();
+    let locked = Arc::new(Barrier::new(2));
+    let pushed = Arc::new(Barrier::new(2));
+    let holder = {
+        let (mixer, locked, pushed) =
+            (Arc::clone(&mixer), Arc::clone(&locked), Arc::clone(&pushed));
+        std::thread::spawn(move || {
+            let hand_off = mixer.hand_off.lock();
+            let mixing = mixer.mixing.lock();
+            let streams = mixer.streams.lock();
+            let producer_streams = mixer.producer_streams.lock();
+            locked.wait();
+            pushed.wait();
+            drop((hand_off, mixing, streams, producer_streams));
+        })
+    };
+    locked.wait();
+    let started = Instant::now();
+    let accepted = producer.push(&[5; 960 * 2]);
+    let elapsed = started.elapsed();
+    pushed.wait();
+    holder.join().unwrap();
+    assert_eq!(accepted, 960 * 2);
+    assert!(elapsed < Duration::from_millis(50), "{elapsed:?}");
+    assert_eq!(mixer.stream_queued_frames("my_radio_voice"), Some(960));
+}
+
+#[test]
+fn a_held_producer_list_makes_mix_into_leave_the_producer_streams_queued() {
+    let mixer = PlaybackMixer::new();
+    let mut producer = mixer.stream_producer("my_radio_voice").unwrap();
+    producer.push(&[20, 20]);
+    let producer_streams = mixer.producer_streams.lock();
+    let mut block = [1_i16, 1];
+    let mut mask = 0b11;
+    mixer.mix_into(&mut block, 2, 1, &mut mask).unwrap();
+    assert_eq!(block, [1, 1]);
+    drop(producer_streams);
+    mixer.mix_into(&mut block, 2, 1, &mut mask).unwrap();
+    assert_eq!(block, [21, 21], "the stream waited for this block");
+}
+
+#[test]
+fn mix_into_drains_a_producer_stream_in_order_beside_the_other_sources() {
+    let mixer = PlaybackMixer::new();
+    let mut producer = mixer.stream_producer("my_radio_voice").unwrap();
+    mixer.add(playback_of(&[100, 200])).unwrap();
+    mixer.append_stream("appended", &[1, 1, 1, 1]).unwrap();
+    producer.push(&[10, 20, 30, 40]);
+    producer.push(&[50, 60]);
+    assert_eq!(mixer.stream_queued_frames("my_radio_voice"), Some(3));
+    assert_eq!(mix_stereo_block(&mixer, 2), [111, 221, 31, 41]);
+    assert_eq!(mix_stereo_block(&mixer, 2), [50, 60, 0, 0]);
+    assert_eq!(mixer.stream_queued_frames("my_radio_voice"), Some(0));
+}
+
+#[test]
+fn a_producer_stream_keeps_the_newest_500_ms_until_it_is_mixed() {
+    let mixer = PlaybackMixer::new();
+    let mut producer = mixer.stream_producer("my_radio_voice").unwrap();
+    for block in 0..30_i16 {
+        producer.push(&[block; 960 * 2]);
+    }
+    assert_eq!(
+        mixer.stream_queued_frames("my_radio_voice"),
+        Some(STREAM_CAPACITY_FRAMES)
+    );
+    let oldest_kept = i16::try_from(30 - STREAM_CAPACITY_FRAMES / 960).unwrap();
+    let block = mix_stereo_block(&mixer, 960);
+    assert!(
+        block.iter().all(|sample| *sample == oldest_kept),
+        "the five oldest blocks were dropped"
+    );
+}
+
+#[test]
+fn a_new_producer_replaces_one_of_the_same_name_and_spent_streams_are_forgotten() {
+    let mixer = PlaybackMixer::new();
+    let mut first = mixer.stream_producer("my_radio_voice").unwrap();
+    first.push(&[7, 7]);
+    let mut second = mixer.stream_producer("my_radio_voice").unwrap();
+    second.push(&[3, 3]);
+    assert_eq!(
+        mix_stereo_block(&mixer, 1),
+        [3, 3],
+        "the replaced stream is not mixed"
+    );
+    let others: Vec<StreamProducer> = (1..MAX_STREAMS)
+        .map(|index| mixer.stream_producer(&format!("stream_{index}")).unwrap())
+        .collect();
+    assert!(matches!(
+        mixer.stream_producer("one_too_many"),
+        Err(Error::TooManyStreams {
+            maximum: MAX_STREAMS,
+            ..
+        })
+    ));
+    assert_eq!(mixer.stream_queued_frames("stream_1"), Some(0));
+    drop(second);
+    drop(others);
+    mixer.release_finished();
+    assert_eq!(mixer.stream_queued_frames("my_radio_voice"), None);
+    assert_eq!(
+        mixer.stream_queued_frames("stream_1"),
+        None,
+        "dropped producers with nothing queued are forgotten"
+    );
+    mixer.stream_producer("one_more").unwrap();
+    drop(first);
+}

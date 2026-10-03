@@ -146,6 +146,8 @@ pub struct PluginExports {
     pub on_plugin_command_event: Option<
         unsafe extern "C" fn(u64, *const c_char, *const c_char, u16, *const c_char, *const c_char),
     >,
+    /// `ts3plugin_onTalkStatusChangeEvent`: server, status, is received whisper, client.
+    pub on_talk_status_change_event: Option<unsafe extern "C" fn(u64, c_int, c_int, u16)>,
     /// `ts3plugin_onEditPostProcessVoiceDataEvent`: server, client, samples, frames, channels,
     /// speaker array, fill mask.
     pub on_edit_post_process_voice_data_event:
@@ -235,6 +237,7 @@ pub(crate) unsafe fn resolve_exports(
             "ts3plugin_onClientSelfVariableUpdateEvent"
         ),
         on_plugin_command_event: optional!("ts3plugin_onPluginCommandEvent"),
+        on_talk_status_change_event: optional!("ts3plugin_onTalkStatusChangeEvent"),
         on_edit_post_process_voice_data_event: optional!(
             "ts3plugin_onEditPostProcessVoiceDataEvent"
         ),

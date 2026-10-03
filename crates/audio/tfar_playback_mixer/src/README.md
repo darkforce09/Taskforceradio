@@ -16,6 +16,7 @@ crates/audio/tfar_playback_mixer/src/
 ├── playback_mixer.rs   `PlaybackMixer` and its capacity constants
 ├── playback_stream.rs  the bounded named FIFO behind `append_stream`, `STREAM_CAPACITY_FRAMES`
 ├── prelude.rs          the public API except `Error` and `Result`, for glob import
+├── stream_producer.rs  `StreamProducer`: the wait-free `rtrb` ring an audio callback feeds a stream with
 ├── wave_library.rs     `WaveLibrary`, the `hound` decoder and cache
 └── tests/              one unit test file per module
 ```
@@ -26,16 +27,20 @@ crates/audio/tfar_playback_mixer/src/
 `prelude.rs` re-exports the same items except `Error` and `Result`, so a glob import never
 shadows `std`'s `Result`. `output_block.rs` is the one place samples reach the TeamSpeak block:
 playbacks and streams both feed it an iterator of interleaved stereo samples, so a stream's ring
-of samples never has to be made contiguous. `PlaybackMixer` keeps three locks: the hand-off of new
-and finished playbacks (non-audio threads), the mixing state (the audio thread, `try_lock`), and
-the streams (`append_stream` locks, `mix_into` uses `try_lock`). Each module attaches its sibling
+of samples never has to be made contiguous. `PlaybackMixer` keeps four locks: the hand-off of new
+and finished playbacks (non-audio threads), the mixing state (the audio thread, `try_lock`), the
+streams (`append_stream` locks, `mix_into` uses `try_lock`) and the list of producer streams
+(`stream_producer` and `release_finished` lock, `mix_into` uses `try_lock`). A `StreamProducer`
+writes its own ring without any mixer lock; it shares the ring's reading side with the mixer
+behind a lock both take only with `try_lock`, the mixer to drain and the producer to drop the
+oldest frames when the ring is full. Each module attaches its sibling
 test file in `tests/` with `#[path]`.
 
 ## Public surface
 
-- `WaveLibrary`, `Playback`, `PlaybackId`, `PlaybackMixer`, `MAX_ACTIVE_PLAYBACKS`,
-  `PLAYBACK_QUEUE_CAPACITY`, `MAX_STREAMS`, `STREAM_CAPACITY_FRAMES`, `CRATE_ROLE`, `Error`,
-  `Result` and `prelude`, re-exported at the crate root.
+- `WaveLibrary`, `Playback`, `PlaybackId`, `PlaybackMixer`, `StreamProducer`,
+  `MAX_ACTIVE_PLAYBACKS`, `PLAYBACK_QUEUE_CAPACITY`, `MAX_STREAMS`, `STREAM_CAPACITY_FRAMES`,
+  `CRATE_ROLE`, `Error`, `Result` and `prelude`, re-exported at the crate root.
 
 ## Boundaries
 

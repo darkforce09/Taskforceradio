@@ -43,8 +43,9 @@ headers in `sdk_headers/` and checks the table offsets and every SDK value the c
   `PluginCommand`, `ServerError`, `ServerPermissionError`, `PostProcessVoiceData`,
   `MixedPlaybackVoiceData`, `CapturedVoiceData`, `InitStatus`, `CommandHandling`, `ErrorDisplay`,
   `InfoItem`); used by both plugin apps.
-- `ServerConnectionHandlerId`, `ClientId`, `ChannelId`, `ConnectStatus`, `Visibility`, `LogLevel`,
-  `ClientProperty`, `ChannelProperty`, `ServerProperty`, `PluginCommandTarget`, `Ts3Vector`.
+- `ServerConnectionHandlerId`, `ClientId`, `ChannelId`, `ConnectStatus`, `Visibility`, `TalkStatus`,
+  `LogLevel`, `ClientProperty`, `ChannelProperty`, `ServerProperty`, `PluginCommandTarget`,
+  `Ts3Vector`.
 - `install_logging`, `install_logging_at`, `LoggingGuard`, `TeamSpeakLogLayer`,
   `print_to_current_tab`.
 - `Ts3Error`, `Error`, `Result`, `CRATE_ROLE`, `prelude`; `export_glue` is public only for the

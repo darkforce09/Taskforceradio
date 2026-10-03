@@ -8,7 +8,7 @@ client and audio events into it.
 ```text
 tools/tfar_ts3_mock/src/mock_host/
 ├── audio_drivers.rs   one voice block through each voice callback, and the custom rolloff
-├── event_drivers.rs   connect, disconnect, switch tabs, join, move, leave, talk, metadata, commands
+├── event_drivers.rs   connect, disconnect, switch tabs, join, move, leave, talk status, metadata, commands
 ├── host_lifecycle.rs  `MockHost`: start in TeamSpeak's order, info panel, commands, shutdown
 ├── mod.rs             the module lines and the public re-exports
 └── tests/             an in-process stand-in plugin and the tests of start, drivers and audio
@@ -20,8 +20,10 @@ tools/tfar_ts3_mock/src/mock_host/
 `setFunctionPointers`, `registerPluginID("mock_plugin_id")` and `init`; a non-zero `init` is
 `Error::InitFailed`. An event driver changes the fake state under the lock, releases it and calls
 the export, so the plugin's queries see the change; a callback the plugin does not export is
-skipped. An audio driver copies the caller's samples, passes the counts, one speaker bit per
-channel and the flags TeamSpeak passes, and returns what the plugin left; a missing export is
+skipped. `set_talking` only sets `CLIENT_FLAG_TALKING`; `talk_status_change` sets it and then
+raises `onTalkStatusChangeEvent`, as TeamSpeak does when a client starts or stops talking. An
+audio driver copies the caller's samples, passes the counts, one speaker bit per channel and the
+flags TeamSpeak passes, and returns what the plugin left; a missing export is
 `Error::MissingExport`. `shutdown` runs once, from the call or the drop, before the library
 unloads.
 

@@ -1,5 +1,6 @@
 //! A loopback HTTP responder for the tests: a `TcpListener` on 127.0.0.1 that answers one scripted
-//! reply per connection and records each request line. No test reaches the real network.
+//! reply per connection (a body, a slow body, a redirect, a 404 or silence) and records each
+//! request line. No test reaches the real network.
 
 use std::io::{BufRead, BufReader, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
@@ -18,6 +19,8 @@ pub(crate) enum ScriptedReply {
     NotFound,
     /// Reads the request, then says nothing for this long before closing.
     Silence(Duration),
+    /// Reads the request, waits this long, then answers `200 OK` with this body.
+    DelayedBody(Duration, &'static str),
 }
 
 /// The responder; its thread ends after the last scripted reply.
@@ -51,6 +54,11 @@ impl LocalResponder {
         self.request_lines
             .recv_timeout(Duration::from_secs(2))
             .expect("a request reached the responder")
+    }
+
+    /// The next request line received within `timeout`, or `None` when no request came.
+    pub(crate) fn try_next_request_line(&self, timeout: Duration) -> Option<String> {
+        self.request_lines.recv_timeout(timeout).ok()
     }
 }
 
@@ -99,10 +107,11 @@ fn answer(
         }
     }
     let response = match reply {
-        ScriptedReply::Body(body) => format!(
-            "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
-            body.len()
-        ),
+        ScriptedReply::Body(body) => ok_response(body),
+        ScriptedReply::DelayedBody(delay, body) => {
+            std::thread::sleep(*delay);
+            ok_response(body)
+        }
         ScriptedReply::RedirectTo(path) => format!(
             "HTTP/1.1 301 Moved Permanently\r\nLocation: http://{address}{path}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
         ),
@@ -120,4 +129,11 @@ fn answer(
     };
     let _ = stream.write_all(response.as_bytes());
     let _ = stream.flush();
+}
+
+fn ok_response(body: &str) -> String {
+    format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+        body.len()
+    )
 }

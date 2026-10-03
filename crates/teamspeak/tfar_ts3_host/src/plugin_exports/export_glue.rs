@@ -10,7 +10,8 @@ pub use super::event_glue::{
     InvokedMoveKind, PlainMoveKind, RawClientMove, RawInvoker, channel_move,
     client_self_variable_update, connect_status_change, delete_channel, invoked_client_move,
     new_channel, new_channel_created, plain_client_move, plugin_command, server_error,
-    server_permission_error, update_channel, update_channel_edited, update_client,
+    server_permission_error, talk_status_change, update_channel, update_channel_edited,
+    update_client,
 };
 pub use super::metadata_glue::MetadataText;
 pub use super::metadata_glue::{

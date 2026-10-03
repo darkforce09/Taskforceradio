@@ -26,7 +26,8 @@ method file adds an `impl Ts3` block: it turns text into a `CString` (refusing a
 `Ts3::check`, which treats `ERROR_ok` and `ERROR_ok_no_update` as success and otherwise asks
 `getErrorMessage` for the text of a `Ts3Error::Call`. A string or zero-terminated list TeamSpeak
 allocates goes through `owned_memory.rs`, which copies it and calls `freeMemory` exactly once.
-Paths come from a zeroed 4096-byte buffer read up to its first NUL. No method takes a lock, so no
+Paths come from a zeroed 4096-byte buffer read up to its first NUL. An optional 3D vector (the
+listener's forward and up) is passed as a null pointer when absent, as the originals do. No method takes a lock, so no
 TeamSpeak call ever runs under one; none may run on an audio thread.
 
 ## Boundaries

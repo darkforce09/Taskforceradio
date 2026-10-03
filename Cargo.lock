@@ -3330,6 +3330,7 @@ dependencies = [
  "tfar_sample_buffer",
  "tfar_spatial_audio",
  "thiserror 2.0.21",
+ "tracing",
 ]
 
 [[package]]
@@ -3349,6 +3350,7 @@ dependencies = [
  "tfar_sample_buffer",
  "tfar_spatial_audio",
  "thiserror 2.0.21",
+ "tracing",
 ]
 
 [[package]]

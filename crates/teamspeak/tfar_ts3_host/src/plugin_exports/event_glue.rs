@@ -1,5 +1,5 @@
 //! The bodies of the event exports: connection, channel and client events, server errors, our own
-//! variable updates and plugin commands.
+//! variable updates, plugin commands and talk status changes.
 //!
 //! **Role:** turns TeamSpeak's raw event arguments into the newtypes, `&str`s and bundles of
 //! `event_arguments` and calls the matching [`Ts3Plugin`] method.
@@ -19,7 +19,9 @@ use super::event_arguments::{
 };
 use super::plugin_trait::Ts3Plugin;
 use crate::ts3_functions::owned_memory::borrowed_text;
-use crate::{ChannelId, ClientId, ConnectStatus, ServerConnectionHandlerId, Visibility};
+use crate::{
+    ChannelId, ClientId, ConnectStatus, ServerConnectionHandlerId, TalkStatus, Visibility,
+};
 
 /// The raw "who did it" arguments TeamSpeak passes as a triple.
 #[derive(Clone, Copy)]
@@ -406,4 +408,21 @@ pub unsafe fn plugin_command<P: Ts3Plugin>(
             });
         });
     }
+}
+
+/// `onTalkStatusChangeEvent`: `status` is an `enum TalkStatus` value and `is_received_whisper`
+/// is non-zero for a whisper.
+pub fn talk_status_change<P: Ts3Plugin>(
+    plugin: &'static P,
+    server: u64,
+    status: c_int,
+    is_received_whisper: c_int,
+    client: u16,
+) {
+    plugin.on_talk_status_change(
+        ServerConnectionHandlerId(server),
+        TalkStatus::from_raw(status),
+        is_received_whisper != 0,
+        ClientId(client),
+    );
 }

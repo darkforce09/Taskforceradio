@@ -542,3 +542,60 @@ fn a_new_session_starts_from_fresh_state_and_frees_what_was_left() {
     });
     assert!(report().is_clean());
 }
+
+#[test]
+fn listener_attributes_accept_a_null_for_any_vector_and_log_it_as_none() {
+    let _session = session_with_one_server();
+    let table = fake_function_table();
+    let forward = sdk::Ts3Vector {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+    };
+    let up = sdk::Ts3Vector {
+        x: 0.0,
+        y: 0.0,
+        z: 1.0,
+    };
+    let answers = [
+        (table.systemset3d_listener_attributes)(
+            SERVER.0,
+            std::ptr::null(),
+            &raw const forward,
+            &raw const up,
+        ),
+        (table.systemset3d_listener_attributes)(
+            SERVER.0,
+            &raw const up,
+            std::ptr::null(),
+            &raw const up,
+        ),
+        (table.systemset3d_listener_attributes)(
+            SERVER.0,
+            std::ptr::null(),
+            std::ptr::null(),
+            std::ptr::null(),
+        ),
+    ];
+    assert_eq!(answers, [ERROR_OK; 3]);
+    let typed = |vector: &sdk::Ts3Vector| tfar_ts3_host::Ts3Vector {
+        x: vector.x,
+        y: vector.y,
+        z: vector.z,
+    };
+    let listener = |position, forward, up| HostCall::Systemset3DListenerAttributes {
+        server: SERVER,
+        position,
+        forward,
+        up,
+    };
+    assert_eq!(
+        calls(),
+        vec![
+            listener(None, Some(typed(&forward)), Some(typed(&up))),
+            listener(Some(typed(&up)), None, Some(typed(&up))),
+            listener(None, None, None),
+        ]
+    );
+    assert!(report().is_clean());
+}

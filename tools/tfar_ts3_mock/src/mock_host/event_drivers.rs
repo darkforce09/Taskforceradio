@@ -2,7 +2,7 @@
 //! into the plugin as the callbacks TeamSpeak raises.
 //!
 //! **Role:** `connect_server`, `disconnect_server`, `set_current_server`, `client_joins`,
-//! `client_moves`, `client_leaves`, `set_talking`, `set_client_metadata` and
+//! `client_moves`, `client_leaves`, `set_talking`, `talk_status_change`, `set_client_metadata` and
 //! `deliver_plugin_command`: each changes the fake state, then calls the matching
 //! `ts3plugin_on*` export.
 //!
@@ -19,7 +19,7 @@
 use std::collections::BTreeMap;
 use std::ffi::{CString, c_int};
 
-use tfar_ts3_host::{ChannelId, ClientId, ConnectStatus, ServerConnectionHandlerId};
+use tfar_ts3_host::{ChannelId, ClientId, ConnectStatus, ServerConnectionHandlerId, TalkStatus};
 use ts3plugin_sys::public_definitions::Visibility;
 
 use super::host_lifecycle::MockHost;
@@ -244,7 +244,8 @@ impl MockHost {
     }
 
     /// Sets whether `client` on the current server is talking (`CLIENT_FLAG_TALKING`); TFAR
-    /// reads the flag, so no callback is raised.
+    /// reads the flag, so no callback is raised; [`talk_status_change`](Self::talk_status_change)
+    /// also raises `onTalkStatusChangeEvent`.
     ///
     /// # Errors
     ///
@@ -258,6 +259,28 @@ impl MockHost {
             fake_client.is_talking = is_talking;
             Ok(())
         })
+    }
+
+    /// `client` (our own included) on the current server starts (`is_talking`) or stops talking,
+    /// as TeamSpeak reports it: sets `CLIENT_FLAG_TALKING`, then raises
+    /// `onTalkStatusChangeEvent` with `STATUS_TALKING` or `STATUS_NOT_TALKING`, not a whisper.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::NoCurrentServer`], [`Error::UnknownClient`].
+    pub fn talk_status_change(&self, client: ClientId, is_talking: bool) -> Result<()> {
+        self.set_talking(client, is_talking)?;
+        let server = self.current_server();
+        let status = if is_talking {
+            TalkStatus::Talking
+        } else {
+            TalkStatus::NotTalking
+        };
+        if let Some(on_talk_status_change) = self.exports().on_talk_status_change_event {
+            // SAFETY: plain values; the plugin may query the client, which exists.
+            unsafe { on_talk_status_change(server.0, status.to_raw(), 0, client.0) };
+        }
+        Ok(())
     }
 
     /// `client` on the current server publishes `metadata` (`CLIENT_META_DATA`), announced with
