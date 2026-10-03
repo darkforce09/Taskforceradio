@@ -75,6 +75,12 @@ impl PluginCore {
                 if is_talking {
                     state.reset_direction_sources_of(sender);
                 }
+                // As for `VOLUME` (plugin.cpp:3099), only a player with current game data is
+                // decided again: without it (a spectator, a player the game no longer reports)
+                // the rule would mute them on every word.
+                if !state.radio.has_fresh_data(sender) {
+                    return None;
+                }
                 let me = state.my_client().filter(|me| *me != sender)?;
                 let query = MuteQuery {
                     client_id: sender,
