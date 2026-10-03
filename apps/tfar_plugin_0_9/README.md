@@ -8,27 +8,43 @@ shared library. TeamSpeak 3 loads it from its plugins folder.
 ```text
 apps/tfar_plugin_0_9/
 ├── Cargo.toml  the `tfar_plugin_0_9` package (cdylib + rlib): tier 6, workspace lints and dependencies
-├── src/        the exports, the plugin lifecycle, the port choice and the stub game link handler
-└── tests/      the built `.so` in the mock TeamSpeak host: metadata, a game link ping, shutdown
+├── src/        the exports, the shared core, the game messages, the events, the voice callbacks
+└── tests/      the built `.so` in the mock TeamSpeak host: a game session, a dormant plugin, a ping
 ```
 
 ## How it works
 
-The TeamSpeak plugin for the 0.9.12 mod: the `ts3plugin_*` exports, the game link listener, the
-TeamSpeak event handlers, push-to-talk and voice activation, metadata and serious mode, wired to the
-0.9 crates. Today it is the stub that proves the path end to end:
+Every domain decision lives in the 0.9 library crates; the app is wiring, threads and TeamSpeak
+side effects. `ts3plugin_init` builds one `PluginCore` behind an `Arc`: TeamSpeak (through the
+`TeamSpeak` trait), one `ServerConnection` per established server connection (the
+`ServerRadioData`, the `MuteTracker`, the `VoiceProcessor` with its scratch and the channel's
+voice facts behind one `parking_lot::Mutex`, beside a `PlaybackMixer`), the `GameSession`, the
+radio sounds with the decoded remote sounds, the HRIR sphere and the local push-to-talk. Then it
+starts the game link server for the 0.9 flavour with the `GameLinkBridge`, the 100 ms service
+thread, the push-to-talk release thread and the update check.
 
-- `src/plugin_exports.rs` expands `ts3_plugin!` over the `static PLUGIN: TfarPlugin`, so every
-  `ts3plugin_*` symbol exists with the original 0.9.12 metadata (name `Task Force Arma 3 Radio`,
-  version `0.9.12`, author `[TF]Nkey`, description `Radio Addon for Arma 3`, info title
-  `Task Force Radio Status (0.9.12)`, no command keyword, API 26, autoload, no configure dialog).
-- `ts3plugin_init` installs the TeamSpeak log forwarder and starts a `GameLinkServer` for the 0.9
-  flavour on 127.0.0.1:47810 with `StubGameLinkHandler`, which answers `TS_INFO\tPING` with `PONG`
-  and every other sync call with `FAIL`.
-- `ts3plugin_shutdown` stops the server, joining its threads, then drops the log forwarder.
+```text
+Arma ──game link──▶ GameLinkBridge ──▶ parse (tfar_game_commands_0_9) ──▶ lock, apply, decide
+                                                                        └▶ unlock, TeamSpeak calls
+TeamSpeak events ──▶ PluginCore (nickname list, plugin commands, VOLUME broadcast, info panel)
+TeamSpeak audio  ──▶ try_lock ──▶ VoiceProcessor / PlaybackMixer ──▶ samples (pass through if busy)
+service thread   ──▶ game timeout, 4 s sweep and metadata, finished sounds freed
+```
 
-Every other callback keeps `Ts3Plugin`'s no-op default, so the plugin passes audio through
-untouched.
+- **Dormant until the game.** Until a message that counts as game activity arrives (anything but
+  `VERSION`), the plugin writes no metadata, nickname, mute, channel move or plugin command, and
+  every audio callback passes through.
+- **Locks.** Outermost first: the push-to-talk lock, the server map, one connection's state; the
+  game session mutex alone. No TeamSpeak call runs under the map or a state lock: each command reads
+  TeamSpeak, locks to decide, unlocks, then calls TeamSpeak. The voice callbacks only `try_read` and
+  `try_lock`, and read the TeamSpeak facts they need (our id, each client's channel name and plugin
+  metadata) from the state instead of calling TeamSpeak.
+- **Sound state** is made on the command threads with `ensure_dsp(dsp_requirements(..))` after
+  every `POS`, `FREQ`, `SPEAKERS`, push-to-talk, `VOLUME` and game start; the audio thread only
+  borrows it.
+- **Shutdown** stops the link server, the service and release threads first, then ends a running
+  game (way back from the serious channel, nickname given back), writes the disabled status, lifts
+  every mute, clears the state, and drops the log forwarder last.
 
 ## Getting started
 
@@ -42,48 +58,59 @@ cargo run -p tfar_ts3_mock -- target/debug/libtfar_plugin_0_9.so  # load it by h
 
 ## Configuration
 
-Two environment variables of the TeamSpeak process, read once in `ts3plugin_init`
-(`src/listen_port.rs`):
+Environment variables of the TeamSpeak process, read once in `ts3plugin_init`:
 
 - `TFAR_GAME_LINK_DEBUG`: `1` makes the plugin listen on the debug port 47811, the one a
-  `-tfdebug` Arma instance connects to; unset or any other value keeps 47810.
+  `-tfdebug` Arma instance connects to; unset or any other value keeps 47810 (`src/listen_port.rs`).
 - `TFAR_GAME_LINK_PORT`: for tests only. A port from 1 to 65535 overrides the port choice, so test
   suites that load the plugin never fight over the fixed ports; any other value is ignored with a
   warning in TeamSpeak's log.
+- `TFAR_SKIP_UPDATE_CHECK`: for tests only. `1` skips the update check, so no test reaches the
+  network (`src/running_plugin.rs`).
+
+From TeamSpeak: the push-to-talk delay of the capture profile in `settings.db` under TeamSpeak's
+config folder, read once at init; from the plugins folder: `radio-sounds/` and
+`tfar_hrir/IRC_1002_C.bin`. Without the sphere the HRTF is off, voices are placed by the 0.9 simple
+ILD, and the chat tab says so.
 
 ## Exports
 
 - Symbols: every `ts3plugin_*` export `ts3_plugin!` writes: name, version, API version, author,
   description, function pointers, init, shutdown, offers-configure, plugin ID, command keyword and
-  command, info title, data and free, autoload, and the event and audio callbacks.
+  command, info title, data and free, autoload, and the event and audio callbacks, with the original
+  0.9.12 metadata (name `Task Force Arma 3 Radio`, version `0.9.12`, author `[TF]Nkey`, info title
+  `Task Force Radio Status (0.9.12)`, no command keyword, API 26, autoload, no configure dialog).
 - Artifact: task_force_radio_linux_amd64.so, which `cargo xtask dist` copies from
-  libtfar_plugin_0_9.so into target/dist/tfar_0_9/ beside radio-sounds/.
+  libtfar_plugin_0_9.so into target/dist/tfar_0_9/ beside radio-sounds/ and tfar_hrir/; its plugin
+  name starts with `task_force_radio`, the prefix every 0.9.12 plugin accepts commands from.
 - Installed by: the owner, by hand, into the Flatpak TeamSpeak plugins folder
   (~/.var/app/com.teamspeak.TeamSpeak3/.ts3client/plugins/); TeamSpeak then lists the plugin in its
   plugin settings.
 
 ## Boundaries
 
-- Depends on: `tfar_ts3_host` (the safe TeamSpeak export layer and the log forwarder);
-  `tfar_game_link_server` (the plugin-side link listener); `tracing` (the plugin's log lines);
-  `thiserror` for the error type. Declared for the full plugin and not used by the stub yet:
-  `tfar_ts3_settings_db`, `tfar_web_requests`, `tfar_voice_pipeline_0_9`,
-  `tfar_radio_routing_0_9`, `tfar_client_state_0_9`, `tfar_game_commands_0_9`,
-  `tfar_plugin_commands_0_9`, `tfar_playback_mixer`, `tfar_geometry`, `tfar_arma_values`. In tests,
-  `tfar_ts3_mock` and `tfar_game_link_client`.
+- Depends on: `tfar_ts3_host` (exports, function table, log forwarder); `tfar_ts3_settings_db`
+  (push-to-talk delay); `tfar_game_link_server` (the listener); `tfar_web_requests` (update check,
+  Piwik); `tfar_game_commands_0_9`, `tfar_plugin_commands_0_9`, `tfar_client_state_0_9`,
+  `tfar_radio_routing_0_9`, `tfar_voice_pipeline_0_9` (every 0.9 decision); `tfar_playback_mixer`,
+  `tfar_hrtf`, `tfar_sample_buffer`, `tfar_dsp_filters`, `tfar_spatial_audio` (sounds and voice
+  buffers); `tfar_geometry`, `tfar_arma_values`; `parking_lot`, `crossbeam-channel`, `tracing`,
+  `thiserror`. In tests, `tfar_ts3_mock` and `tfar_game_link_client`.
 - Used by: TeamSpeak 3, which loads the shared library; `tools/tfar_ts3_mock` in the plugin test
   suites.
-- Rules: a plugin whose game link never connected this session stays dormant and passes audio
-  through untouched; no thread outlives `ts3plugin_shutdown` (`tests/plugin_in_mock_host.rs`).
-  Tier 6 in `apps`: every workspace dependency has a lower tier and follows the edge matrix in
-  `crates/README.md` (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export
+- Rules: a dormant plugin writes nothing to TeamSpeak and passes audio through
+  (`tests/plugin_scenario_in_mock_host.rs`, `without_game_activity_the_plugin_stays_dormant`); no
+  thread outlives `ts3plugin_shutdown` and no TeamSpeak memory leaks (`leak_report` in both host
+  tests). Tier 6 in `apps`: every workspace dependency has a lower tier and follows the edge matrix
+  in `crates/README.md` (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export
   glue only (`cargo xtask verify unsafe-allowlist`).
 
 ## Related documentation
 
 - [Game link protocol](/documentation/architecture/game_link_protocol.md) — the ports, the
-  handshake and the plugin side of the link.
+  handshake, the dormant rule and the plugin side of the link.
+- [Audio pipeline](/documentation/architecture/audio_pipeline.md) — the 0.9 voice chain and the
+  callbacks.
 - [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports.
-- [Windows dependencies](/documentation/program/behaviour_specs/windows_dependencies.md) — the Win32
-  objects the originals use and what replaces them.
+- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs the port fixes.

@@ -47,6 +47,18 @@ tfar_playback_mixer.workspace = true
 tfar_geometry.workspace = true
 # The parsers for Arma's field, array and position strings.
 tfar_arma_values.workspace = true
+# The HRIR sphere the sound state's direction sources and the remote radio sounds render with.
+tfar_hrtf.workspace = true
+# The stereo scratch of the voice callbacks and the copy into and out of TeamSpeak's channels.
+tfar_sample_buffer.workspace = true
+# The loudspeaker, vehicle and under-water filters of the positional remote radio sounds.
+tfar_dsp_filters.workspace = true
+# The 0.9 simple ILD that places a remote radio sound when no HRIR sphere is loaded.
+tfar_spatial_audio.workspace = true
+# The per-connection state lock the audio callbacks `try_lock`, and the push-to-talk condvar.
+parking_lot.workspace = true
+# The stop signal of the service thread.
+crossbeam-channel = { workspace = true, features = ["std"] }
 # Log lines of the plugin and its game link, forwarded to TeamSpeak's log by `tfar_ts3_host`.
 tracing = { workspace = true, features = ["std"] }
 

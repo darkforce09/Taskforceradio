@@ -24,3 +24,12 @@ fn a_new_plugin_runs_nothing_and_shutdown_is_harmless() {
 fn the_plugin_serves_the_0_9_flavour() {
     assert_eq!(FLAVOUR, Flavour::V0_9);
 }
+
+#[test]
+fn every_chat_command_is_answered_handled_as_the_original_answers_zero() {
+    let plugin = TfarPlugin::new();
+    assert_eq!(
+        plugin.process_command(ServerConnectionHandlerId(1), "anything"),
+        CommandHandling::Handled
+    );
+}
