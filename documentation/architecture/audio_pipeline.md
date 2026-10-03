@@ -59,7 +59,8 @@ TS post-process samples (mono or more channels)
   |   hearing, same vehicle or no isolation: gain = 0.9 distance curve
   |   hearing, other vehicle:  Butterworth LP2 at 20000*(1-loss)/4, gain = curve*(1-loss)^1.2
   |   cannot speak:            Butterworth LP4 at 100 Hz, gain = curve(not hearing)*14
-  |   -> tfar_hrtf at the sender's position, rotated by my view angle (F-001)
+  |   reach of zero or less: gain 0 beyond 1 m (F-051)
+  |   -> tfar_hrtf at the sender's position, rotated by my view angle (F-001), +4 dB makeup (D23)
   |
   |  RADIO ("original")
   |   -> compressor (threshold 65 dB, ratio 0.1, attack 1 ms, release 300 ms)
@@ -71,6 +72,7 @@ TS post-process samples (mono or more channels)
   |          phone              -> Butterworth BP2 1850/1550, gain vol*10
   |        on a ground speaker:  Butterworth BP1 2000/1000 x4, speaker distance gain or vehicle LP,
   |                              waveZ < -1.1 -> LP4 100 Hz x14, tfar_hrtf at the speaker position
+  |                              (with the +4 dB makeup, where D23 gives speakers none)
   |        -> saturating mix
   -> gain x globalVolume -> back into TS channels 0-1, others zeroed
 ```
@@ -99,12 +101,16 @@ TS post-process samples
   |
   |  DIRECT SPEECH (not me, not a spectator, distance + 2*objectInterception <= voiceVolume+15)
   |   hearing, same vehicle or no isolation:
-  |       objectInterception > 0 -> Butterworth LP2 at 2000 - min(n,5)*strength (one-frame look-back)
+  |       objectInterception > 0 -> Butterworth LP2 at 2000 - clamp(n,0,5)*strength (F-046:
+  |       0 Hz or below is silence; F-045: per-client strength), with a one-frame look-back
+  |       that a sender's first frame skips (F-061)
   |   hearing, other vehicle:  LP2 at 20000*(1-loss)/4, gain = attenuation*(1-loss)^1.2
   |   cannot speak:            LP4 100 Hz, gain = attenuation(not hearing)*14
+  |       attenuation = 10^(-1.5*d/maxD), 1 within 1 m, 0 below 0.001, maxD 5 m when not hearing
   |   -> level: tfar_spatial_audio distance curve (the 25-point TFAR curve, scaled by the sender's
   |      voiceVolume) x emitter cone (inner 90 deg, outer 135 deg, 1.8 / 1.0) when voiceCone is on
-  |   -> direction: tfar_hrtf at the unit direction to the sender (F-009) relative to my view
+  |   -> direction: tfar_hrtf at the unit direction to the sender (F-009) relative to my view,
+  |      +4 dB makeup (D23)
   |   -> direct-speech compressor (threshold 80 dB, ratio 0.1, 1 ms / 300 ms)  (F-013)
   |
   |  RADIO ("original")
@@ -115,10 +121,12 @@ TS post-process samples
   |          airborne   -> airborne effect;   digital_lr -> LR effect
   |          phone      -> Butterworth BP2 1850/1550, gain vol*10;   anything else -> silence
   |          error = calcErrorLevel(min(antenna loss, distance/range)) (F-011), gain vol*0.35
-  |        ground speaker: BP1 2000/1000 x4, speaker distance gain or vehicle LP,
-  |                        waveZ < -1.1 -> LP4 100 Hz x14, SW effect, tfar_hrtf at the speaker
+  |        ground speaker: BP1 2000/1000 x4, speaker distance gain or vehicle LP by the
+  |                        speaker's vehicle alone (F-062), waveZ < -1.1 -> LP4 100 Hz x14,
+  |                        SW effect, tfar_hrtf at the speaker without the makeup (D23)
   |        intercom: LR effect at error 0, gain intercomVolume, x0.1 headset lowered,
-  |                  x(1-intercomDucking) while any LR route is louder than 2
+  |                  x(1-intercomDucking) while I receive any LR transmission above
+  |                  volume 2, from any sender (F-063)
   |        -> saturating mix
   -> gain x globalVolume -> back into TS channels 0-1, others zeroed
 ```
@@ -153,10 +161,25 @@ stereo).
   at a time, and glides direction and gain across the steps. The adapter adds a constant
   480 frames, 10 ms at 48 kHz (`ADDED_LATENCY_FRAMES`), to every source it renders.
 - **Level:** the compensated IRCAM sphere is diffuse-field equalised, so a source comes out quieter
-  than its input: about −4 dB straight ahead and −9 dB behind. Nothing compensates for it yet (see
-  the open questions below).
+  than its input: about −4 dB straight ahead and −9 dB behind. Direct speech gets
+  `HRTF_MAKEUP_GAIN_DB`, +4 dB, after the HRTF in both voice pipelines, so speech straight ahead
+  keeps the original's loudness
+  ([D23](/documentation/decisions/audio.md#2026-10-03--direct-speech-keeps-a-4-db-makeup-gain-after-the-hrtf-d23)).
+  Speaker radios get the HRTF without the makeup: the simple ILD they replace is itself 0.625
+  (−4.1 dB) straight ahead. The 1.0 pipeline does so; the 0.9 pipeline still renders its
+  loudspeakers with the makeup. The simple-ILD fallback never gets it.
 - **Memory:** every `HrtfSource` holds its own copy of the prepared processor, about 2 MB, so a
-  pipeline with one source per (sender, key) grows by about 2 MB per audible source.
+  pipeline with one source per (sender, key) grows by about 2 MB per audible source. This is
+  accepted, with no pool, shared processor or cap
+  ([D26](/documentation/decisions/audio.md#2026-10-03--hrtf-memory-of-about-2-mb-per-source-is-accepted-with-no-pooling-d26));
+  the 1.0 voice source is ensured only while the sender is within direct-speech range.
+- **Reset when a sender starts talking:** a source keeps up to 480 frames of the previous
+  utterance in its block adapter, so each plugin resets a sender's sources (direct speech and every
+  speaker radio) when that sender starts talking, and the old tail never replays. The trigger is
+  TeamSpeak's `onTalkStatusChangeEvent` with talking set, through `tfar_ts3_host`'s
+  `on_talk_status_change`. Until both apps use that event, the 1.0 plugin resets on a remote
+  tangent press and after 200 ms without a voice block from the sender, and the 0.9 plugin resets
+  the sources only with the voices (`resetVoices`).
 - **The sphere file:** both plugins load it from `tfar_hrir/IRC_1002_C.bin` relative to
   TeamSpeak's plugins folder, beside `radio-sounds/`; `cargo xtask dist` copies the sphere and its
   `CREDITS.md` from `assets/hrir/` into `tfar_hrir/` of each version folder. When the file cannot
@@ -175,15 +198,17 @@ stereo).
   volume, as in the original.
 - **Distance volume:** `volumeAttenuation` (1.0) and `volumeFromDistance` (0.9) belong to the voice
   pipeline crates; `tfar_spatial_audio` builds the 25-point curve from the function it is given and
-  owns no distance rule of its own.
+  owns no distance rule of its own. The 1.0 attenuation is `10^(−1.5·d/maxD)`, the original's
+  `10^((d/(2·maxD))·−60/20)` (−30 dB at `maxD`), 1 within 1 m and 0 below 0.001
+  (`reference/tfar_1_0/ts/src/helpers.hpp:122`). The 0.9 gain is `d^−0.3·max(0, maxD − d)/maxD`,
+  1 within 1 m, and 0 beyond 1 m for a reach of zero or less (F-051).
 
 ## Open questions
 
-- **Makeup gain for the HRTF:** whether the voice pipelines add a fixed gain after `tfar_hrtf`
-  (about +4 dB, the frontal loss of the diffuse-field EQ) so that direct speech keeps the
-  original's loudness, or accept the quieter output. Pending the owner.
-- **HRTF memory:** about 2 MB per source; whether many simultaneous senders need a shared
-  processor or a cap on HRTF sources. Pending a measurement in M6 and M7.
+None. The makeup gain after the HRTF is decided by
+[D23](/documentation/decisions/audio.md#2026-10-03--direct-speech-keeps-a-4-db-makeup-gain-after-the-hrtf-d23)
+and the HRTF memory by
+[D26](/documentation/decisions/audio.md#2026-10-03--hrtf-memory-of-about-2-mb-per-source-is-accepted-with-no-pooling-d26).
 
 ## Differences from Windows players
 

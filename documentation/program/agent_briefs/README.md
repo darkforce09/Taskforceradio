@@ -34,6 +34,11 @@ documentation/program/agent_briefs/
 ├── m6m7_v5w6_plugin_apps.md              M6 + M7 V5 + W6: the full TeamSpeak plugin apps
 ├── m7_w1_commands_settings_1_0.md        M7 W1: tfar_plugin_settings_1_0, the 1.0 game and plugin commands
 ├── m7_w3_state_routing_antennas_1_0.md   M7 W3: tfar_client_state_1_0, tfar_radio_routing_1_0, tfar_antennas_1_0
+├── m8_c1_milestone_close.md              M8 C1: the full gate run, dist check, runbook and milestone close
+├── m8_l4_infrastructure_gaps.md          M8 L4: game link ports and queue, talk status, mock, web requests, mixer
+├── m8_p5_audio_path_gaps.md              M8 P5: allocation-free routing, F-091, local tangent, remote sounds
+├── m8_r3_records.md                      M8 R3: the records pass after the plugin apps, D23 to D26
+├── m8_v6w7_app_migration.md              M8 V6 + W7: both plugin apps onto the new library APIs, D24, D25
 └── shared_brief.md                       rules, environment facts, crate edges and report format for every agent
 ```
 

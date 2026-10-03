@@ -29,9 +29,10 @@ in floating point. Every filter in the port runs in f64 DF2T.
 
 ### Dormant plugin
 
-A plugin whose game link has never connected in this TeamSpeak session. It leaves the metadata,
-nickname, mutes and channel alone and passes audio through untouched, so the 0.9 and 1.0 plugins can be
-loaded at the same time.
+A plugin with no game in progress: its game link has had no game message in this TeamSpeak session, or
+its game has ended and its game-end handling has finished (D25). It leaves the metadata, nickname, mutes
+and channel alone and passes audio through untouched, so the 0.9 and 1.0 plugins can be loaded at the
+same time and the mods switched within one TeamSpeak session.
 
 ### Game link
 

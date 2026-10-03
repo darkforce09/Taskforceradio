@@ -17,8 +17,9 @@ Crates: `tfar_game_link_protocol` (frames and codec), `tfar_game_link_server` (t
 - The **plugin listens**; the **extension connects**. Under Proton, wine sockets are host sockets, so
   a DLL inside Arma reaches a listener on the host's loopback.
 - One link per mod version. The 0.9 and 1.0 pairs use different ports and never talk to each other.
-- The plugin accepts one session at a time. A new connection whose HELLO is accepted replaces the
-  previous session, which is closed (Arma restarted, or a second instance took over).
+- The plugin accepts one session at a time, over both its ports. A new connection whose HELLO is
+  accepted replaces the previous session, which is closed (Arma restarted, or a second instance
+  took over, on the same port or the other one): the newest valid HELLO wins.
 - Both sides set `TCP_NODELAY`.
 
 ## Ports
@@ -34,18 +35,20 @@ The plugin binds `127.0.0.1` only, never another interface.
   the original `isDebugArmaInstance` (`reference/tfar_1_0/extensions/task_force_radio_pipe/stdafx.h`
   defines the parameter; `reference/tfar_1_0/extensions/task_force_radio_pipe/dllmain.cpp:21` picks
   the debug pipe).
-- **Plugin:** listens on the normal port. The original plugin switched to the debug pipe only by
-  recompiling (`reference/tfar_0_9_12/ts/src/plugin.cpp:51`). Both plugins listen on the debug port
-  instead when TeamSpeak's environment sets `TFAR_GAME_LINK_DEBUG` to exactly `1`; any other value
-  keeps the normal port. This is the default answer to the roadmap's debug-port question, pending
-  the owner (`listen_port.rs` in each plugin app).
+- **Plugin:** listens on both its normal and its `-tfdebug` port at once
+  ([D24](/documentation/decisions/game_link.md#2026-10-03--each-plugin-listens-on-both-its-normal-and-its--tfdebug-port-d24)).
+  The original plugin switched to the debug pipe only by recompiling
+  (`reference/tfar_0_9_12/ts/src/plugin.cpp:51`). Each port has its own accept loop and its own
+  bind retry, and both feed the one session slot of the [roles](#roles): a normal and a debug Arma
+  instance need no plugin setting, and the one whose HELLO is accepted last holds the session.
 - **Test override:** `TFAR_GAME_LINK_PORT`, set to a port from 1 to 65535, makes the plugin listen
-  on that port and wins over `TFAR_GAME_LINK_DEBUG`; any other value is ignored with a warning. It
+  on that one port instead of the two of the table; any other value is ignored with a warning. It
   exists for test suites that load the plugin, so parallel tests never fight over the fixed ports
   (`apps/tfar_plugin_0_9/tests/plugin_in_mock_host.rs`). The extensions have no override: they
   always use the port of the table.
-- A port already in use: the plugin logs it to the TeamSpeak log and the current tab, stays
-  dormant, and retries the bind every 5 s.
+- A port already in use: the plugin logs it to the TeamSpeak log and the current tab and retries
+  that bind every 5 s; the other port keeps working meanwhile. With neither port bound the plugin
+  stays dormant.
 
 ## Frames
 
@@ -187,15 +190,20 @@ two-character speaking codes) comes from the plugin's command crates, as the beh
 
 ## Dormant plugin
 
-A plugin whose game link has never had a game message this TeamSpeak session (0.9: never in game;
-1.0: never game-connected) is **dormant**. A dormant plugin:
+A plugin with no game in progress is **dormant**: one whose game link has had no game message
+this TeamSpeak session (0.9: never in game; 1.0: never game-connected), and one whose game has
+ended and whose game-end handling has finished
+([D25](/documentation/decisions/game_link.md#2026-10-03--a-plugin-returns-to-dormant-after-its-game-end-handling-d25)).
+A dormant plugin:
 - writes no metadata, nickname or channel, and sends no mute, unmute or plugin command;
 - passes every audio callback through untouched;
-- keeps listening on its port and answers the handshake.
+- keeps listening on its ports and answers the handshake.
 
-This lets both Rust plugins be installed at once: only the version whose mod is running acts.
-Switching mods without restarting TeamSpeak leaves the first plugin active but out of game; the
-open findings in [progress](/documentation/program/progress.md) track that case (OF-011).
+The game-end handling of the disconnect row in [connected and disconnected](#connected-and-disconnected)
+runs in full first: every mute lifted, the `off` sound, the channel and nickname given back, and the
+metadata set to "not in game" once. Then the plugin is dormant until its next game message, which
+wakes it as the first one did. This lets both Rust plugins be installed at once and the mods be
+switched within one TeamSpeak session: only the version whose mod is in a game acts.
 
 ## Sequence
 

@@ -11,9 +11,9 @@ yet decided live in the [roadmap](/documentation/roadmap.md)'s open questions.
 
 ```text
 documentation/decisions/
-├── audio.md       HRTF through the hrtf crate, the distance and cone gain model, the filter libraries
+├── audio.md       HRTF through the hrtf crate, gain model, filters, makeup gain, HRTF memory
 ├── bug_policy.md  fix every bug, keep every feature, C and C++ only as oracles, the port order
-├── game_link.md   Proton only, the TeamSpeak bindings, the TCP game link, its ports, the focus frame
+├── game_link.md   Proton only, the TeamSpeak bindings, the TCP game link, its ports, focus, dormancy
 └── workspace.md   the rewrite, repository, names, layout, conventions, git, panics, dist, toolchain, libraries
 ```
 
@@ -28,8 +28,8 @@ the file of its subject. The approved program plan's ids stay in the heading in 
 | Subject | Plan decisions |
 |---|---|
 | `workspace.md` | D1, D5, D6, D7, D8, D11, D12, D13, D14, D15, D16, D17, D18 |
-| `game_link.md` | D2, D22, plus the TCP link, the ports and the focus frame |
-| `audio.md` | D19, D20, D21 |
+| `game_link.md` | D2, D22, D24, D25, plus the TCP link, the ports and the focus frame |
+| `audio.md` | D19, D20, D21, D23, D26 |
 | `bug_policy.md` | D3, D4, D9, D10 |
 
 An entry is never reworded. When a decision changes, a new entry records the new one and names the old

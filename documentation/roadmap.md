@@ -136,7 +136,7 @@ The artifacts the owner installs by hand, the finished runbook, and every bug fi
 | Licence of the Rust port (D16: `UNLICENSED` until decided; upstream is APL-SA) | Before release (M8) |
 | Are the `hrtf` crate's click artefacts on fast-moving sources acceptable, or does `tfar_hrtf` need its own crossfade? | M4 |
 | Does 32-bit Arma matter? | Settled as no, unless the owner says otherwise |
-| How the plugin picks the `-tfdebug` port (default since 30678a8: `TFAR_GAME_LINK_DEBUG=1` in TeamSpeak's environment; see the [game link protocol](/documentation/architecture/game_link_protocol.md#ports)) | The owner confirms the default |
-| Does direct speech get a makeup gain after the HRTF, whose diffuse-field EQ costs about 4 dB in front and 9 dB behind? See the [audio pipeline](/documentation/architecture/audio_pipeline.md#open-questions) | M6 and M7, before the voice pipelines |
-| Does about 2 MB of memory per HRTF source need a cap or a shared processor? | M6 and M7 |
+| How the plugin picks the `-tfdebug` port | Settled on 2026-10-03: it listens on both ports ([D24](/documentation/decisions/game_link.md#2026-10-03--each-plugin-listens-on-both-its-normal-and-its--tfdebug-port-d24)) |
+| Does direct speech get a makeup gain after the HRTF, whose diffuse-field EQ costs about 4 dB in front and 9 dB behind? | Settled on 2026-10-03: +4 dB on direct speech ([D23](/documentation/decisions/audio.md#2026-10-03--direct-speech-keeps-a-4-db-makeup-gain-after-the-hrtf-d23)) |
+| Does about 2 MB of memory per HRTF source need a cap or a shared processor? | Settled on 2026-10-03: no ([D26](/documentation/decisions/audio.md#2026-10-03--hrtf-memory-of-about-2-mb-per-source-is-accepted-with-no-pooling-d26)) |
 | May the IRCAM LISTEN sphere, published with no licence text, ship in the dist folders with its credit? | Before release (M8) |

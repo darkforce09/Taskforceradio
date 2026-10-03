@@ -80,22 +80,22 @@ Every "Ports from" path is a file in the reference trees; a `:line` points at th
 | `tfar_game_commands_0_9` | 2 | `reference/tfar_0_9_12/ts/src/plugin.cpp:1769` (`processGameCommand`), `reference/tfar_0_9_12/ts/src/plugin.cpp:1534` (`ts_info`) | — | F-003, F-020, F-021, F-027, F-028 | M6 |
 | `tfar_plugin_commands_0_9` | 2 | `reference/tfar_0_9_12/ts/src/plugin.cpp:3071` (`processPluginCommand`), `reference/tfar_0_9_12/ts/src/plugin.cpp:1300` (metadata block) | — | — | M6 |
 | `tfar_radio_effects_0_9` | 2 | `reference/tfar_0_9_12/ts/src/RadioEffect.h` | `fastrand` | F-019 | M6 |
-| `tfar_client_state_0_9` | 3 | `reference/tfar_0_9_12/ts/src/plugin.cpp:192` (`CLIENT_DATA`), `reference/tfar_0_9_12/ts/src/plugin.cpp:370` (server data), `reference/tfar_0_9_12/ts/src/plugin.cpp:1938` (expiry), `reference/tfar_0_9_12/ts/src/plugin.cpp:1418` (serious mode) | `parking_lot`, `arc-swap` | F-002, F-022, F-024 | M6 |
+| `tfar_client_state_0_9` | 3 | `reference/tfar_0_9_12/ts/src/plugin.cpp:192` (`CLIENT_DATA`), `reference/tfar_0_9_12/ts/src/plugin.cpp:370` (server data), `reference/tfar_0_9_12/ts/src/plugin.cpp:1938` (expiry), `reference/tfar_0_9_12/ts/src/plugin.cpp:1418` (serious mode) | `parking_lot`, `arc-swap` | F-002, F-022, F-024, F-032, F-033 | M6 |
 | `tfar_radio_routing_0_9` | 4 | `reference/tfar_0_9_12/ts/src/plugin.cpp:989` (`isOverLocalRadio`), `reference/tfar_0_9_12/ts/src/plugin.cpp:1091` (`isOverRadio`), `reference/tfar_0_9_12/ts/src/plugin.cpp:1188` (mute status), `reference/tfar_0_9_12/ts/src/plugin.cpp:1356` (dead players) | — | F-023, F-025 | M6 |
-| `tfar_voice_pipeline_0_9` | 5 | `reference/tfar_0_9_12/ts/src/plugin.cpp:2653` (stereo function), `reference/tfar_0_9_12/ts/src/plugin.cpp:2852` (captured voice), `reference/tfar_0_9_12/ts/src/plugin.cpp:2476` (`processRadioEffect`), `reference/tfar_0_9_12/ts/src/plugin.cpp:698` (`volumeFromDistance`) | — | — | M6 |
+| `tfar_voice_pipeline_0_9` | 5 | `reference/tfar_0_9_12/ts/src/plugin.cpp:2653` (stereo function), `reference/tfar_0_9_12/ts/src/plugin.cpp:2852` (captured voice), `reference/tfar_0_9_12/ts/src/plugin.cpp:2476` (`processRadioEffect`), `reference/tfar_0_9_12/ts/src/plugin.cpp:698` (`volumeFromDistance`) | — | F-051 | M6 |
 
 ## crates/version_1_0
 
 | Crate | Tier | Ports from (reference file:line) | External crates | Fixes | Milestone |
 |---|---|---|---|---|---|
 | `tfar_plugin_settings_1_0` | 0 | `reference/tfar_1_0/ts/src/settings.hpp` | `parking_lot` | F-031 | M7 |
-| `tfar_antennas_1_0` | 2 | `reference/tfar_1_0/ts/src/antennaManager.cpp:24` (`findConnection`), `reference/tfar_1_0/ts/src/antennaManager.h` | — | — | M7 |
+| `tfar_antennas_1_0` | 2 | `reference/tfar_1_0/ts/src/antennaManager.cpp:24` (`findConnection`), `reference/tfar_1_0/ts/src/antennaManager.h` | — | F-041 | M7 |
 | `tfar_game_commands_1_0` | 2 | `reference/tfar_1_0/ts/src/CommandProcessor.cpp:72` (sync), `reference/tfar_1_0/ts/src/CommandProcessor.cpp:224` (async), `reference/tfar_1_0/ts/src/task_force_radio.hpp:47` (FREQ) | — | F-003, F-029 | M7 |
 | `tfar_plugin_commands_1_0` | 2 | `reference/tfar_1_0/ts/src/plugin.cpp:1026` (`processPluginCommand`), `reference/tfar_1_0/ts/src/Teamspeak.cpp:644` (metadata block) | — | F-014 | M7 |
 | `tfar_radio_effects_1_0` | 2 | `reference/tfar_1_0/ts/src/RadioEffect.hpp` | `fastrand` | F-011 | M7 |
-| `tfar_client_state_1_0` | 3 | `reference/tfar_1_0/ts/src/clientData.cpp`, `reference/tfar_1_0/ts/src/serverData.cpp`, `reference/tfar_1_0/ts/src/task_force_radio.cpp`, `reference/tfar_1_0/ts/src/plugin.cpp:879` (`processTangentPress`) | `parking_lot`, `arc-swap` | F-002, F-008, F-015, F-016, F-017 | M7 |
+| `tfar_client_state_1_0` | 3 | `reference/tfar_1_0/ts/src/clientData.cpp`, `reference/tfar_1_0/ts/src/serverData.cpp`, `reference/tfar_1_0/ts/src/task_force_radio.cpp`, `reference/tfar_1_0/ts/src/plugin.cpp:879` (`processTangentPress`) | `parking_lot`, `arc-swap` | F-002, F-008, F-015, F-016, F-017, F-042–F-047 | M7 |
 | `tfar_radio_routing_1_0` | 4 | `reference/tfar_1_0/ts/src/clientData.cpp:148` (`isOverLocalRadio`), `reference/tfar_1_0/ts/src/clientData.cpp:267` (`isOverRadio`), `reference/tfar_1_0/ts/src/plugin.cpp:68` (mute status) | — | — | M7 |
-| `tfar_voice_pipeline_1_0` | 5 | `reference/tfar_1_0/ts/src/plugin.cpp:455` (`processVoiceData`), `reference/tfar_1_0/ts/src/plugin.cpp:789` (captured voice), `reference/tfar_1_0/ts/src/helpers.hpp:122` (`volumeAttenuation`) | — | F-013 | M7 |
+| `tfar_voice_pipeline_1_0` | 5 | `reference/tfar_1_0/ts/src/plugin.cpp:455` (`processVoiceData`), `reference/tfar_1_0/ts/src/plugin.cpp:789` (captured voice), `reference/tfar_1_0/ts/src/helpers.hpp:122` (`volumeAttenuation`) | — | F-013, F-061–F-063 | M7 |
 
 ## apps
 
@@ -104,8 +104,8 @@ files their installed names. Apps sit at tier 6 (plugins) or 2 (extensions).
 
 | Crate | Tier | Ports from (reference file:line) | External crates | Fixes | Milestone |
 |---|---|---|---|---|---|
-| `tfar_plugin_0_9` | 6 | `reference/tfar_0_9_12/ts/src/plugin.cpp:2217` (init), `reference/tfar_0_9_12/ts/src/plugin.cpp:1977` (ServiceThread), `reference/tfar_0_9_12/ts/src/plugin.cpp:2398` (TS events) | `tracing`, `profiling`, `tracy-client` (feature `tracy`), `parking_lot`, `crossbeam-channel` | — | M0 skeleton, M2 exports, M6 full |
-| `tfar_plugin_1_0` | 6 | `reference/tfar_1_0/ts/src/plugin.cpp:289` (init), `reference/tfar_1_0/ts/src/plugin.cpp:133` (ServiceThread), `reference/tfar_1_0/ts/src/Teamspeak.cpp:838` (`/tfar` commands) | `tracing`, `profiling`, `tracy-client` (feature `tracy`), `parking_lot`, `crossbeam-channel` | — | M0 skeleton, M2 exports, M7 full |
+| `tfar_plugin_0_9` | 6 | `reference/tfar_0_9_12/ts/src/plugin.cpp:2217` (init), `reference/tfar_0_9_12/ts/src/plugin.cpp:1977` (ServiceThread), `reference/tfar_0_9_12/ts/src/plugin.cpp:2398` (TS events) | `tracing`, `profiling`, `tracy-client` (feature `tracy`), `parking_lot`, `crossbeam-channel` | F-071 | M0 skeleton, M2 exports, M6 full |
+| `tfar_plugin_1_0` | 6 | `reference/tfar_1_0/ts/src/plugin.cpp:289` (init), `reference/tfar_1_0/ts/src/plugin.cpp:133` (ServiceThread), `reference/tfar_1_0/ts/src/Teamspeak.cpp:838` (`/tfar` commands) | `tracing`, `profiling`, `tracy-client` (feature `tracy`), `parking_lot`, `crossbeam-channel` | F-081, F-082 | M0 skeleton, M2 exports, M7 full |
 | `tfar_extension_0_9` | 2 | `reference/tfar_0_9_12/arma3/@task_force_radio/task_force_radio_pipe/task_force_radio_pipe.cpp:53` | — | — | M0 skeleton, M3 transport, M6 full |
 | `tfar_extension_1_0` | 2 | `reference/tfar_1_0/extensions/task_force_radio_pipe/task_force_radio_pipe.cpp:9`, `reference/tfar_1_0/extensions/task_force_radio_pipe/SharedMemoryTransfer.cpp:250` | — | — | M0 skeleton, M3 transport, M7 full |
 
@@ -120,15 +120,15 @@ files their installed names. Apps sit at tier 6 (plugins) or 2 (extensions).
 
 ## Workspace edges
 
-Every workspace dependency, read from `cargo metadata` on 2026-10-03; crates with none are left
-out. Dev-dependencies serve tests only and are exempt from tier order.
+Every workspace dependency, read from `cargo metadata` on 2026-10-03 at c98fc87; crates with
+none are left out. Dev-dependencies serve tests only and are exempt from tier order.
 
 | Crate | Depends on | Dev-depends on |
 |---|---|---|
 | `tfar_antennas_1_0` | `tfar_arma_values`, `tfar_geometry` | — |
 | `tfar_arma_values` | `tfar_geometry` | — |
 | `tfar_client_state_0_9` | `tfar_dsp_filters`, `tfar_dynamics`, `tfar_game_commands_0_9`, `tfar_geometry`, `tfar_hrtf`, `tfar_radio_effects_0_9` | — |
-| `tfar_client_state_1_0` | `tfar_dsp_filters`, `tfar_dynamics`, `tfar_game_commands_1_0`, `tfar_geometry`, `tfar_hrtf`, `tfar_plugin_settings_1_0`, `tfar_radio_effects_1_0` | — |
+| `tfar_client_state_1_0` | `tfar_arma_values`, `tfar_dsp_filters`, `tfar_dynamics`, `tfar_game_commands_1_0`, `tfar_geometry`, `tfar_hrtf`, `tfar_plugin_commands_1_0`, `tfar_plugin_settings_1_0`, `tfar_radio_effects_1_0`, `tfar_sample_buffer` | — |
 | `tfar_dsp_filters` | `tfar_sample_buffer` | — |
 | `tfar_dynamics` | `tfar_sample_buffer` | — |
 | `tfar_extension_0_9` | `tfar_arma_extension_abi`, `tfar_game_link_client` | `tfar_game_link_protocol`, `tfar_game_link_server` |
@@ -140,15 +140,15 @@ out. Dev-dependencies serve tests only and are exempt from tier order.
 | `tfar_golden_vectors` | — | `tfar_dsp_filters`, `tfar_dynamics`, `tfar_geometry`, `tfar_sample_buffer`, `tfar_spatial_audio` |
 | `tfar_hrtf` | `tfar_geometry`, `tfar_sample_buffer` | — |
 | `tfar_playback_mixer` | `tfar_sample_buffer` | — |
-| `tfar_plugin_0_9` | `tfar_arma_values`, `tfar_client_state_0_9`, `tfar_game_commands_0_9`, `tfar_game_link_server`, `tfar_geometry`, `tfar_playback_mixer`, `tfar_plugin_commands_0_9`, `tfar_radio_routing_0_9`, `tfar_ts3_host`, `tfar_ts3_settings_db`, `tfar_voice_pipeline_0_9`, `tfar_web_requests` | `tfar_game_link_client`, `tfar_ts3_mock` |
-| `tfar_plugin_1_0` | `tfar_antennas_1_0`, `tfar_arma_values`, `tfar_client_state_1_0`, `tfar_debug_window`, `tfar_game_commands_1_0`, `tfar_game_link_server`, `tfar_geometry`, `tfar_playback_mixer`, `tfar_plugin_commands_1_0`, `tfar_plugin_settings_1_0`, `tfar_radio_routing_1_0`, `tfar_ts3_host`, `tfar_ts3_settings_db`, `tfar_voice_pipeline_1_0`, `tfar_web_requests` | `tfar_game_link_client`, `tfar_ts3_mock` |
+| `tfar_plugin_0_9` | `tfar_arma_values`, `tfar_client_state_0_9`, `tfar_dsp_filters`, `tfar_game_commands_0_9`, `tfar_game_link_server`, `tfar_geometry`, `tfar_hrtf`, `tfar_playback_mixer`, `tfar_plugin_commands_0_9`, `tfar_radio_routing_0_9`, `tfar_sample_buffer`, `tfar_spatial_audio`, `tfar_ts3_host`, `tfar_ts3_settings_db`, `tfar_voice_pipeline_0_9`, `tfar_web_requests` | `tfar_game_link_client`, `tfar_ts3_mock` |
+| `tfar_plugin_1_0` | `tfar_antennas_1_0`, `tfar_arma_values`, `tfar_client_state_1_0`, `tfar_debug_window`, `tfar_dsp_filters`, `tfar_game_commands_1_0`, `tfar_game_link_server`, `tfar_geometry`, `tfar_hrtf`, `tfar_playback_mixer`, `tfar_plugin_commands_1_0`, `tfar_plugin_settings_1_0`, `tfar_radio_routing_1_0`, `tfar_sample_buffer`, `tfar_spatial_audio`, `tfar_ts3_host`, `tfar_ts3_settings_db`, `tfar_voice_pipeline_1_0`, `tfar_web_requests` | `tfar_game_link_client`, `tfar_ts3_mock` |
 | `tfar_plugin_commands_0_9` | `tfar_arma_values` | — |
 | `tfar_plugin_commands_1_0` | `tfar_arma_values` | — |
 | `tfar_radio_effects_0_9` | `tfar_arma_values`, `tfar_dsp_filters`, `tfar_sample_buffer` | — |
 | `tfar_radio_effects_1_0` | `tfar_arma_values`, `tfar_dsp_filters`, `tfar_sample_buffer` | — |
 | `tfar_radio_routing_0_9` | `tfar_client_state_0_9`, `tfar_geometry` | — |
-| `tfar_radio_routing_1_0` | `tfar_antennas_1_0`, `tfar_client_state_1_0`, `tfar_geometry`, `tfar_plugin_settings_1_0` | — |
+| `tfar_radio_routing_1_0` | `tfar_antennas_1_0`, `tfar_arma_values`, `tfar_client_state_1_0`, `tfar_geometry`, `tfar_plugin_settings_1_0` | — |
 | `tfar_spatial_audio` | `tfar_geometry`, `tfar_sample_buffer` | — |
 | `tfar_ts3_mock` | `tfar_game_link_client`, `tfar_game_link_protocol`, `tfar_ts3_host` | — |
 | `tfar_voice_pipeline_0_9` | `tfar_client_state_0_9`, `tfar_dsp_filters`, `tfar_dynamics`, `tfar_hrtf`, `tfar_playback_mixer`, `tfar_radio_effects_0_9`, `tfar_radio_routing_0_9`, `tfar_sample_buffer`, `tfar_spatial_audio` | — |
-| `tfar_voice_pipeline_1_0` | `tfar_client_state_1_0`, `tfar_dsp_filters`, `tfar_dynamics`, `tfar_hrtf`, `tfar_playback_mixer`, `tfar_plugin_settings_1_0`, `tfar_radio_effects_1_0`, `tfar_radio_routing_1_0`, `tfar_sample_buffer`, `tfar_spatial_audio` | — |
+| `tfar_voice_pipeline_1_0` | `tfar_antennas_1_0`, `tfar_client_state_1_0`, `tfar_dsp_filters`, `tfar_dynamics`, `tfar_geometry`, `tfar_hrtf`, `tfar_playback_mixer`, `tfar_plugin_settings_1_0`, `tfar_radio_effects_1_0`, `tfar_radio_routing_1_0`, `tfar_sample_buffer`, `tfar_spatial_audio` | — |

@@ -95,3 +95,44 @@ inside the game process under wine, can.
 `windows-sys`); the 0.9 extension sends no `FOCUS` frames, since 0.9.12 has no focus-aware behaviour.
 
 **Supersedes:** none.
+
+### 2026-10-03 — Each plugin listens on both its normal and its -tfdebug port (D24)
+
+**Context:** An Arma instance started with `-tfdebug` connects to the debug port of its mod (47811 or
+47821), the normal one to the normal port. The original plugins switched to the debug pipe only by
+recompiling. The plugin apps listened on one port, the debug one only when TeamSpeak's environment set
+`TFAR_GAME_LINK_DEBUG=1`, a setting outside the game that a player has to change by hand; that variable
+was the game link protocol's default, pending the owner, and never an entry here.
+
+**Decision:** Each plugin binds both its normal and its `-tfdebug` port on 127.0.0.1. Each port has its
+own accept loop and its own bind retry, and both feed one session slot: the newest connection whose
+`HELLO` is valid wins and replaces the session before it. `TFAR_GAME_LINK_DEBUG` is removed. The
+test-only `TFAR_GAME_LINK_PORT` stays, so test suites that load a plugin never fight over the fixed
+ports.
+
+**Consequences:** A normal and a debug Arma instance need no plugin change; the one that connects last
+holds the session. A port already in use fails alone and is retried while the other port keeps working.
+`tfar_game_link_server` takes a list of ports in its `ServerConfig` and exposes the bound addresses;
+its tests cover a `HELLO` on each port, the session switching ports, and a busy debug port.
+
+**Supersedes:** none.
+
+### 2026-10-03 — A plugin returns to dormant after its game-end handling (D25)
+
+**Context:** A plugin stays dormant until its first game message of the TeamSpeak session, then acts.
+Under that rule it never went back to sleep, so after playing 0.9 and then 1.0 in one TeamSpeak session
+the 0.9 plugin kept writing its out-of-game metadata beside the 1.0 one (OF-011). The options were to
+accept it and restart TeamSpeak between mods, or to let a plugin sleep again after its game ends.
+
+**Decision:** Once a plugin's game-end handling has finished (every mute lifted, the off sound played,
+the channel and nickname given back, the metadata set to "not in game" once), the plugin is dormant
+again: no metadata, nickname, channel, mute or plugin-command side effect until game activity resumes.
+Its next game message wakes it as the first one did.
+
+**Consequences:** Both Rust plugins can stay installed and the mods can be switched within one TeamSpeak
+session; only the plugin whose mod is in a game acts. The game link stays bound and answers the
+handshake while dormant. Each plugin app holds a mock test that sees no side effect for 10 s of service
+ticks after a game end, and side effects again once game activity resumes.
+
+**Supersedes:** the dormant rule of "2026-10-02 — The game link is length-prefixed frames over localhost
+TCP", under which a plugin is dormant only until its game link first connects.

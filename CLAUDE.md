@@ -11,10 +11,11 @@ TeamSpeak plugin (a Linux `.so`), talking over localhost TCP. Shared logic lives
 mods themselves are archived byte for byte in `reference/` and never edited; no SQF changes, and the
 extension keeps the name `task_force_radio_pipe`.
 
-**Current state:** milestone M0 (workspace skeleton, reference archive, gates and documentation) is in
-progress. Resume from [progress.md](/documentation/program/progress.md), which holds the current milestone,
-the last green commit, the next action and the handoff; the milestones are in the
-[roadmap](/documentation/roadmap.md).
+**Current state:** all code is written: every library crate, both extensions, both full plugin apps
+and the tools. M8's completion waves are under way (records and library gaps, then the app migration,
+then the full gate run and milestone close); every live check waits for the owner. Resume from
+[progress.md](/documentation/program/progress.md), which holds the current milestone, the last green
+commit, the next action and the handoff; the milestones are in the [roadmap](/documentation/roadmap.md).
 
 ## 1. Project laws
 
