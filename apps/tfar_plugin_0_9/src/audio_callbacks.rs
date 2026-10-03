@@ -57,6 +57,7 @@ impl PluginCore {
             voice,
             facts,
             voice_scratch,
+            logged_voice_outcomes,
             ..
         } = &mut *guard;
         let Some(listener) = facts.my_client else {
@@ -74,6 +75,7 @@ impl PluginCore {
             is_in_game: self.is_in_game(),
         };
         let outcome = voice.process_sender(radio, &context, voice_scratch, Instant::now());
+        log_voice_outcome_change(logged_voice_outcomes, radio, &context, outcome);
         if outcome != VoiceOutcome::PassThrough {
             // The counts were checked by the copy above, so the write back cannot fail.
             let _ = write_back_from_stereo(voice_scratch, data.samples, data.channels, data.frames);
@@ -155,4 +157,40 @@ impl PluginCore {
             *volume = 1.0;
         }
     }
+}
+
+/// Logs a sender's voice outcome when it differs from the last one logged for that client id,
+/// with the facts the voice chain decided on. Diagnostics for live sessions: one line per change,
+/// so a player who stays processed or silenced costs nothing after the first frame.
+fn log_voice_outcome_change(
+    logged: &mut [u8],
+    radio: &tfar_client_state_0_9::ServerRadioData,
+    context: &VoiceFrameContext<'_>,
+    outcome: VoiceOutcome,
+) {
+    let code = match outcome {
+        VoiceOutcome::Processed => 1,
+        VoiceOutcome::Silenced => 2,
+        VoiceOutcome::PassThrough => 3,
+    };
+    let Some(previous) = logged.get_mut(usize::from(context.sender.0)) else {
+        return;
+    };
+    if *previous == code {
+        return;
+    }
+    *previous = code;
+    let fresh = radio.fresh_client_by_id(context.sender);
+    tracing::info!(
+        client = context.sender.0,
+        outcome = ?outcome,
+        nickname = fresh.map_or("<no fresh entry>", |(nickname, _)| nickname),
+        has_fresh_data = radio.has_fresh_data(context.sender),
+        listener_has_fresh_data = radio.has_fresh_data(context.listener),
+        metadata_shows_plugin = context.sender_metadata_shows_plugin,
+        channel = context.sender_channel_name,
+        in_game = context.is_in_game,
+        voice_volume = fresh.map(|(_, client)| client.voice_volume),
+        "voice: outcome changed"
+    );
 }

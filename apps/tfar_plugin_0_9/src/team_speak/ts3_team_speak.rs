@@ -184,7 +184,9 @@ impl TeamSpeakActions for Ts3TeamSpeak {
         server: ServerConnectionHandlerId,
         clients: &[ClientId],
     ) -> Result<(), Ts3Error> {
-        self.ts3.request_mute_clients(server, clients)
+        let result = self.ts3.request_mute_clients(server, clients);
+        tracing::info!(clients = ?clients, ok = result.is_ok(), "mute: requested");
+        result
     }
 
     fn unmute_clients(
@@ -192,7 +194,9 @@ impl TeamSpeakActions for Ts3TeamSpeak {
         server: ServerConnectionHandlerId,
         clients: &[ClientId],
     ) -> Result<(), Ts3Error> {
-        self.ts3.request_unmute_clients(server, clients)
+        let result = self.ts3.request_unmute_clients(server, clients);
+        tracing::info!(clients = ?clients, ok = result.is_ok(), "mute: unmute requested");
+        result
     }
 
     fn set_own_nickname(

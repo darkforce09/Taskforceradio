@@ -57,6 +57,9 @@ pub struct ServerState {
     /// Whether the running game started before the mission named its serious channel, so the
     /// first `VERSION` that names one still makes the move.
     pub is_serious_move_pending: bool,
+    /// The last voice outcome logged per TeamSpeak client id (0 none, 1 processed, 2 silenced,
+    /// 3 passed through), so the voice callback logs only changes; sized for every `anyID`.
+    pub logged_voice_outcomes: Box<[u8]>,
 }
 
 impl ServerState {
@@ -73,12 +76,30 @@ impl ServerState {
             own_voice_stream: None,
             channel_before_serious_mode: None,
             is_serious_move_pending: false,
+            logged_voice_outcomes: vec![0; usize::from(u16::MAX) + 1].into_boxed_slice(),
         }
     }
 
     /// Takes in a channel snapshot: the nickname list, our nickname and the voice facts.
     pub fn apply_channel_snapshot(&mut self, snapshot: &ChannelSnapshot) {
-        self.radio.update_nicknames(&snapshot.nickname_pairs());
+        let pairs = snapshot.nickname_pairs();
+        for (client_id, nickname) in &pairs {
+            match self.radio.client(nickname).map(|client| client.client_id) {
+                None => tracing::info!(
+                    nickname = %nickname,
+                    client = client_id.0,
+                    "nickname list: a new client entry"
+                ),
+                Some(previous) if previous != *client_id => tracing::info!(
+                    nickname = %nickname,
+                    previous = previous.0,
+                    client = client_id.0,
+                    "nickname list: a nickname moved to another client id"
+                ),
+                Some(_) => {}
+            }
+        }
+        self.radio.update_nicknames(&pairs);
         if !snapshot.my_nickname.is_empty() {
             self.radio.set_my_nickname(&snapshot.my_nickname);
         }
