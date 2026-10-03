@@ -24,6 +24,9 @@ use crate::game_link::async_commands::apply_async_message;
 use crate::game_link::sync_replies::sync_reply;
 use crate::runtime::PluginRuntime;
 
+/// The command name of a position update, which the sync path logs before it queues it.
+const POSITION_PREFIX: &str = "POS\t";
+
 /// The game link handler of the running plugin; see the module header.
 #[derive(Debug)]
 pub struct LinkHandler {
@@ -55,7 +58,11 @@ impl GameLinkHandler for LinkHandler {
             return;
         };
         let text = String::from_utf8_lossy(text);
-        runtime.game_messages.lock().push(&text);
+        // A `POS` here is the one the sync path queued and logged already, as the original skips
+        // logging it twice (`CommandProcessor.cpp:225`).
+        if !text.starts_with(POSITION_PREFIX) {
+            runtime.game_messages.lock().push(&text);
+        }
         match parse(&text) {
             Ok(GameCommand::MissionEnd) => runtime.end_mission(Instant::now()),
             Ok(command) => {

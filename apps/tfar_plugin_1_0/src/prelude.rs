@@ -4,7 +4,7 @@
 
 pub use crate::crate_role::CRATE_ROLE;
 pub use crate::listen_port::{
-    DEBUG_PORT_VARIABLE, PORT_OVERRIDE_VARIABLE, server_config, server_config_from_environment,
+    PORT_OVERRIDE_VARIABLE, server_config, server_config_from_environment,
 };
 pub use crate::plugin_lifecycle::{
     FLAVOUR, LOG_CHANNEL, PLUGIN_VERSION, SKIP_UPDATE_CHECK_VARIABLE, TfarPlugin,

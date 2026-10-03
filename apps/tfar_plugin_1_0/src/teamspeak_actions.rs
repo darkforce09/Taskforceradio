@@ -106,7 +106,8 @@ pub trait TeamSpeakActions: Send + Sync {
     );
     /// TeamSpeak's own 3D attenuation off (`systemset3DSettings(1, 1)`).
     fn neutralise_3d_settings(&self, server: ServerConnectionHandlerId);
-    /// The 3D listener at the origin.
+    /// The 3D listener at the origin, its forward and up vectors left as TeamSpeak has them
+    /// (`systemset3DListenerAttributes(pos, nullptr, nullptr)`, `Teamspeak.cpp:686`).
     fn neutralise_listener(&self, server: ServerConnectionHandlerId);
     /// `client`'s 3D voice position at the origin.
     fn neutralise_client(&self, server: ServerConnectionHandlerId, client: ClientId);
@@ -326,7 +327,7 @@ impl TeamSpeakActions for Ts3 {
     fn neutralise_listener(&self, server: ServerConnectionHandlerId) {
         logged(
             "systemset3DListenerAttributes",
-            self.system_set_3d_listener_attributes(server, ORIGIN, ORIGIN, ORIGIN),
+            self.system_set_3d_listener_attributes(server, ORIGIN, None, None),
         );
     }
 

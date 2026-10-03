@@ -45,7 +45,6 @@ pub fn post_process_voice(runtime: &PluginRuntime, data: &mut PostProcessVoiceDa
     let settings = runtime.settings_snapshot();
     let now = Instant::now();
     let sender = state_client_id(data.client);
-    state.note_voice_block(sender, now);
     let ServerState {
         session,
         voice,
@@ -129,13 +128,10 @@ pub fn captured_voice(runtime: &PluginRuntime, data: &mut CapturedVoiceData<'_>)
         sender_metadata,
         now,
     };
-    if let Err(error) = voice.append_own_voice_for_speakers(
-        session,
-        &context,
-        captured_stereo,
-        &runtime.sounds.mixer,
-    ) {
-        tracing::trace!(%error, "the own voice did not reach the speaker stream");
+    if let Some(voice) = voice.process_own_voice_for_speakers(session, &context, captured_stereo)
+        && !runtime.sounds.push_own_voice(voice.as_slice())
+    {
+        tracing::trace!("the own voice did not reach the speaker stream");
     }
 }
 

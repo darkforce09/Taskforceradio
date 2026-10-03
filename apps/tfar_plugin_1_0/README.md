@@ -16,11 +16,14 @@ apps/tfar_plugin_1_0/
 
 The TeamSpeak plugin for the 1.0 mod, wiring the 1.0 library crates to TeamSpeak:
 
-- **Game link.** `ts3plugin_init` starts a `GameLinkServer` for the 1.0 flavour on 127.0.0.1:47820.
-  Sync calls (`TS_INFO`, `POS`, `IS_SPEAKING`, `IS_SPEAKING_BULK`) are answered on the session
-  thread; async messages (`POS`, `FREQ`, `KILLED`, `DFRAME`, `SPEAKERS`, the tangents, `SETCFG`,
-  `MISSIONEND`, `RadioTwrAdd`/`RadioTwrDel`, `TRACK`, `collectDebugInfo`) run in arrival order on
-  the async worker. `SETCFG` goes through `tfar_plugin_settings_1_0` and pushes needcfg.
+- **Game link.** `ts3plugin_init` starts a `GameLinkServer` for the 1.0 flavour on both
+  127.0.0.1:47820 and the `-tfdebug` port 47821; the newest valid `HELLO` on either port holds the
+  session. Sync calls (`TS_INFO`, `POS`, `IS_SPEAKING`, `IS_SPEAKING_BULK`) are answered on the
+  session thread; a sync `POS` is queued with `GameLinkServer::queue_async` and applied on the
+  async worker, as the original queues it. Async messages (`POS`, `FREQ`, `KILLED`, `DFRAME`,
+  `SPEAKERS`, the tangents, `SETCFG`, `MISSIONEND`, `RadioTwrAdd`/`RadioTwrDel`, `TRACK`,
+  `collectDebugInfo`) run in arrival order on the async worker. `SETCFG` goes through
+  `tfar_plugin_settings_1_0` and pushes needcfg.
 - **State.** One `ServerState` per connection behind a `parking_lot` mutex: the 1.0 session, the
   mute tracker, the radio towers, the voice processor and its scratch. Apply functions run under
   the lock; TeamSpeak is called after it is released.
@@ -29,13 +32,23 @@ The TeamSpeak plugin for the 1.0 mod, wiring the 1.0 library crates to TeamSpeak
   disconnect lifts every mute, plays `off`, restores channel, nickname and voice activation and
   sets needcfg.
 - **Audio.** The post-process callback runs `tfar_voice_pipeline_1_0`, the captured callback feeds
-  speaker radios, the mixed-playback callback adds the radio sounds; all three only `try_lock`.
-- **Push-to-talk.** A local tangent forces the microphone on and broadcasts to the channel; the
-  release waits TeamSpeak's push-to-talk delay plus `tangentReleaseDelay` on its own thread.
+  speaker radios through the mixer's own-voice `StreamProducer`, the mixed-playback callback adds
+  the radio sounds; all three only `try_lock`. A remote tangent sound is shaped by
+  `render_remote_tangent_sound`. When TeamSpeak reports a sender starts talking, the sender's
+  HRTF direction sources are reset, so an utterance never replays the last one's tail.
+- **Push-to-talk.** A local tangent goes through `SessionState::apply_local_tangent`, then forces
+  the microphone on and broadcasts to the channel; the release waits TeamSpeak's push-to-talk
+  delay plus `tangentReleaseDelay` on its own thread.
 - **Service.** Every 100 ms the game link poll; every 4 s the serious-channel move (focus-gated),
   the expiry sweep, every mute, the client metadata and the own metadata.
+- **Web requests.** The update check and each `TRACK` run as cancellable `BackgroundRequest`s;
+  shutdown cancels them first and joins them last within 1 s. A request already waiting for the
+  network is not interrupted: one still running at the deadline is logged and left, cancelled, and
+  ends within its own timeout (10 s for the update check, 5 s for tracking) without acting.
 - **Diagnostics.** `/tfar diag|pos|full|debug|rstflt`, the debug window and the dump.
-- **Dormant.** Until the first game message the plugin sends nothing and passes audio through.
+- **Dormant.** Until the first game message, and again after each game end has been handled
+  (mutes lifted, `off` played, channel and nickname back, the not-in-game metadata written once),
+  the plugin sends nothing and passes audio through; the next game message wakes it.
 
 ## Getting started
 
@@ -51,13 +64,14 @@ cargo run -p tfar_ts3_mock -- target/debug/libtfar_plugin_1_0.so  # load it by h
 
 Environment variables of the TeamSpeak process, read once in `ts3plugin_init`:
 
-- `TFAR_GAME_LINK_DEBUG`: `1` makes the plugin listen on the debug port 47821, the one a
-  `-tfdebug` Arma instance connects to; unset or any other value keeps 47820.
-- `TFAR_GAME_LINK_PORT`: for tests only. A port from 1 to 65535 overrides the port choice, so test
-  suites that load the plugin never fight over the fixed ports; any other value is ignored with a
-  warning in TeamSpeak's log.
+- `TFAR_GAME_LINK_PORT`: for tests only. A port from 1 to 65535 is the one port the plugin then
+  listens on, instead of both 47820 and 47821, so test suites that load the plugin never fight
+  over the fixed ports; any other value is ignored with a warning in TeamSpeak's log.
 - `TFAR_SKIP_UPDATE_CHECK`: for tests only. `1` skips the update check, so a test without network
-  starts no thread that outlives the plugin.
+  sends no request.
+- `TFAR_SERVICE_TICK_MS`: for tests only. 1 to 100 sets the service tick in milliseconds and
+  scales the 4 s sweep (40 ticks) and the 500 ms snapshot (5 ticks) with it; the game link's
+  timeout and debounce stay in real time. Any other value is ignored with a warning.
 
 Files under TeamSpeak's plugins folder: `radio-sounds/` (the WAVs) and
 `tfar_hrir/IRC_1002_C.bin` (the HRIR sphere; without it HRTF is off and the chat tab says so).
@@ -84,16 +98,18 @@ Cargo features, off by default: `tracy` (profiling zones to a Tracy viewer throu
   (update check, Piwik); `tfar_voice_pipeline_1_0`, `tfar_radio_routing_1_0`,
   `tfar_client_state_1_0`, `tfar_game_commands_1_0`, `tfar_plugin_commands_1_0`,
   `tfar_plugin_settings_1_0`, `tfar_antennas_1_0`; `tfar_playback_mixer`, `tfar_hrtf`,
-  `tfar_sample_buffer`, `tfar_dsp_filters`, `tfar_spatial_audio`; `tfar_geometry`,
-  `tfar_arma_values`; `tfar_debug_window`; `parking_lot`, `arc-swap`, `crossbeam-channel`,
+  `tfar_sample_buffer`; `tfar_arma_values`; `tfar_debug_window`; `parking_lot`, `arc-swap`, `crossbeam-channel`,
   `profiling`, `tracing`, `thiserror`, and `tracy-client` behind `tracy`. In tests,
   `tfar_ts3_mock` and `tfar_game_link_client`.
 - Used by: TeamSpeak 3, which loads the shared library; `tools/tfar_ts3_mock` in the plugin test
   suites.
-- Rules: a plugin whose game link never carried a game message this session stays dormant and
-  passes audio through untouched; no TeamSpeak call while a server lock is held; the audio
-  callbacks never block; no thread outlives `ts3plugin_shutdown` except an update check still
-  waiting for the network (`tests/game_scenarios.rs`). Tier 6 in `apps`: every workspace
+- Rules: a plugin is dormant, making no side effect and passing audio through untouched, until
+  its first game message and again after each game end until the next one (decision D25,
+  `after_its_game_end_the_plugin_is_dormant_until_game_activity_resumes`); no TeamSpeak call
+  while a server lock is held; the audio callbacks never block; `ts3plugin_shutdown` returns
+  within 2 s and joins every thread it started, except a web request still waiting for the
+  network after its 1 s join budget (`shutdown_joins_every_thread_the_plugin_started_within_two_seconds`
+  in `tests/game_scenarios.rs`). Tier 6 in `apps`: every workspace
   dependency has a lower tier and follows the edge matrix in `crates/README.md`
   (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export glue only
   (`cargo xtask verify unsafe-allowlist`).

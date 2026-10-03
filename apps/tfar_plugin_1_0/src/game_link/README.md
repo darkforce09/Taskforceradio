@@ -9,7 +9,7 @@ messages, the local tangent and the settings.
 apps/tfar_plugin_1_0/src/game_link/
 ├── async_commands.rs   the async messages applied in order: POS, FREQ, KILLED, DFRAME, SPEAKERS, towers, TRACK
 ├── link_handler.rs     `LinkHandler`: the `GameLinkHandler` of the running plugin
-├── local_tangent.rs    the own `TANGENT` and `RELEASE_ALL_TANGENTS`: transmit state, sounds, push-to-talk
+├── local_tangent.rs    the own `TANGENT` and `RELEASE_ALL_TANGENTS`: session apply, sounds, push-to-talk
 ├── mod.rs              `mod` lines and the re-export of `LinkHandler`
 ├── settings_apply.rs   `SETCFG`: the settings, needcfg, serious mode and the version warning
 └── sync_replies.rs     the answers to `TS_INFO`, `POS`, `IS_SPEAKING` and `IS_SPEAKING_BULK`
@@ -21,8 +21,12 @@ apps/tfar_plugin_1_0/src/game_link/
 `MISSIONEND` counts as a game message (`record_game_message`, which runs a due connect transition
 first); `MISSIONEND` forgets the game's messages so the game disconnects. Sync calls are parsed
 with `tfar_game_commands_1_0::parse` and answered from the fixed replies or the session; a `POS`
-answers its speaking code and is then applied on the same thread. Async messages arrive from the
-link server's FIFO worker and go through `apply_async_message`.
+answers its speaking code and is queued with `GameLinkServer::queue_async` behind every async
+message already queued, as the original queues it. Async messages, those queued `POS` calls
+included, arrive from the link server's FIFO worker and go through `apply_async_message`; a
+`TRACK` starts a cancellable Piwik request the runtime keeps until shutdown. The local tangent
+goes through `SessionState::apply_local_tangent` and `apply_local_release_all_tangents`, then
+push-to-talk and the broadcast.
 
 ## Boundaries
 

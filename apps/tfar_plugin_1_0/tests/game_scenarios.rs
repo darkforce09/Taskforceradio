@@ -1,14 +1,17 @@
 //! The built 1.0 plugin `.so` in the mock TeamSpeak host, driven by a real game link client:
-//! the full game scenario, the dormant plugin, the mission end, needcfg, radio towers and the
-//! debug window without a display.
+//! the full game scenario, the dormant plugin, the return to dormant after a game end, the mission
+//! end, needcfg, radio towers, the debug window without a display, the HRTF reset when a sender
+//! starts talking, and a shutdown that joins every thread within 2 s.
 //!
 //! The plugin reads its port and switches from the process environment, so each test re-runs its
 //! own binary as a child with `TFAR_GAME_LINK_PORT` set to a free port, the update check off and
-//! no X11 display; the child loads the plugin and runs one scenario.
+//! no X11 display (a scenario may set more variables, such as a shorter service tick or a local
+//! proxy); the child loads the plugin and runs one scenario.
 
 #[cfg(test)]
 mod scenarios {
     use std::f64::consts::TAU;
+    use std::io::{Read, Write};
     use std::net::TcpListener;
     use std::path::{Path, PathBuf};
     use std::process::Command;
@@ -35,6 +38,15 @@ mod scenarios {
 
     /// Runs `scenario` in a child process of this test binary, or right here inside the child.
     pub(crate) fn run_in_child(test_name: &str, scenario: fn()) {
+        run_in_child_with(test_name, scenario, &[]);
+    }
+
+    /// [`run_in_child`] with the variables of `environment` set in the child, over the defaults.
+    pub(crate) fn run_in_child_with(
+        test_name: &str,
+        scenario: fn(),
+        environment: &[(&str, String)],
+    ) {
         if std::env::var(CHILD_MARKER).as_deref() == Ok(test_name) {
             scenario();
             return;
@@ -44,8 +56,12 @@ mod scenarios {
             .env(CHILD_MARKER, test_name)
             .env("TFAR_GAME_LINK_PORT", free_port().to_string())
             .env("TFAR_SKIP_UPDATE_CHECK", "1")
-            .env_remove("TFAR_GAME_LINK_DEBUG")
             .env_remove("DISPLAY")
+            .envs(
+                environment
+                    .iter()
+                    .map(|(name, value)| (*name, value.as_str())),
+            )
             .status()
             .unwrap();
         assert!(
@@ -108,7 +124,21 @@ mod scenarios {
 
     /// Loads the plugin with the radio sounds of `name`'s folder.
     fn load_plugin(name: &str) -> (MockHost, PathBuf) {
+        load_plugin_from(plugin_folder(name))
+    }
+
+    /// Loads the plugin with the radio sounds and the HRIR sphere of `assets/hrir/`, so HRTF is
+    /// on.
+    fn load_plugin_with_hrir(name: &str) -> (MockHost, PathBuf) {
         let folder = plugin_folder(name);
+        let sphere = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/hrir/IRC_1002_C.bin");
+        std::fs::create_dir_all(folder.join("tfar_hrir")).unwrap();
+        std::fs::copy(sphere, folder.join("tfar_hrir/IRC_1002_C.bin")).unwrap();
+        load_plugin_from(folder)
+    }
+
+    /// Loads the plugin with the plugins folder `folder`.
+    fn load_plugin_from(folder: PathBuf) -> (MockHost, PathBuf) {
         let library = locate_cdylib("tfar_plugin_1_0").expect("libtfar_plugin_1_0.so is built");
         let options = HostOptions {
             plugin_path: Some(folder.clone()),
@@ -331,6 +361,21 @@ mod scenarios {
             if clients.contains(&charlie))
                 })
             },
+        );
+        let centred_listener = host.calls().into_iter().any(|call| {
+            matches!(
+                call,
+                HostCall::Systemset3DListenerAttributes {
+                    position: Some(_),
+                    forward: None,
+                    up: None,
+                    ..
+                }
+            )
+        });
+        assert!(
+            centred_listener,
+            "the own POS centres the listener, its forward and up vectors left null"
         );
         let metadata = own_text_values(&host.calls(), ClientProperty::MetaData);
         assert!(
@@ -586,12 +631,283 @@ mod scenarios {
         assert!(host.leak_report().is_clean());
         let _ = std::fs::remove_dir_all(folder);
     }
+
+    /// The calls that change something in TeamSpeak: everything but queries and log lines.
+    fn acting_calls(calls: Vec<HostCall>) -> Vec<HostCall> {
+        calls
+            .into_iter()
+            .filter(|call| !matches!(call, HostCall::Query(_) | HostCall::LogMessage { .. }))
+            .collect()
+    }
+
+    /// Whether the latest own metadata says the game is `playing` or not.
+    fn metadata_says_playing(calls: &[HostCall], playing: bool) -> bool {
+        let expected = if playing {
+            "Playing: [B]Yes[/B]"
+        } else {
+            "Playing: [B]No[/B]"
+        };
+        own_text_values(calls, ClientProperty::MetaData)
+            .last()
+            .is_some_and(|text| text.contains(expected))
+    }
+
+    /// The `FREQ` message of the local player called `nickname`.
+    fn frequencies(nickname: &str) -> String {
+        format!("FREQ\t[\"30.0|7|0|tf_anprc152\"]\t[]\ttrue\t20\t{nickname}\t0\t7\t1\t1\t20")
+    }
+
+    /// Run with a 10 ms service tick, so 1 s of wall time is 10 s of service ticks.
+    pub(crate) fn dormant_again_after_game_end() {
+        let (mut host, folder) = load_plugin("dormant-again");
+        let (own, bravo, charlie) = connect_three_clients(&host);
+        let client = game_client();
+        client.send_focus(true).unwrap();
+        start_game_in_serious_channel(&host, &client, own, &folder);
+        position_three_clients(&host, &client, charlie);
+        // The connect transition opens the 500 ms debounce window before the disconnect may follow.
+        std::thread::sleep(Duration::from_millis(600));
+        send(&client, "MISSIONEND");
+        wait_for(&host, "the game end handling", |calls| {
+            played(calls, &folder, "radio-sounds/off")
+                && own_text_values(calls, ClientProperty::Nickname).last()
+                    == Some(&"Alpha TS".to_owned())
+                && metadata_says_playing(calls, false)
+        });
+        std::thread::sleep(Duration::from_millis(100));
+        host.take_calls();
+
+        // Ten seconds of service ticks, plugin commands, focus frames and voice: nothing acts.
+        let ticks_started = Instant::now();
+        host.deliver_plugin_command(bravo, REMOTE_PLUGIN_NAME, &format!("REQVOL\t{}", bravo.0))
+            .unwrap();
+        host.deliver_plugin_command(bravo, REMOTE_PLUGIN_NAME, "VOLUME\tBravo\t20\ttrue")
+            .unwrap();
+        host.deliver_plugin_command(
+            bravo,
+            REMOTE_PLUGIN_NAME,
+            "TANGENT\tPRESSED\t30.0\t20000\tdigital\ttf_anprc152_7\t1\t0\tBravo",
+        )
+        .unwrap();
+        client.send_focus(false).unwrap();
+        client.send_focus(true).unwrap();
+        let samples = sine(1_000.0, 8_000.0, 0, 480);
+        assert_eq!(
+            host.post_process_voice(bravo, &samples, 1).unwrap().samples,
+            samples,
+            "a dormant plugin passes voice through"
+        );
+        std::thread::sleep(Duration::from_secs(1).saturating_sub(ticks_started.elapsed()));
+        let acting = acting_calls(host.calls());
+        assert!(
+            acting.is_empty(),
+            "a plugin dormant after its game end acts on nothing: {acting:#?}"
+        );
+
+        // The next game message wakes it as the first one did.
+        send(&client, &frequencies("Alpha"));
+        wait_for(&host, "the game to start again", |calls| {
+            played(calls, &folder, "radio-sounds/on")
+                && own_text_values(calls, ClientProperty::Nickname) == ["Alpha"]
+                && metadata_says_playing(calls, true)
+        });
+        host.shutdown();
+        assert!(host.leak_report().is_clean());
+        let _ = std::fs::remove_dir_all(folder);
+    }
+
+    /// The names of this process's threads the plugin starts (all begin with `tfar-`; the game
+    /// link client of the test names its threads `tfar_…`), as Linux shortens them to 15 bytes.
+    fn plugin_threads() -> Vec<String> {
+        std::fs::read_dir("/proc/self/task")
+            .unwrap()
+            .filter_map(|task| std::fs::read_to_string(task.ok()?.path().join("comm")).ok())
+            .map(|name| name.trim_end().to_owned())
+            .filter(|name| name.starts_with("tfar-"))
+            .collect()
+    }
+
+    /// How long [`slow_proxy`] holds each request before it refuses it.
+    pub(crate) const SLOW_PROXY_DELAY: Duration = Duration::from_millis(500);
+
+    /// A local HTTP proxy that answers every request with `502` after [`SLOW_PROXY_DELAY`], so a
+    /// web request is still in flight at shutdown and ends soon after without network; returns
+    /// its URL. It serves until the test process exits.
+    pub(crate) fn slow_proxy() -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        std::thread::spawn(move || {
+            for connection in listener.incoming() {
+                let Ok(mut connection) = connection else {
+                    continue;
+                };
+                std::thread::spawn(move || {
+                    let mut request = [0_u8; 4_096];
+                    let _ = connection.read(&mut request);
+                    std::thread::sleep(SLOW_PROXY_DELAY);
+                    let _ = connection.write_all(
+                        b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                    );
+                });
+            }
+        });
+        url
+    }
+
+    /// Run with the update check on and every proxy variable pointing at [`slow_proxy`], so the
+    /// web requests are in flight when shutdown begins.
+    pub(crate) fn shutdown_joins_every_thread() {
+        let (mut host, folder) = load_plugin("shutdown");
+        let (own, _, _) = connect_three_clients(&host);
+        let client = game_client();
+        client.send_focus(true).unwrap();
+        start_game_in_serious_channel(&host, &client, own, &folder);
+        send(&client, &frequencies("Alpha"));
+        send(
+            &client,
+            "TRACK\tmissionStart\tsomeuid\t[[1,\"mission\",\"shutdown test\"]]",
+        );
+        send(
+            &client,
+            "TANGENT\tPRESSED\t30.0\t20000\tdigital\ttf_anprc152_1",
+        );
+        wait_for(&host, "the press broadcast", |calls| {
+            sent_command(calls, "TANGENT\tPRESSED")
+        });
+        send(
+            &client,
+            "TANGENT\tRELEASED\t30.0\t20000\tdigital\ttf_anprc152_1",
+        );
+        wait_for(&host, "the release broadcast", |calls| {
+            sent_command(calls, "TANGENT\tRELEASED")
+        });
+        let running = plugin_threads();
+        for started in [
+            "tfar-service",
+            "tfar-game-link-",
+            "tfar-tangent-re",
+            "tfar-teamspeak-",
+            "tfar-update-che",
+            "tfar-piwik-trac",
+        ] {
+            assert!(
+                running.iter().any(|name| name.starts_with(started)),
+                "{started} runs before shutdown: {running:?}"
+            );
+        }
+
+        let shutdown_started = Instant::now();
+        host.shutdown();
+        let shutdown_took = shutdown_started.elapsed();
+        println!("shutdown took {shutdown_took:?}");
+        assert!(
+            shutdown_took < Duration::from_secs(2),
+            "shutdown took {shutdown_took:?}"
+        );
+        assert_eq!(
+            plugin_threads(),
+            Vec::<String>::new(),
+            "every thread the plugin started is joined"
+        );
+        assert!(host.leak_report().is_clean());
+        let _ = std::fs::remove_dir_all(folder);
+    }
+
+    /// Bravo's next voice block, which the test numbers from `block`.
+    fn bravo_block(host: &MockHost, bravo: ClientId, block: usize) -> Vec<i16> {
+        let samples = sine(500.0, 8_000.0, block * 480, 480);
+        host.post_process_voice(bravo, &samples, 1).unwrap().samples
+    }
+
+    pub(crate) fn hrtf_reset_on_talk_start() {
+        let (mut host, folder) = load_plugin_with_hrir("hrtf");
+        let (own, bravo, charlie) = connect_three_clients(&host);
+        let client = game_client();
+        client.send_focus(true).unwrap();
+        start_game_in_serious_channel(&host, &client, own, &folder);
+        position_three_clients(&host, &client, charlie);
+        assert_eq!(sync(&client, &position("Bravo", [3.0, 0.0, 0.0])), "00");
+        host.deliver_plugin_command(bravo, REMOTE_PLUGIN_NAME, "VOLUME\tBravo\t20\ttrue")
+            .unwrap();
+        let started = Instant::now();
+        let mut block = 0;
+        while rms(&bravo_block(&host, bravo, block)) <= 100.0
+            || rms(&bravo_block(&host, bravo, block + 1)) <= 100.0
+        {
+            assert!(
+                started.elapsed() < EFFECT_TIMEOUT,
+                "timed out waiting for Bravo's voice placed through the HRTF"
+            );
+            block += 2;
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        block += 2;
+        host.talk_status_change(bravo, false).unwrap();
+        assert!(
+            rms(&bravo_block(&host, bravo, block)) > 100.0,
+            "a stop leaves the voice's tail"
+        );
+        host.talk_status_change(bravo, true).unwrap();
+        let first = bravo_block(&host, bravo, block + 1);
+        assert!(
+            rms(&first) < 1.0,
+            "a new utterance starts from a fresh HRTF source, whose first block is silence: {}",
+            rms(&first)
+        );
+        assert!(rms(&bravo_block(&host, bravo, block + 2)) > 100.0);
+        host.shutdown();
+        assert!(host.leak_report().is_clean());
+        let _ = std::fs::remove_dir_all(folder);
+    }
 }
 
 use scenarios::{
-    dormant_plugin, full_scenario, mission_end_and_needcfg, radio_towers_and_debug_window,
-    run_in_child,
+    dormant_again_after_game_end, dormant_plugin, full_scenario, hrtf_reset_on_talk_start,
+    mission_end_and_needcfg, radio_towers_and_debug_window, run_in_child, run_in_child_with,
+    shutdown_joins_every_thread, slow_proxy,
 };
+
+#[test]
+fn after_its_game_end_the_plugin_is_dormant_until_game_activity_resumes() {
+    run_in_child_with(
+        "after_its_game_end_the_plugin_is_dormant_until_game_activity_resumes",
+        dormant_again_after_game_end,
+        &[("TFAR_SERVICE_TICK_MS", "10".to_owned())],
+    );
+}
+
+#[test]
+fn shutdown_joins_every_thread_the_plugin_started_within_two_seconds() {
+    let proxy = slow_proxy();
+    let mut environment = vec![
+        ("TFAR_SKIP_UPDATE_CHECK", "0".to_owned()),
+        ("NO_PROXY", String::new()),
+        ("no_proxy", String::new()),
+    ];
+    for variable in [
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+    ] {
+        environment.push((variable, proxy.clone()));
+    }
+    run_in_child_with(
+        "shutdown_joins_every_thread_the_plugin_started_within_two_seconds",
+        shutdown_joins_every_thread,
+        &environment,
+    );
+}
+
+#[test]
+fn a_sender_that_starts_talking_gets_a_fresh_hrtf_source() {
+    run_in_child(
+        "a_sender_that_starts_talking_gets_a_fresh_hrtf_source",
+        hrtf_reset_on_talk_start,
+    );
+}
 
 #[test]
 fn the_full_game_scenario_mutes_renames_transmits_and_processes_radio_voice() {

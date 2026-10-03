@@ -5,6 +5,7 @@
 //! Arma's focus unless `moveWhileTabbedOut`, and by `noAutomoveSpectator`), the expiry sweep with
 //! the mute refresh, the client metadata, the DSP objects and the own metadata; every 500 ms a
 //! debug window snapshot while the window is open; finished radio sounds are freed every tick.
+//! The periods come from `ServicePeriods`, which a test may shorten.
 //!
 //! **Position:** started in `ts3plugin_init`, stopped and joined in `ts3plugin_shutdown`.
 //!
@@ -22,18 +23,10 @@ use crossbeam_channel::{RecvTimeoutError, Sender};
 
 use crate::diagnostics::debug_snapshot::publish_debug_snapshot;
 use crate::runtime::PluginRuntime;
+use crate::service::service_periods::ServicePeriods;
 
 /// The name of the service thread.
 pub const SERVICE_THREAD_NAME: &str = "tfar-service";
-
-/// One tick of the loop.
-pub const SERVICE_TICK: Duration = Duration::from_millis(100);
-
-/// The period of the sweep, the channel move and the metadata (`MILLIS_TO_EXPIRE`).
-pub const SWEEP_PERIOD: Duration = Duration::from_secs(4);
-
-/// The period of the debug window snapshot.
-pub const DEBUG_SNAPSHOT_PERIOD: Duration = Duration::from_millis(500);
 
 /// The running service thread.
 #[derive(Debug)]
@@ -43,26 +36,26 @@ pub struct ServiceThread {
 }
 
 impl ServiceThread {
-    /// Starts the loop over `runtime`.
+    /// Starts the loop over `runtime` with `periods`.
     ///
     /// # Errors
     ///
     /// The system's error when the thread cannot start.
-    pub fn start(runtime: Weak<PluginRuntime>) -> std::io::Result<Self> {
+    pub fn start(runtime: Weak<PluginRuntime>, periods: ServicePeriods) -> std::io::Result<Self> {
         let (stop, stop_receiver) = crossbeam_channel::bounded::<()>(0);
         let thread = std::thread::Builder::new()
             .name(SERVICE_THREAD_NAME.to_owned())
             .spawn(move || {
                 let mut timers = Timers::default();
                 loop {
-                    match stop_receiver.recv_timeout(SERVICE_TICK) {
+                    match stop_receiver.recv_timeout(periods.tick) {
                         Err(RecvTimeoutError::Timeout) => {}
                         Ok(()) | Err(RecvTimeoutError::Disconnected) => return,
                     }
                     let Some(runtime) = runtime.upgrade() else {
                         return;
                     };
-                    tick(&runtime, &mut timers, Instant::now());
+                    tick(&runtime, &periods, &mut timers, Instant::now());
                 }
             })?;
         Ok(Self { stop, thread })
@@ -94,7 +87,7 @@ fn is_due(last: &mut Option<Instant>, period: Duration, now: Instant) -> bool {
 }
 
 /// One tick of the loop.
-fn tick(runtime: &PluginRuntime, timers: &mut Timers, now: Instant) {
+fn tick(runtime: &PluginRuntime, periods: &ServicePeriods, timers: &mut Timers, now: Instant) {
     profiling::scope!("service_tick");
     if runtime.is_shutting_down() {
         return;
@@ -104,10 +97,10 @@ fn tick(runtime: &PluginRuntime, timers: &mut Timers, now: Instant) {
     if runtime.is_dormant() {
         return;
     }
-    if is_due(&mut timers.last_sweep, SWEEP_PERIOD, now) {
+    if is_due(&mut timers.last_sweep, periods.sweep, now) {
         sweep(runtime, now);
     }
-    if is_due(&mut timers.last_debug_snapshot, DEBUG_SNAPSHOT_PERIOD, now) {
+    if is_due(&mut timers.last_debug_snapshot, periods.debug_snapshot, now) {
         publish_debug_snapshot(runtime);
     }
 }

@@ -3,7 +3,8 @@
 //!
 //! **Role:** `_onConnectStatusChangeEvent`, `_onChannelSwitchedEvent`, `_onClientMoved` and the
 //! client update handling of `reference/tfar_1_0/ts/src/Teamspeak.cpp:294-370`, writing the client
-//! directory of `tfar_client_state_1_0` and the metadata cache the voice gate reads.
+//! directory of `tfar_client_state_1_0` and the metadata cache the voice gate reads; a client that
+//! starts talking gets fresh direction sources.
 //!
 //! **Position:** methods of `PluginRuntime`; called from the TeamSpeak event callbacks on
 //! TeamSpeak's main thread and, for the metadata, by the service thread.
@@ -52,6 +53,16 @@ impl PluginRuntime {
         self.servers.remove(server);
     }
 
+    /// TeamSpeak reports `client` on `server` starts talking: a new utterance begins, so the
+    /// client's direction sources forget the tail of the last one.
+    pub fn client_started_talking(&self, server: ServerConnectionHandlerId, client: ClientId) {
+        if let Some(state) = self.servers.get(server) {
+            state
+                .lock()
+                .reset_direction_sources(state_client_id(client));
+        }
+    }
+
     /// The local client entered `channel`: every other client is forgotten and the clients of the
     /// new channel join; serious mode is checked again.
     pub fn own_channel_switched(&self, server: ServerConnectionHandlerId, channel: ChannelId) {
@@ -73,7 +84,6 @@ impl PluginRuntime {
             state.own_channel = Some(channel);
             state.session.clients.every_client_left();
             state.client_metadata.clear();
-            state.last_voice_block_at.clear();
             let own_id = own.map(state_client_id);
             let leaving: Vec<_> = state
                 .mutes

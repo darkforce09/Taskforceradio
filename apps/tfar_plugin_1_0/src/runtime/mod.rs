@@ -1,6 +1,7 @@
 //! The running plugin: its state per server connection, the game lifecycle, serious mode, the
 //! auto-mute and the client roster.
 
+pub mod background_requests;
 pub mod client_roster;
 pub mod game_lifecycle;
 pub mod mute_updates;

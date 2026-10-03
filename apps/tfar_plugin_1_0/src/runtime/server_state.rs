@@ -16,7 +16,7 @@
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use parking_lot::{Mutex, RwLock};
 use tfar_antennas_1_0::AntennaManager;
@@ -29,10 +29,6 @@ use tfar_voice_pipeline_1_0::VoiceProcessor;
 /// The largest voice block, in frames, the scratch buffers hold without growing: 100 ms at
 /// 48 kHz, ten of TeamSpeak's usual 10 ms blocks.
 pub const MAX_BLOCK_FRAMES: usize = 4_800;
-
-/// A silence this long between two voice blocks of a sender starts a new utterance, whose
-/// direction sources forget the last one's tail.
-pub const UTTERANCE_GAP: Duration = Duration::from_millis(200);
 
 /// The plugin's state for one server connection; see the module header.
 #[derive(Debug)]
@@ -51,8 +47,6 @@ pub struct ServerState {
     pub captured_stereo: StereoBuffer,
     /// The last metadata read of each client, which the voice gate reads when its cache expired.
     pub client_metadata: BTreeMap<TeamspeakClientId, String>,
-    /// When each sender's last voice block arrived.
-    pub last_voice_block_at: BTreeMap<TeamspeakClientId, Instant>,
     /// The channels of the server with their names, in TeamSpeak's order.
     pub channels: Vec<(ChannelId, String)>,
     /// The channel the local client is in.
@@ -79,7 +73,6 @@ impl ServerState {
             playback_stereo: StereoBuffer::with_frames(MAX_BLOCK_FRAMES),
             captured_stereo: StereoBuffer::with_frames(MAX_BLOCK_FRAMES),
             client_metadata: BTreeMap::new(),
-            last_voice_block_at: BTreeMap::new(),
             channels: Vec::new(),
             own_channel: None,
             original_channel: None,
@@ -88,19 +81,9 @@ impl ServerState {
         }
     }
 
-    /// Records a voice block of `sender` at `now`; when it starts a new utterance, the sender's
-    /// direction sources (direct speech and every speaker radio) forget the previous one, so its
-    /// tail does not replay. Allocates only on a sender's first block.
-    pub fn note_voice_block(&mut self, sender: TeamspeakClientId, now: Instant) {
-        let previous = self.last_voice_block_at.insert(sender, now);
-        let is_new_utterance =
-            previous.is_none_or(|at| now.saturating_duration_since(at) > UTTERANCE_GAP);
-        if is_new_utterance {
-            self.reset_direction_sources(sender);
-        }
-    }
-
-    /// Resets every direction source of `sender`: the direct-speech one and one per speaker radio.
+    /// Resets every direction source of `sender`: the direct-speech one and one per speaker radio,
+    /// so a new utterance never replays the tail of the last one. Runs when TeamSpeak reports the
+    /// sender starts talking and when a remote tangent press arrives.
     pub fn reset_direction_sources(&mut self, sender: TeamspeakClientId) {
         let Self { session, .. } = self;
         let Some(client) = session.clients.by_id_mut(sender) else {

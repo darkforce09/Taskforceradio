@@ -6,8 +6,8 @@
 //! through the apply functions of `tfar_client_state_1_0`, and what they return is carried out in
 //! TeamSpeak after the lock is released.
 //!
-//! **Position:** called by `LinkHandler::async_message` on the link's async worker; `POS` also by
-//! the sync path.
+//! **Position:** called by `LinkHandler::async_message` on the link's async worker, which also
+//! runs the sync `POS` calls the sync path queues there.
 //!
 //! **Signals and state:** the current server's state under its lock; the settings snapshot.
 //!
@@ -19,7 +19,7 @@ use std::time::Instant;
 
 use tfar_antennas_1_0::prelude::{Antenna, NetId};
 use tfar_game_commands_1_0::prelude::{FrequencyReport, GameCommand, PositionUpdate, TowerRecord};
-use tfar_web_requests::prelude::{build_track_request_1_0, spawn_track};
+use tfar_web_requests::prelude::{build_track_request_1_0, spawn_cancellable_track};
 
 use crate::diagnostics::debug_dump::write_debug_dump;
 use crate::game_link::local_tangent::{apply_local_tangent, release_all_tangents};
@@ -69,11 +69,10 @@ pub fn apply_async_message(runtime: &PluginRuntime, text: &str, command: GameCom
                 .nth(TRACK_CUSTOM_VARIABLES_FIELD)
                 .unwrap_or_default();
             match build_track_request_1_0(&event.action, &event.uid, custom_variables) {
-                Ok(url) => {
-                    if let Err(error) = spawn_track(url) {
-                        tracing::warn!(%error, "the tracking request did not start");
-                    }
-                }
+                Ok(url) => match spawn_cancellable_track(url) {
+                    Ok(request) => runtime.web_requests.keep(request),
+                    Err(error) => tracing::warn!(%error, "the tracking request did not start"),
+                },
                 Err(error) => tracing::debug!(%error, "no tracking request for this event"),
             }
         }
@@ -88,7 +87,7 @@ pub fn apply_async_message(runtime: &PluginRuntime, text: &str, command: GameCom
 
 /// `POS`: the client's position and state; the own one neutralises TeamSpeak's listener, any
 /// other recomputes that client's mute and neutralises its 3D position.
-pub fn apply_position(runtime: &PluginRuntime, update: &PositionUpdate) {
+fn apply_position(runtime: &PluginRuntime, update: &PositionUpdate) {
     let Some((server, state)) = runtime.current_server() else {
         return;
     };

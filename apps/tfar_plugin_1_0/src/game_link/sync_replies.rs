@@ -7,8 +7,10 @@
 //!
 //! **Position:** called by `LinkHandler::sync_request` on the link's session thread.
 //!
-//! **Signals and state:** reads the current server's session under its lock; the `POS` payload is
-//! applied right after the reply is taken, on the same thread.
+//! **Signals and state:** reads the current server's session under its lock; a sync `POS` is
+//! queued on the game link's async worker with `GameLinkServer::queue_async`, behind every async
+//! message already queued, and applied there in order, as the original queues it
+//! (`CommandProcessor.cpp:85-88`); the answer is the speaking code at the time of the call.
 //!
 //! **Invariants:** a malformed message gets its command's error reply (`00` for `POS`), never a
 //! panic; TeamSpeak is asked only with the server lock released.
@@ -19,7 +21,6 @@ use tfar_game_commands_1_0::replies::{
     UNKNOWN_CLIENT_SPEAKING_CODE, bulk_speaking_reply,
 };
 
-use crate::game_link::async_commands::apply_position;
 use crate::plugin_lifecycle::PLUGIN_VERSION;
 use crate::runtime::PluginRuntime;
 
@@ -52,9 +53,10 @@ pub fn sync_reply(runtime: &PluginRuntime, text: &str) -> String {
     match command {
         GameCommand::TsInfo(query) => ts_info_reply(runtime, &query),
         GameCommand::Position(update) => {
-            let code = speaking_code(runtime, &update.nickname);
-            apply_position(runtime, &update);
-            code_text(code)
+            if !runtime.queue_async_message(text) {
+                tracing::debug!("the link server is stopped; a sync POS is not applied");
+            }
+            code_text(speaking_code(runtime, &update.nickname))
         }
         GameCommand::IsSpeaking { nickname } => code_text(speaking_code(runtime, &nickname)),
         GameCommand::IsSpeakingBulk(nicknames) => {

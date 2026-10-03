@@ -47,10 +47,8 @@ tfar_client_state_1_0.workspace = true
 tfar_game_commands_1_0.workspace = true
 # The 1.0 plugin command and metadata formats.
 tfar_plugin_commands_1_0.workspace = true
-# Radio sound playback.
+# Radio sound playback and the own-voice stream.
 tfar_playback_mixer.workspace = true
-# Positions, directions and distances.
-tfar_geometry.workspace = true
 # The parsers for Arma's field, array and position strings.
 tfar_arma_values.workspace = true
 # The 1.0 settings.
@@ -61,12 +59,9 @@ tfar_antennas_1_0.workspace = true
 tfar_debug_window.workspace = true
 # The HRIR sphere the voice pipeline's direction sources render with.
 tfar_hrtf.workspace = true
-# The stereo scratch of the voice callbacks and the copy into and out of TeamSpeak's channels.
+# The stereo scratch of the voice callbacks, the copy into and out of TeamSpeak's channels and
+# the gain of a local radio sound.
 tfar_sample_buffer.workspace = true
-# The loudspeaker, vehicle and under-water filters of the remote radio sounds.
-tfar_dsp_filters.workspace = true
-# The 1.0 simple ILD that places a remote radio sound played from a position.
-tfar_spatial_audio.workspace = true
 # The per-connection state locks the audio callbacks `try_lock`, and the push-to-talk lock.
 parking_lot.workspace = true
 # The settings snapshot and the running plugin, read by the audio callbacks without a lock.

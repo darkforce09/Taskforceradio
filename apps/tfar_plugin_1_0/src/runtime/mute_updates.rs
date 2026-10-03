@@ -142,7 +142,6 @@ impl PluginRuntime {
             let id = state_client_id(client);
             state.session.clients.client_left(id);
             state.client_metadata.remove(&id);
-            state.last_voice_block_at.remove(&id);
             state.mutes.client_left(id)
         };
         if was_muted && let Some(ts) = self.act() {

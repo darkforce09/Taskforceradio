@@ -2,52 +2,47 @@
 
 use super::*;
 
-#[test]
-fn without_variables_the_plugin_listens_on_the_spec_port() {
-    assert_eq!(server_config(Flavour::V1_0, None, None).port, 47820);
+fn ports(config: &ServerConfig) -> Vec<u16> {
+    config.listen_ports().collect()
 }
 
 #[test]
-fn the_debug_variable_set_to_one_picks_the_debug_port() {
-    assert_eq!(server_config(Flavour::V1_0, Some("1"), None).port, 47821);
+fn without_an_override_the_plugin_listens_on_both_spec_ports() {
+    let config = server_config(Flavour::V1_0, None);
+    assert_eq!(config.port, 47820);
+    assert_eq!(config.debug_port, Some(47821));
+    assert_eq!(ports(&config), [47820, 47821]);
 }
 
 #[test]
-fn any_other_debug_value_keeps_the_spec_port() {
-    for value in ["0", "", "true", "yes", " 1"] {
-        assert_eq!(server_config(Flavour::V1_0, Some(value), None).port, 47820);
-    }
+fn a_valid_override_is_the_one_port_listened_on() {
+    assert_eq!(ports(&server_config(Flavour::V1_0, Some("50123"))), [50123]);
+    assert_eq!(ports(&server_config(Flavour::V1_0, Some(" 1 "))), [1]);
 }
 
 #[test]
-fn a_valid_override_wins_over_the_debug_variable() {
-    assert_eq!(
-        server_config(Flavour::V1_0, Some("1"), Some("50123")).port,
-        50123
-    );
-    assert_eq!(server_config(Flavour::V1_0, None, Some(" 1 ")).port, 1);
-}
-
-#[test]
-fn an_override_that_is_not_a_port_is_ignored() {
+fn an_override_that_is_not_a_port_keeps_both_spec_ports() {
     for value in ["0", "65536", "-1", "port", ""] {
-        assert_eq!(server_config(Flavour::V1_0, None, Some(value)).port, 47820);
         assert_eq!(
-            server_config(Flavour::V1_0, Some("1"), Some(value)).port,
-            47821
+            ports(&server_config(Flavour::V1_0, Some(value))),
+            [47820, 47821],
+            "{value:?}"
         );
     }
 }
 
 #[test]
 fn the_server_serves_the_1_0_flavour_starting_with_needcfg() {
-    let config = server_config(Flavour::V1_0, None, Some("50123"));
-    assert_eq!(config.flavour, Flavour::V1_0);
-    assert!(config.initial_needcfg);
+    for config in [
+        server_config(Flavour::V1_0, None),
+        server_config(Flavour::V1_0, Some("50123")),
+    ] {
+        assert_eq!(config.flavour, Flavour::V1_0);
+        assert!(config.initial_needcfg);
+    }
 }
 
 #[test]
-fn the_variable_names_are_the_documented_ones() {
-    assert_eq!(DEBUG_PORT_VARIABLE, "TFAR_GAME_LINK_DEBUG");
+fn the_variable_name_is_the_documented_one() {
     assert_eq!(PORT_OVERRIDE_VARIABLE, "TFAR_GAME_LINK_PORT");
 }

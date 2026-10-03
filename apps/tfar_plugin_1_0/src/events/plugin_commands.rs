@@ -20,6 +20,7 @@ use tfar_client_state_1_0::prelude::{RemoteRadioSounds, TangentTransition};
 use tfar_plugin_commands_1_0::prelude::{PluginCommand, accepts_sender, decode, encode};
 use tfar_radio_routing_1_0::apply_remote_tangent;
 use tfar_ts3_host::{ClientProperty, PluginCommandTarget, ServerConnectionHandlerId};
+use tfar_voice_pipeline_1_0::prelude::{RemoteSoundListener, RemoteSoundPlan};
 
 use crate::runtime::PluginRuntime;
 use crate::runtime::mute_updates::decide_client_mute;
@@ -66,18 +67,20 @@ pub fn plugin_command_received(
                 let heard = Some(!effects.heard.is_empty());
                 let mute = decide_client_mute(&mut state, &settings, effects.client_id, heard, now);
                 runtime.ensure_sender_dsp(&mut state, &settings, effects.client_id);
-                let listener = state
-                    .session
-                    .clients
-                    .own()
-                    .map(|own| (own.client_position(now), own.view_direction));
+                let listener = state.session.clients.own().map(|own| RemoteSoundListener {
+                    position: own.client_position(now),
+                    view: own.view_direction,
+                });
                 (effects, mute, listener, state.session.game.speaker_distance)
             };
-            for sounds in [&effects.play_start, &effects.play_end]
-                .into_iter()
-                .flatten()
-            {
-                play_remote_sounds(runtime, sounds, listener, speaker_distance);
+            // A dormant plugin mixes nothing, so its sounds would only wait to play stale.
+            if !runtime.is_dormant() {
+                for sounds in [&effects.play_start, &effects.play_end]
+                    .into_iter()
+                    .flatten()
+                {
+                    play_remote_sounds(runtime, sounds, listener, speaker_distance);
+                }
             }
             runtime.send_mute_changes(server, mute);
         }
@@ -129,16 +132,16 @@ pub fn plugin_command_received(
 fn play_remote_sounds(
     runtime: &PluginRuntime,
     sounds: &RemoteRadioSounds,
-    listener: Option<(
-        tfar_geometry::prelude::Position,
-        tfar_geometry::prelude::Direction,
-    )>,
+    listener: Option<RemoteSoundListener>,
     speaker_distance: f64,
 ) {
     for placement in &sounds.placements {
-        runtime
-            .sounds
-            .play_remote(sounds.sound, placement, listener, speaker_distance);
+        let plan = RemoteSoundPlan {
+            placement: placement.clone(),
+            listener,
+            speaker_distance,
+        };
+        runtime.sounds.play_remote(sounds.sound, &plan);
     }
 }
 

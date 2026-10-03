@@ -13,8 +13,11 @@
 //! acted on after it is released.
 //!
 //! **Invariants:** a game starts only on a connect while not in game and ends only on a
-//! disconnect while in game; the metadata is written only while the plugin is not dormant, and
-//! once shutdown begins no transition runs and only the shutdown clears the metadata.
+//! disconnect while in game; the metadata is written only while the plugin is not dormant; once a
+//! disconnect's handling has run (mutes lifted, the `off` sound, channel and nickname back, the
+//! not-in-game metadata once) the plugin is dormant again until the next game message (D25); a
+//! connect always wakes it; once shutdown begins no transition runs and only the shutdown clears
+//! the metadata.
 
 use std::path::PathBuf;
 use std::time::Instant;
@@ -59,6 +62,9 @@ impl PluginRuntime {
         match poll.transition {
             Some(GameLinkTransition::Connected { is_game_start }) => {
                 tracing::info!(is_game_start, "the game connected");
+                // A connect follows a game message, which woke the plugin; a game end that ran
+                // between that message and this poll put it back to sleep.
+                self.mark_game_activity();
                 if is_game_start {
                     self.set_in_game(true);
                     self.play_lifecycle_sound(GAME_ON_SOUND);
@@ -86,8 +92,19 @@ impl PluginRuntime {
                     state.lock().session.end_game();
                 }
                 self.update_own_metadata();
+                self.return_to_dormant_unless_connected(now);
             }
             None => {}
+        }
+    }
+
+    /// After a disconnect's handling the plugin is dormant again (decision D25), unless a game
+    /// message arrived meanwhile and the game counts as connected at `now`.
+    fn return_to_dormant_unless_connected(&self, now: Instant) {
+        let settings = self.settings();
+        if !self.game_link.lock().is_connected(now, &settings) {
+            tracing::info!("the game ended; the plugin is dormant until the next game message");
+            self.return_to_dormant();
         }
     }
 

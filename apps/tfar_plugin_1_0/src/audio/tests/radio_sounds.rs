@@ -1,108 +1,52 @@
-//! Unit tests for the radio sound choice and shaping.
+//! Unit tests for the radio sound list and the own-voice stream wiring.
+
+use tfar_client_state_1_0::prelude::{RadioSubtype, local_radio_sound, remote_radio_sound};
 
 use super::*;
 
-fn placement(is_on_ground: bool, stereo_mode: StereoMode) -> RemoteSoundPlacement {
-    RemoteSoundPlacement {
-        gain: 0.5,
-        position: None,
-        is_on_ground,
-        volume: 7.0,
-        is_underwater: false,
-        vehicle_volume_loss: 0.0,
-        is_same_vehicle: true,
-        stereo_mode,
-    }
-}
-
-fn constant_block(value: i16) -> StereoBuffer {
-    let mut buffer = StereoBuffer::with_frames(480);
-    buffer.as_mut_slice().fill(value);
-    buffer
-}
-
 #[test]
-fn the_local_sounds_follow_the_subtype_folder() {
-    assert_eq!(
-        local_radio_sound(&RadioSubtype::Digital, true).as_deref(),
-        Some("radio-sounds/sw/local_start")
-    );
-    assert_eq!(
-        local_radio_sound(&RadioSubtype::DigitalLongRange, false).as_deref(),
-        Some("radio-sounds/lr/local_end")
-    );
-    assert_eq!(
-        local_radio_sound(&RadioSubtype::Airborne, true).as_deref(),
-        Some("radio-sounds/ab/local_start")
-    );
-}
-
-#[test]
-fn diver_phone_and_unknown_radios_have_no_local_sound() {
-    for subtype in [
-        RadioSubtype::DiverDigital,
-        RadioSubtype::Phone,
-        RadioSubtype::Unknown("radio".to_owned()),
-    ] {
-        assert_eq!(local_radio_sound(&subtype, true), None);
-    }
-}
-
-#[test]
-fn every_named_sound_is_preloaded() {
+fn every_sound_the_session_names_is_preloaded() {
     for subtype in [
         RadioSubtype::Digital,
         RadioSubtype::DigitalLongRange,
         RadioSubtype::Airborne,
     ] {
-        for is_pressed in [true, false] {
-            let sound = local_radio_sound(&subtype, is_pressed).unwrap();
-            assert!(RADIO_SOUNDS.contains(&sound.as_str()), "{sound}");
+        for is_start in [true, false] {
+            let local = local_radio_sound(&subtype, is_start).unwrap();
+            let remote = remote_radio_sound(&subtype, is_start).unwrap();
+            assert!(RADIO_SOUNDS.contains(&local), "{local}");
+            assert!(RADIO_SOUNDS.contains(&remote), "{remote}");
         }
     }
 }
 
 #[test]
-fn a_carried_radio_sound_keeps_only_its_ear() {
-    let mut left = constant_block(1000);
-    shape_remote_sound(&mut left, &placement(false, StereoMode::Left), None, 20.0);
-    assert!(
-        left.as_slice()
-            .as_chunks::<2>()
-            .0
-            .iter()
-            .all(|frame| frame[0] == 500)
+fn the_own_voice_reaches_the_mixer_stream() {
+    let (sounds, problems) = RadioSounds::load(None);
+    assert_eq!(problems, Vec::<String>::new());
+    assert_eq!(
+        sounds.mixer.stream_queued_frames(OWN_RADIO_VOICE_STREAM),
+        Some(0)
     );
-    let mut right = constant_block(1000);
-    let listener = Some((
-        Position::from_array([0.0; 3]).unwrap(),
-        Direction::from_array([0.0, 1.0, 0.0]).unwrap(),
-    ));
-    shape_remote_sound(
-        &mut right,
-        &placement(false, StereoMode::Right),
-        listener,
-        20.0,
+    assert!(sounds.push_own_voice(&[100_i16; 960]));
+    assert_eq!(
+        sounds.mixer.stream_queued_frames(OWN_RADIO_VOICE_STREAM),
+        Some(480)
     );
-    assert!(
-        right
-            .as_slice()
-            .as_chunks::<2>()
-            .0
-            .iter()
-            .all(|frame| frame[0] == 0 && frame[1] == 500)
-    );
+    let mut block = [0_i16; 960];
+    let mut mask = 0;
+    sounds
+        .mixer
+        .mix_into(&mut block, 2, 480, &mut mask)
+        .unwrap();
+    assert!(block.iter().all(|sample| *sample == 100));
+    assert_eq!(mask & 3, 3);
 }
 
 #[test]
-fn a_speaker_sound_beyond_its_reach_is_silent() {
-    let mut buffer = constant_block(10_000);
-    let mut far = placement(true, StereoMode::Both);
-    far.position = Some(Position::from_array([5_000.0, 0.0, 0.0]).unwrap());
-    let listener = Some((
-        Position::from_array([0.0; 3]).unwrap(),
-        Direction::from_array([0.0, 1.0, 0.0]).unwrap(),
-    ));
-    shape_remote_sound(&mut buffer, &far, listener, 20.0);
-    assert!(buffer.as_slice().iter().all(|sample| *sample == 0));
+fn without_a_plugins_folder_no_sound_is_queued() {
+    let (sounds, _) = RadioSounds::load(None);
+    sounds.play_local("radio-sounds/sw/local_start", 1.0, StereoMode::Both);
+    assert_eq!(sounds.mixer.active_playback_count(), 0);
+    assert_eq!(sounds.sound_path("radio-sounds/on"), None);
 }

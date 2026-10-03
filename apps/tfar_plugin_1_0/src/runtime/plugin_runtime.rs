@@ -3,23 +3,24 @@
 //!
 //! **Role:** own every piece of plugin state (the server states, the settings snapshot, the game
 //! link state, the radio sounds and the HRIR sphere, the push-to-talk state, the link server, the
-//! service thread, the debug window, the game message log) and the helpers the handlers share.
+//! service thread, the debug window, the web requests, the game message log) and the helpers the
+//! handlers share.
 //!
 //! **Position:** one per load, behind an `Arc` the plugin static publishes through an `ArcSwap`;
 //! the game link handler and the service thread keep it alive until shutdown joins them.
 //!
 //! **Signals and state:** see the fields. The lock order is: the server registry (only to clone
 //! a state out), then one server lock; every other lock (game link state, link server, service,
-//! debug window, message log, warnings) is a leaf that is never held while a server lock is taken.
-//! The push-to-talk lock is held across TeamSpeak calls, which is allowed because no audio
-//! callback and no TeamSpeak callback takes it.
+//! debug window, web requests, message log, warnings) is a leaf that is never held while a server
+//! lock is taken. The push-to-talk lock is held across TeamSpeak calls, which is allowed because
+//! no audio callback and no TeamSpeak callback takes it.
 //!
 //! **Invariants:** no TeamSpeak call while a server lock is held; nothing but queries reaches
-//! TeamSpeak while the plugin is dormant ([`PluginRuntime::act`] answers `None`).
+//! TeamSpeak while the plugin is dormant ([`PluginRuntime::act`] answers `None`): before its first
+//! game message and again after each game end.
 
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
-use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use arc_swap::ArcSwap;
@@ -34,6 +35,7 @@ use tfar_voice_pipeline_1_0::prelude::{ensure_every_sender_dsp, ensure_sender_ds
 use crate::audio::radio_sounds::RadioSounds;
 use crate::diagnostics::message_ring::MessageRing;
 use crate::push_to_talk::PushToTalk;
+use crate::runtime::background_requests::BackgroundRequests;
 use crate::runtime::server_state::{
     MAX_BLOCK_FRAMES, ServerRegistry, ServerState, SharedServerState,
 };
@@ -42,6 +44,11 @@ use crate::teamspeak_actions::TeamSpeakActions;
 
 /// How many game messages the diagnostics dump keeps.
 pub const GAME_MESSAGE_LOG_CAPACITY: usize = 256;
+
+/// How long shutdown waits for the web requests it cancelled, all together. With the joins of the
+/// link server, the service thread and the release thread (each within about one 100 ms poll) it
+/// keeps `ts3plugin_shutdown` under its 2 s budget.
+pub const WEB_REQUEST_JOIN_BUDGET: Duration = Duration::from_secs(1);
 
 /// The plugin's state from `init` to `shutdown`; see the module header.
 pub struct PluginRuntime {
@@ -57,7 +64,8 @@ pub struct PluginRuntime {
     pub game_link: Mutex<GameLinkState>,
     /// The in-game flag of [`PluginRuntime::game_link`], for the audio callbacks.
     is_in_game: AtomicBool,
-    /// A game message arrived this session: the plugin is no longer dormant.
+    /// A game message arrived since the plugin loaded or since its last game end: the plugin is
+    /// not dormant.
     has_game_activity: AtomicBool,
     /// Shutdown has begun: no thread writes the own metadata any more.
     is_shutting_down: AtomicBool,
@@ -83,8 +91,8 @@ pub struct PluginRuntime {
     pub has_warned_minimum_version: AtomicBool,
     /// The nickname-too-short warning was shown.
     pub has_warned_short_nickname: AtomicBool,
-    /// The update check thread.
-    update_check: Mutex<Option<JoinHandle<()>>>,
+    /// The update check and the tracking requests, cancelled and joined at shutdown.
+    pub web_requests: BackgroundRequests,
     /// The seed of the next underwater dropout generator.
     dropout_seed: AtomicU64,
     /// When the plugin last asked to move into the serious channel.
@@ -129,7 +137,7 @@ impl PluginRuntime {
             game_messages: Mutex::new(MessageRing::new(GAME_MESSAGE_LOG_CAPACITY)),
             has_warned_minimum_version: AtomicBool::new(false),
             has_warned_short_nickname: AtomicBool::new(false),
-            update_check: Mutex::new(None),
+            web_requests: BackgroundRequests::new(),
             dropout_seed: AtomicU64::new(0x5446_4152),
             last_serious_move_at: Mutex::new(None),
         })
@@ -145,14 +153,20 @@ impl PluginRuntime {
         (!self.is_dormant()).then_some(self.ts)
     }
 
-    /// No game message arrived this session (see the game link protocol's dormant rule).
+    /// No game message arrived since the plugin loaded or since its last game end (decision D25).
     pub fn is_dormant(&self) -> bool {
         !self.has_game_activity.load(Ordering::Acquire)
     }
 
-    /// A game message arrived: the plugin wakes for the rest of the session.
+    /// A game message arrived: the plugin wakes until its next game end.
     pub fn mark_game_activity(&self) {
         self.has_game_activity.store(true, Ordering::Release);
+    }
+
+    /// The game-end handling has finished: the plugin is dormant again until the next game
+    /// message (decision D25).
+    pub fn return_to_dormant(&self) {
+        self.has_game_activity.store(false, Ordering::Release);
     }
 
     /// Whether shutdown has begun.
@@ -252,9 +266,15 @@ impl PluginRuntime {
         *self.service.lock() = Some(service);
     }
 
-    /// Keeps the update check thread until shutdown.
-    pub fn attach_update_check(&self, handle: JoinHandle<()>) {
-        *self.update_check.lock() = Some(handle);
+    /// Queues `text` (an async call without its `~`) on the game link's async worker behind
+    /// every message already queued, as if the extension had sent it as an `ASYNC` frame; the
+    /// sync `POS` answer schedules its apply this way. False, dropping `text`, before the link
+    /// server starts and after shutdown takes it.
+    pub fn queue_async_message(&self, text: &str) -> bool {
+        self.link_server
+            .lock()
+            .as_ref()
+            .is_some_and(|server| server.queue_async(text.as_bytes()))
     }
 
     /// What the DSP objects of the voice chain are built with.
@@ -298,11 +318,14 @@ impl PluginRuntime {
         }
     }
 
-    /// Stops everything `init` started, in the shutdown order: the game ends if it runs, the
-    /// metadata says disabled and is cleared, every mute is lifted, then the link server, the
-    /// service thread, the tangent release thread, the debug window and the update check stop.
+    /// Stops everything `init` started, in the shutdown order: the web requests are cancelled,
+    /// the game ends if it runs, the metadata says disabled and is cleared, every mute is
+    /// lifted, then the link server, the service thread, the tangent release thread and the
+    /// debug window stop and are joined, and the web requests are joined within
+    /// [`WEB_REQUEST_JOIN_BUDGET`].
     pub fn shut_down(self: &Arc<Self>) {
         self.is_shutting_down.store(true, Ordering::Release);
+        self.web_requests.cancel_all();
         if self.is_in_game() {
             self.end_game();
             self.set_in_game(false);
@@ -326,14 +349,12 @@ impl PluginRuntime {
         {
             tracing::warn!(%error, "the debug window did not stop cleanly");
         }
-        let update_check = self.update_check.lock().take();
-        if let Some(handle) = update_check {
-            if handle.is_finished() {
-                let _ = handle.join();
-            } else {
-                tracing::warn!("the update check is still waiting for the network; it is left");
-            }
-        }
+        let report = self.web_requests.cancel_and_join(WEB_REQUEST_JOIN_BUDGET);
+        tracing::debug!(
+            joined = report.joined,
+            left_running = report.left_running,
+            "web requests stopped"
+        );
         self.sounds.release_finished();
         self.servers.clear();
     }

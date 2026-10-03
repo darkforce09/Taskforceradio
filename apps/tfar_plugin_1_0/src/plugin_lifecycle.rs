@@ -13,8 +13,10 @@
 //! load without a lock; the logging guard behind a mutex taken only by `init` and `shutdown` on
 //! TeamSpeak's main thread.
 //!
-//! **Invariants:** after `shutdown` no thread the plugin started runs, except an update check
-//! still waiting for the network, which is logged; a second `init` stops the first one's work.
+//! **Invariants:** `shutdown` returns within its 2 s budget, and after it no thread the plugin
+//! started runs, except a web request (update check or tracking) still waiting for the network
+//! at the end of its join budget, which is cancelled, logged and ends within its own timeout; a
+//! second `init` stops the first one's work.
 
 use std::ffi::CStr;
 use std::sync::Arc;
@@ -26,11 +28,11 @@ use tfar_plugin_commands_1_0::prelude::info_data_text;
 use tfar_ts3_host::{
     CapturedVoiceData, ChannelId, ClientId, ClientMove, CommandHandling, ConnectStatus,
     ErrorDisplay, InfoItem, InitStatus, Invoker, LoggingGuard, MixedPlaybackVoiceData,
-    PluginCommand, PostProcessVoiceData, ServerConnectionHandlerId, ServerError, Ts3, Ts3Plugin,
-    install_logging, print_to_current_tab,
+    PluginCommand, PostProcessVoiceData, ServerConnectionHandlerId, ServerError, TalkStatus, Ts3,
+    Ts3Plugin, install_logging, print_to_current_tab,
 };
 use tfar_ts3_settings_db::prelude::{read_push_to_talk_delay, settings_database_path};
-use tfar_web_requests::prelude::{UPDATE_AVAILABLE_MESSAGE, spawn_update_check};
+use tfar_web_requests::prelude::{UPDATE_AVAILABLE_MESSAGE, spawn_cancellable_update_check};
 
 use crate::audio::RadioSounds;
 use crate::audio::voice_callbacks;
@@ -39,7 +41,7 @@ use crate::events::plugin_commands::{own_variable_changed, plugin_command_receiv
 use crate::game_link::LinkHandler;
 use crate::listen_port::server_config_from_environment;
 use crate::runtime::PluginRuntime;
-use crate::service::ServiceThread;
+use crate::service::{ServicePeriods, ServiceThread};
 use crate::teamspeak_actions::TeamSpeakActions;
 
 #[cfg(test)]
@@ -119,7 +121,8 @@ impl TfarPlugin {
         let handler = Arc::new(LinkHandler::new(runtime.downgrade()));
         match GameLinkServer::start(config, handler) {
             Ok(server) => {
-                tracing::info!(port = config.port, "started; the game link listens");
+                let ports: Vec<u16> = config.listen_ports().collect();
+                tracing::info!(?ports, "started; the game link listens");
                 runtime.attach_link_server(server);
             }
             Err(error) => {
@@ -127,15 +130,15 @@ impl TfarPlugin {
                 return InitStatus::Failure;
             }
         }
-        match ServiceThread::start(runtime.downgrade()) {
+        match ServiceThread::start(runtime.downgrade(), ServicePeriods::from_environment()) {
             Ok(service) => runtime.attach_service(service),
             Err(error) => tracing::error!(%error, "the service thread did not start"),
         }
         if std::env::var(SKIP_UPDATE_CHECK_VARIABLE).as_deref() != Ok("1") {
-            match spawn_update_check(PLUGIN_VERSION, || {
+            match spawn_cancellable_update_check(PLUGIN_VERSION, || {
                 let _ = print_to_current_tab(UPDATE_AVAILABLE_MESSAGE);
             }) {
-                Ok(handle) => runtime.attach_update_check(handle),
+                Ok(request) => runtime.web_requests.keep(request),
                 Err(error) => tracing::warn!(%error, "the update check did not start"),
             }
         }
@@ -333,6 +336,18 @@ impl Ts3Plugin for TfarPlugin {
         new_value: &str,
     ) {
         self.with_runtime(|runtime| own_variable_changed(runtime, server, flag, new_value));
+    }
+
+    fn on_talk_status_change(
+        &self,
+        server: ServerConnectionHandlerId,
+        status: TalkStatus,
+        _is_received_whisper: bool,
+        client: ClientId,
+    ) {
+        if status.is_talking() {
+            self.with_runtime(|runtime| runtime.client_started_talking(server, client));
+        }
     }
 
     fn on_plugin_command(&self, command: PluginCommand<'_>) {

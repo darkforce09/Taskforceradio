@@ -1,34 +1,34 @@
-//! The radio sounds: the WAV files under the plugins folder, the HRIR sphere, the playback mixer,
-//! and the shaping of the local and remote tangent sounds before they are queued.
+//! The radio sounds: the WAV files under the plugins folder, the HRIR sphere, the playback mixer
+//! with the own-voice stream, and the local and remote tangent sounds queued into it.
 //!
 //! **Role:** `PlaybackHandler` of `reference/tfar_1_0/ts/src/PlaybackHandler.cpp:133-262`: load
-//! `radio-sounds/` once at init, play `on` and `off` through TeamSpeak, and turn a local or remote
-//! tangent sound into a mixer playback with its gain, ear, vehicle and loudspeaker filters,
-//! under-water muffling and simple ILD direction.
+//! `radio-sounds/` once at init, play `on` and `off` through TeamSpeak, queue a local tangent
+//! sound at its gain into its ear, and queue a remote tangent sound shaped by
+//! `tfar_voice_pipeline_1_0::render_remote_tangent_sound`.
 //!
 //! **Position:** owned by `PluginRuntime`; [`RadioSounds::play_local`] and
-//! [`RadioSounds::play_remote`] run on the game link worker and TeamSpeak's main thread, the
-//! mixer's `mix_into` on the mixed-playback audio callback.
+//! [`RadioSounds::play_remote`] run on the game link worker and TeamSpeak's main thread,
+//! [`RadioSounds::push_own_voice`] on the captured-voice audio callback, the mixer's `mix_into`
+//! on the mixed-playback audio callback.
 //!
-//! **Signals and state:** the decoded WAV cache and the mixer, both safe to share; the shaping
-//! runs on the calling thread, never on an audio thread.
+//! **Signals and state:** the decoded WAV cache and the mixer, both safe to share; the own-voice
+//! `StreamProducer` behind a mutex only the captured-voice callback takes, with `try_lock`; the
+//! shaping runs on the calling thread, never on an audio thread.
 //!
 //! **Invariants:** a missing or malformed WAV plays nothing and is logged once at init; a missing
-//! HRIR sphere switches HRTF off for the session.
+//! HRIR sphere switches HRTF off for the session; pushing the own voice never blocks or
+//! allocates.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use tfar_arma_values::{RadioSubtype, StereoMode};
-use tfar_client_state_1_0::prelude::RemoteSoundPlacement;
-use tfar_dsp_filters::prelude::{FilterDesign, StereoFilter};
-use tfar_geometry::prelude::{Direction, Position};
+use parking_lot::Mutex;
+use tfar_arma_values::StereoMode;
 use tfar_hrtf::HrirLibrary;
-use tfar_playback_mixer::{Playback, PlaybackMixer, WaveLibrary};
-use tfar_sample_buffer::{StereoBuffer, apply_gain};
-use tfar_spatial_audio::prelude::{ILD_COEFFICIENT_1_0, apply_pan, stereo_pan_gains};
+use tfar_playback_mixer::{Playback, PlaybackMixer, StreamProducer, WaveLibrary};
+use tfar_sample_buffer::apply_gain;
 use tfar_voice_pipeline_1_0::prelude::{
-    CANT_SPEAK_GAIN, NO_VEHICLE_LOSS, SPEAKER_GAIN, vehicle_loss_gain, volume_attenuation,
+    OWN_RADIO_VOICE_STREAM, RemoteSoundPlan, apply_stereo_mode, render_remote_tangent_sound,
 };
 
 use crate::runtime::game_lifecycle::wave_path;
@@ -58,51 +58,6 @@ pub const RADIO_SOUNDS: [&str; 14] = [
     "radio-sounds/ab/remote_end",
 ];
 
-/// The sample rate of every radio sound.
-const SAMPLE_RATE_HZ: f64 = 48_000.0;
-
-/// The under-water loudspeaker gain (`CANT_SPEAK_GAIN * 50`).
-const UNDERWATER_SPEAKER_GAIN: f32 = CANT_SPEAK_GAIN * 50.0;
-
-/// The local tangent sound of `subtype` (`SoundDirectory::getRadioSound`,
-/// `PlaybackHandler.hpp:290-303`): only `digital`, `digital_lr` and `airborne` radios have one.
-pub fn local_radio_sound(subtype: &RadioSubtype, is_pressed: bool) -> Option<String> {
-    let folder = match subtype {
-        RadioSubtype::Digital | RadioSubtype::DigitalLongRange | RadioSubtype::Airborne => {
-            subtype.sound_folder()?
-        }
-        _ => return None,
-    };
-    let event = if is_pressed {
-        "local_start"
-    } else {
-        "local_end"
-    };
-    Some(format!("radio-sounds/{folder}/{event}"))
-}
-
-/// Silences the ear `stereo_mode` leaves out.
-pub fn apply_stereo_mode(buffer: &mut StereoBuffer, stereo_mode: StereoMode) {
-    let silenced = match stereo_mode {
-        StereoMode::Both => return,
-        StereoMode::Left => 1,
-        StereoMode::Right => 0,
-    };
-    for frame in buffer.as_mut_slice().as_chunks_mut::<2>().0 {
-        if let Some(sample) = frame.get_mut(silenced) {
-            *sample = 0;
-        }
-    }
-}
-
-/// Runs `design` over `buffer` at `gain`, or logs why it cannot be built.
-fn filter(buffer: &mut StereoBuffer, design: FilterDesign, gain: f32) {
-    match StereoFilter::new(design, SAMPLE_RATE_HZ) {
-        Ok(mut filter) => filter.process_stereo_i16(buffer, gain),
-        Err(error) => tracing::warn!(%error, "a radio sound filter could not be built"),
-    }
-}
-
 /// Narrows a gain to the `f32` the sample crates take.
 #[expect(
     clippy::cast_possible_truncation,
@@ -110,75 +65,6 @@ fn filter(buffer: &mut StereoBuffer, design: FilterDesign, gain: f32) {
 )]
 const fn as_gain(value: f64) -> f32 {
     value as f32
-}
-
-/// Shapes a remote tangent sound as `PlaybackHandler::playWavFile` with a position does: the
-/// gain, the vehicle low-pass, the loudspeaker attenuation and band-pass, the under-water
-/// low-pass and the simple ILD from the listener; a carried radio's sound only keeps its ear.
-/// `listener` is the local player's position and view, `speaker_distance` the game's setting.
-pub fn shape_remote_sound(
-    buffer: &mut StereoBuffer,
-    placement: &RemoteSoundPlacement,
-    listener: Option<(Position, Direction)>,
-    speaker_distance: f64,
-) {
-    apply_gain(buffer.as_mut_slice(), as_gain(placement.gain));
-    let Some((listener_position, view)) = listener else {
-        return;
-    };
-    let audible = (placement.volume / 10.0 * speaker_distance).round();
-    let distance = placement
-        .position
-        .map_or(0.0, |position| position.distance_to(listener_position));
-    let loss = placement.vehicle_volume_loss;
-    if loss > NO_VEHICLE_LOSS && !placement.is_same_vehicle {
-        let gain =
-            volume_attenuation(distance, true, audible, 1.0 - loss) * vehicle_loss_gain(loss);
-        let cutoff_hz = 20_000.0 * (1.0 - loss) / 4.0;
-        filter(
-            buffer,
-            FilterDesign::ButterworthLowPass {
-                order: 2,
-                cutoff_hz,
-            },
-            as_gain(gain),
-        );
-    }
-    if placement.is_on_ground {
-        apply_gain(
-            buffer.as_mut_slice(),
-            as_gain(volume_attenuation(distance, true, audible, 1.0)),
-        );
-        filter(
-            buffer,
-            FilterDesign::ButterworthBandPass {
-                order: 1,
-                centre_hz: 2_000.0,
-                width_hz: 1_000.0,
-            },
-            SPEAKER_GAIN,
-        );
-        if placement.is_underwater {
-            filter(
-                buffer,
-                FilterDesign::ButterworthLowPass {
-                    order: 4,
-                    cutoff_hz: 100.0,
-                },
-                UNDERWATER_SPEAKER_GAIN,
-            );
-        }
-        if let Some(position) = placement.position {
-            let gains = stereo_pan_gains(
-                listener_position.direction_to(position),
-                view.view_angle(),
-                ILD_COEFFICIENT_1_0,
-            );
-            apply_pan(buffer, gains);
-        }
-    } else {
-        apply_stereo_mode(buffer, placement.stereo_mode);
-    }
 }
 
 /// The radio sounds, the mixer and the HRIR sphere; see the module header.
@@ -190,13 +76,16 @@ pub struct RadioSounds {
     waves: WaveLibrary,
     /// The playbacks and the own-voice stream the mixed-playback callback adds in.
     pub mixer: PlaybackMixer,
+    /// The writing end of the mixer's [`OWN_RADIO_VOICE_STREAM`]; `None` when the mixer refused
+    /// it, which leaves the speaker radios without the own voice.
+    own_voice: Mutex<Option<StreamProducer>>,
     /// The HRIR sphere; `None` switches HRTF off.
     hrir: Option<Arc<HrirLibrary>>,
 }
 
 impl RadioSounds {
-    /// Loads every radio sound and the HRIR sphere under `plugin_path`; returns the sounds and
-    /// the problems to tell the user (a missing sphere).
+    /// Loads every radio sound and the HRIR sphere under `plugin_path` and opens the own-voice
+    /// stream; returns the sounds and the problems to tell the user (a missing sphere).
     pub fn load(plugin_path: Option<PathBuf>) -> (Self, Vec<String>) {
         let waves = WaveLibrary::new();
         let mut problems = Vec::new();
@@ -218,10 +107,16 @@ impl RadioSounds {
                 }
             }
         }
+        let mixer = PlaybackMixer::new();
+        let own_voice = mixer
+            .stream_producer(OWN_RADIO_VOICE_STREAM)
+            .inspect_err(|error| tracing::warn!(%error, "the own-voice stream did not open"))
+            .ok();
         let sounds = Self {
             plugin_path,
             waves,
-            mixer: PlaybackMixer::new(),
+            mixer,
+            own_voice: Mutex::new(own_voice),
             hrir,
         };
         (sounds, problems)
@@ -257,32 +152,38 @@ impl RadioSounds {
             apply_gain(buffer.as_mut_slice(), as_gain(gain));
             apply_stereo_mode(buffer, stereo_mode);
         });
-        self.queue(playback);
+        if let Err(error) = playback.and_then(|playback| self.mixer.add(playback)) {
+            tracing::warn!(%error, "a local radio sound could not be queued");
+        }
     }
 
-    /// Queues `sound` shaped for one radio that hears a remote tangent.
-    pub fn play_remote(
-        &self,
-        sound: &str,
-        placement: &RemoteSoundPlacement,
-        listener: Option<(Position, Direction)>,
-        speaker_distance: f64,
-    ) {
+    /// Queues `sound` shaped as `plan` says for one radio that hears a remote tangent.
+    pub fn play_remote(&self, sound: &str, plan: &RemoteSoundPlan) {
         let Some(samples) = self.samples(sound) else {
             return;
         };
-        let playback = Playback::new(&samples, |buffer| {
-            shape_remote_sound(buffer, placement, listener, speaker_distance);
-        });
-        self.queue(playback);
+        let playback = match render_remote_tangent_sound(&samples, plan) {
+            Ok(playback) => playback,
+            Err(error) => {
+                tracing::warn!(%error, "a remote radio sound could not be shaped");
+                return;
+            }
+        };
+        if let Err(error) = self.mixer.add(playback) {
+            tracing::warn!(%error, "a remote radio sound could not be queued");
+        }
     }
 
-    /// Hands a built playback to the mixer.
-    fn queue(&self, playback: tfar_playback_mixer::Result<Playback>) {
-        match playback.and_then(|playback| self.mixer.add(playback)) {
-            Ok(_) => {}
-            Err(error) => tracing::warn!(%error, "a radio sound could not be queued"),
-        }
+    /// Appends the interleaved stereo `samples` to the own-voice stream; false when they were
+    /// not appended (no stream, or another push at the same moment). Never blocks and never
+    /// allocates: the captured-voice callback calls it.
+    pub fn push_own_voice(&self, samples: &[i16]) -> bool {
+        let Some(mut own_voice) = self.own_voice.try_lock() else {
+            return false;
+        };
+        own_voice
+            .as_mut()
+            .is_some_and(|producer| producer.push(samples) > 0)
     }
 
     /// Drops the playbacks that finished, off the audio thread.
