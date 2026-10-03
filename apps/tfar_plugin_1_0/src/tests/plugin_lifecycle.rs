@@ -13,6 +13,11 @@ fn the_metadata_is_the_original_plugins() {
 }
 
 #[test]
+fn the_reported_version_is_the_exported_one() {
+    assert_eq!(TfarPlugin::VERSION.to_str().unwrap(), PLUGIN_VERSION);
+}
+
+#[test]
 fn a_new_plugin_runs_nothing_and_shutdown_is_harmless() {
     let plugin = TfarPlugin::new();
     assert!(!plugin.is_running());

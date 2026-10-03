@@ -1,5 +1,5 @@
 //! The built plugin `.so` in the mock TeamSpeak host: TeamSpeak's load order, the original
-//! metadata, a game link round trip to the stub handler, and a clean shutdown.
+//! metadata, a game link round trip, and a clean shutdown.
 //!
 //! The plugin reads its port from the process environment, so the test re-runs its own binary as
 //! a child with `TFAR_GAME_LINK_PORT` set to a free port; the child loads the plugin and runs the
@@ -60,7 +60,7 @@ mod mock_host_scenario {
         );
         assert_eq!(
             client.sync_request(b"TS_INFO\tVERSION"),
-            SyncOutcome::Reply(b"UNKNOWN COMMAND".to_vec())
+            SyncOutcome::Reply(b"1.0.0.1".to_vec())
         );
         assert!(started.elapsed() < Duration::from_secs(1));
 
@@ -87,6 +87,7 @@ fn the_plugin_loads_answers_the_ping_and_shuts_down() {
         .args([TEST_NAME, "--exact", "--nocapture", "--test-threads=1"])
         .env(CHILD_MARKER, "1")
         .env("TFAR_GAME_LINK_PORT", free_port().to_string())
+        .env("TFAR_SKIP_UPDATE_CHECK", "1")
         .env_remove("TFAR_GAME_LINK_DEBUG")
         .status()
         .unwrap();
