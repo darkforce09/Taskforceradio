@@ -27,6 +27,8 @@ and the gate tooling, so every later milestone starts from a green workspace.
 
 **Acceptance:** `cargo xtask ci ci-local` passes; both extension stubs cross-compile to Windows
 DLLs; both plugin stubs build as `.so` files; `cargo xtask verify reference-untouched` holds.
+Status: holds at the M8 close (C1): every `ci-local` step held, `cargo xtask dist` cross-compiled
+both DLLs and built both `.so` files, and `reference-untouched` held.
 
 ## M1 — Foundations
 
@@ -100,43 +102,49 @@ window check is live, deferred by the owner.
 
 The full 0.9.12 plugin and extension, built from the M1–M5 crates.
 
-- [ ] The 6 `version_0_9` crates.
-- [ ] The full `tfar_plugin_0_9` and `tfar_extension_0_9`.
-- [ ] Mock scenario suites.
+- [x] The 6 `version_0_9` crates.
+- [x] The full `tfar_plugin_0_9` and `tfar_extension_0_9`.
+- [x] Mock scenario suites.
 
 **Acceptance:** the mock scenarios pass, and the owner runs a live two-client session with the
-0.9.12 mod: SW, LR, DD, speakers, serious mode.
+0.9.12 mod: SW, LR, DD, speakers, serious mode. Status: the mock scenarios pass (f41e744, moved
+onto the shared library APIs in 5c815ef); live check deferred by the owner.
 
 ## M7 — 1.0 track
 
 The full 1.0 plugin and extension, built from the M1–M5 crates and never from the 0.9 ones.
 
-- [ ] The 8 `version_1_0` crates.
-- [ ] The full `tfar_plugin_1_0` and `tfar_extension_1_0`.
-- [ ] Mock suites.
+- [x] The 8 `version_1_0` crates.
+- [x] The full `tfar_plugin_1_0` and `tfar_extension_1_0`.
+- [x] Mock suites.
 
 **Acceptance:** the same as M6, plus antennas, intercom, SETCFG/NEEDCFG and the focus-aware channel
-move.
+move. Status: the mock suites pass (166bb66, moved onto the shared library APIs in b9ed797); live
+check deferred by the owner.
 
 ## M8 — Release readiness
 
 The artifacts the owner installs by hand, the finished runbook, and every bug fix closed with a test.
 
-- [ ] `cargo xtask dist` produces the final artifacts plus the `radio-sounds` and `tfar_hrir`
+- [x] `cargo xtask dist` produces the final artifacts plus the `radio-sounds` and `tfar_hrir`
       folders.
-- [ ] The [manual install runbook](/documentation/runbooks/manual_install_and_test.md) is complete.
-- [ ] Every [bug fix](/documentation/program/bug_fixes.md) entry is closed with a test.
+- [x] The [manual install runbook](/documentation/runbooks/manual_install_and_test.md) is complete.
+- [ ] Every [bug fix](/documentation/program/bug_fixes.md) entry is closed with a test. Every entry
+      names its test except the 1.0 half of F-002, which the borrow checker holds with no runtime
+      test (OF-029).
 
 **Acceptance:** the owner installs from the dist folder under target by hand and plays both mods.
+Status: live check deferred by the owner.
 
 ## Open questions
 
 | Question | Settle by |
 |---|---|
 | Licence of the Rust port (D16: `UNLICENSED` until decided; upstream is APL-SA) | Before release (M8) |
-| Are the `hrtf` crate's click artefacts on fast-moving sources acceptable, or does `tfar_hrtf` need its own crossfade? | M4 |
+| Are the `hrtf` crate's click artefacts on fast-moving sources acceptable, or does `tfar_hrtf` need its own crossfade? | A listening check, deferred by the owner with the live checks |
 | Does 32-bit Arma matter? | Settled as no, unless the owner says otherwise |
 | How the plugin picks the `-tfdebug` port | Settled on 2026-10-03: it listens on both ports ([D24](/documentation/decisions/game_link.md#2026-10-03--each-plugin-listens-on-both-its-normal-and-its--tfdebug-port-d24)) |
 | Does direct speech get a makeup gain after the HRTF, whose diffuse-field EQ costs about 4 dB in front and 9 dB behind? | Settled on 2026-10-03: +4 dB on direct speech ([D23](/documentation/decisions/audio.md#2026-10-03--direct-speech-keeps-a-4-db-makeup-gain-after-the-hrtf-d23)) |
 | Does about 2 MB of memory per HRTF source need a cap or a shared processor? | Settled on 2026-10-03: no ([D26](/documentation/decisions/audio.md#2026-10-03--hrtf-memory-of-about-2-mb-per-source-is-accepted-with-no-pooling-d26)) |
+| Does a plugin stay active after its game ends, so two installed plugins both act after a mod switch in one TeamSpeak session? | Settled on 2026-10-03: it returns to dormant after its game-end handling ([D25](/documentation/decisions/game_link.md#2026-10-03--a-plugin-returns-to-dormant-after-its-game-end-handling-d25)) |
 | May the IRCAM LISTEN sphere, published with no licence text, ship in the dist folders with its credit? | Before release (M8) |

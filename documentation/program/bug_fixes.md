@@ -75,6 +75,7 @@ keeps its id, and a new bug takes the next free one.
 | F-033 | `reference/tfar_0_9_12/ts/src/plugin.cpp:567` | `getClientData` by client id returns the first map entry with that id; after a rename the stale entry of the old nickname keeps the id until it expires and sorts first, so it stands in for the fresh one | A lookup by id returns only an entry with a current data frame, and of several the one positioned last | `tfar_client_state_0_9` | M6 | `a_lookup_by_client_id_returns_the_fresh_entry_not_a_stale_one_left_by_a_rename`, `of_two_current_entries_with_one_id_the_last_positioned_wins` |
 | F-051 | `reference/tfar_0_9_12/ts/src/plugin.cpp:706` | `volumeFromDistance` divides by the reach `clientDistance · multiplier`; a reach of 0 gives `NaN` beyond 1 m | A reach of zero or less gives the gain 0 beyond 1 m | `tfar_voice_pipeline_0_9` | M6 | `a_zero_reach_is_silence_not_a_division_by_zero` |
 | F-071 | `reference/tfar_0_9_12/ts/src/plugin.cpp:1703`, `reference/tfar_0_9_12/ts/src/plugin.cpp:1854` | The delayed push-to-talk release runs on a thread per release, coordinated by the flags `skip_tangent_off` and `waiting_tangent_off`; the skip is one bool, so with press, release, press, release, press inside the delay the two skips merge, the first release thread consumes it, and the second release goes out while the third press is held | A press cancels the waiting release for good; only the last release is sent, after its own delay | `tfar_plugin_0_9` | M6 | `press_release_press_release_within_the_delay_sends_only_the_last_release`, `a_press_while_a_release_waits_cancels_it_for_good` |
+| F-091 | `reference/tfar_0_9_12/ts/src/plugin.cpp:347`, `reference/tfar_0_9_12/ts/src/plugin.cpp:593`, `reference/tfar_0_9_12/ts/src/plugin.cpp:2004` | A client entry made before any POS starts at data frame 0, so while the game is at frame 0 or 1 a client never positioned counts as current at the origin; outside a game the current frame is `INVALID_DATA_FRAME`, so a killed player's entry (also `INVALID_DATA_FRAME`) is within one frame and counts as current | An entry starts at `INVALID_DATA_FRAME`, and an entry at that frame is never current, in or outside a game; a POS makes it current | `tfar_client_state_0_9` | M8 | `an_entry_without_a_position_is_not_current_in_or_outside_a_game`, `a_killed_players_invalid_frame_is_not_current_outside_a_game` |
 
 ## Counts
 
@@ -82,4 +83,4 @@ keeps its id, and a new bug takes the next free one.
 |---|---|
 | Both versions | 6 (F-001–F-006) |
 | 1.0 only | 27 (F-007–F-018, F-029–F-031, F-041–F-047, F-061–F-063, F-081, F-082) |
-| 0.9 only | 14 (F-019–F-028, F-032, F-033, F-051, F-071) |
+| 0.9 only | 15 (F-019–F-028, F-032, F-033, F-051, F-071, F-091) |

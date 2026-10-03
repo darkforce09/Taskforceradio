@@ -90,7 +90,7 @@ Tier = 0 with no workspace dependency, else 1 + highest dependency tier.
 | crates/version_1_0/tfar_radio_routing_1_0 | lib | tfar_antennas_1_0, tfar_arma_values, tfar_client_state_1_0, tfar_geometry, tfar_plugin_settings_1_0 | 4 |
 | crates/version_1_0/tfar_voice_pipeline_1_0 | lib | tfar_antennas_1_0, tfar_client_state_1_0, tfar_dsp_filters, tfar_dynamics, tfar_geometry, tfar_hrtf, tfar_playback_mixer, tfar_plugin_settings_1_0, tfar_radio_effects_1_0, tfar_radio_routing_1_0, tfar_sample_buffer, tfar_spatial_audio | 5 |
 | apps/tfar_plugin_0_9 | cdylib + rlib | tfar_arma_values, tfar_client_state_0_9, tfar_dsp_filters, tfar_game_commands_0_9, tfar_game_link_server, tfar_geometry, tfar_hrtf, tfar_playback_mixer, tfar_plugin_commands_0_9, tfar_radio_routing_0_9, tfar_sample_buffer, tfar_spatial_audio, tfar_ts3_host, tfar_ts3_settings_db, tfar_voice_pipeline_0_9, tfar_web_requests | 6 |
-| apps/tfar_plugin_1_0 | cdylib + rlib | tfar_antennas_1_0, tfar_arma_values, tfar_client_state_1_0, tfar_debug_window, tfar_dsp_filters, tfar_game_commands_1_0, tfar_game_link_server, tfar_geometry, tfar_hrtf, tfar_playback_mixer, tfar_plugin_commands_1_0, tfar_plugin_settings_1_0, tfar_radio_routing_1_0, tfar_sample_buffer, tfar_spatial_audio, tfar_ts3_host, tfar_ts3_settings_db, tfar_voice_pipeline_1_0, tfar_web_requests | 6 |
+| apps/tfar_plugin_1_0 | cdylib + rlib | tfar_antennas_1_0, tfar_arma_values, tfar_client_state_1_0, tfar_debug_window, tfar_game_commands_1_0, tfar_game_link_server, tfar_hrtf, tfar_playback_mixer, tfar_plugin_commands_1_0, tfar_plugin_settings_1_0, tfar_radio_routing_1_0, tfar_sample_buffer, tfar_ts3_host, tfar_ts3_settings_db, tfar_voice_pipeline_1_0, tfar_web_requests | 6 |
 | apps/tfar_extension_0_9 | cdylib + rlib | tfar_arma_extension_abi, tfar_game_link_client | 2 |
 | apps/tfar_extension_1_0 | cdylib + rlib | tfar_arma_extension_abi, tfar_game_link_client | 2 |
 | tools/xtask | bin | — | 0 |
@@ -98,7 +98,7 @@ Tier = 0 with no workspace dependency, else 1 + highest dependency tier.
 | tools/tfar_extension_probe | bin | — | 0 |
 | tools/tfar_golden_vectors | lib | — | 0 |
 
-The table matches `cargo metadata` of 2026-10-03 at c98fc87 (normal and build dependencies). The
+The table matches `cargo metadata` of 2026-10-03 at b9ed797 (normal and build dependencies). The
 workspace dev-dependencies, for tests only: `tfar_plugin_0_9` and `tfar_plugin_1_0` →
 `tfar_ts3_mock`, `tfar_game_link_client`; `tfar_extension_0_9` → `tfar_game_link_server`,
 `tfar_game_link_protocol`; `tfar_extension_1_0` → `tfar_game_link_server`; `tfar_golden_vectors` →

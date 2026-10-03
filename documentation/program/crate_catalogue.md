@@ -120,7 +120,7 @@ files their installed names. Apps sit at tier 6 (plugins) or 2 (extensions).
 
 ## Workspace edges
 
-Every workspace dependency, read from `cargo metadata` on 2026-10-03 at c98fc87; crates with
+Every workspace dependency, read from `cargo metadata` on 2026-10-03 at b9ed797; crates with
 none are left out. Dev-dependencies serve tests only and are exempt from tier order.
 
 | Crate | Depends on | Dev-depends on |
@@ -141,7 +141,7 @@ none are left out. Dev-dependencies serve tests only and are exempt from tier or
 | `tfar_hrtf` | `tfar_geometry`, `tfar_sample_buffer` | — |
 | `tfar_playback_mixer` | `tfar_sample_buffer` | — |
 | `tfar_plugin_0_9` | `tfar_arma_values`, `tfar_client_state_0_9`, `tfar_dsp_filters`, `tfar_game_commands_0_9`, `tfar_game_link_server`, `tfar_geometry`, `tfar_hrtf`, `tfar_playback_mixer`, `tfar_plugin_commands_0_9`, `tfar_radio_routing_0_9`, `tfar_sample_buffer`, `tfar_spatial_audio`, `tfar_ts3_host`, `tfar_ts3_settings_db`, `tfar_voice_pipeline_0_9`, `tfar_web_requests` | `tfar_game_link_client`, `tfar_ts3_mock` |
-| `tfar_plugin_1_0` | `tfar_antennas_1_0`, `tfar_arma_values`, `tfar_client_state_1_0`, `tfar_debug_window`, `tfar_dsp_filters`, `tfar_game_commands_1_0`, `tfar_game_link_server`, `tfar_geometry`, `tfar_hrtf`, `tfar_playback_mixer`, `tfar_plugin_commands_1_0`, `tfar_plugin_settings_1_0`, `tfar_radio_routing_1_0`, `tfar_sample_buffer`, `tfar_spatial_audio`, `tfar_ts3_host`, `tfar_ts3_settings_db`, `tfar_voice_pipeline_1_0`, `tfar_web_requests` | `tfar_game_link_client`, `tfar_ts3_mock` |
+| `tfar_plugin_1_0` | `tfar_antennas_1_0`, `tfar_arma_values`, `tfar_client_state_1_0`, `tfar_debug_window`, `tfar_game_commands_1_0`, `tfar_game_link_server`, `tfar_hrtf`, `tfar_playback_mixer`, `tfar_plugin_commands_1_0`, `tfar_plugin_settings_1_0`, `tfar_radio_routing_1_0`, `tfar_sample_buffer`, `tfar_ts3_host`, `tfar_ts3_settings_db`, `tfar_voice_pipeline_1_0`, `tfar_web_requests` | `tfar_game_link_client`, `tfar_ts3_mock` |
 | `tfar_plugin_commands_0_9` | `tfar_arma_values` | — |
 | `tfar_plugin_commands_1_0` | `tfar_arma_values` | — |
 | `tfar_radio_effects_0_9` | `tfar_arma_values`, `tfar_dsp_filters`, `tfar_sample_buffer` | — |

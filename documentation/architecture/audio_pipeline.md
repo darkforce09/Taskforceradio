@@ -147,10 +147,14 @@ stereo).
 
 - Local and on/off sounds: `radio-sounds` WAVs played through TeamSpeak's `playWaveFile` from the
   plugin folder (the local start and end sounds per radio kind sw, lr, dd and ab, plus on and off).
-- Remote tangent sounds and the `my_radio_voice` stream: decoded once (48 kHz, stereo, i16 only;
-  anything else is refused with a log line), queued per playback, mixed in the mixed-playback
-  callback. Positional sounds get the speaker band-pass, the vehicle low-pass, the underwater
-  low-pass and direction from `tfar_hrtf`, exactly as speech on a ground speaker.
+- Remote tangent sounds: decoded once (48 kHz, stereo, i16 only; anything else is refused with a
+  log line), shaped by each pipeline's `render_remote_tangent_sound` on the plugin-command thread,
+  queued per playback and mixed in the mixed-playback callback. Positional sounds get the speaker
+  band-pass, the vehicle low-pass, the underwater low-pass and direction from `tfar_hrtf`, exactly
+  as speech on a ground speaker.
+- The `my_radio_voice` stream: the captured-voice callback of each plugin pushes the processed own
+  voice through a `StreamProducer` ring, which never blocks or allocates on the audio thread; the
+  mixed-playback callback drains it.
 - Each playback owns its filters and is dropped when it ends; no thread per playback (F-005).
 
 ## HRTF rendering (`tfar_hrtf`)
@@ -166,8 +170,8 @@ stereo).
   keeps the original's loudness
   ([D23](/documentation/decisions/audio.md#2026-10-03--direct-speech-keeps-a-4-db-makeup-gain-after-the-hrtf-d23)).
   Speaker radios get the HRTF without the makeup: the simple ILD they replace is itself 0.625
-  (−4.1 dB) straight ahead. The 1.0 pipeline does so; the 0.9 pipeline still renders its
-  loudspeakers with the makeup. The simple-ILD fallback never gets it.
+  (−4.1 dB) straight ahead; both pipelines render their loudspeakers at unity. The simple-ILD
+  fallback never gets the makeup.
 - **Memory:** every `HrtfSource` holds its own copy of the prepared processor, about 2 MB, so a
   pipeline with one source per (sender, key) grows by about 2 MB per audible source. This is
   accepted, with no pool, shared processor or cap
@@ -177,9 +181,8 @@ stereo).
   utterance in its block adapter, so each plugin resets a sender's sources (direct speech and every
   speaker radio) when that sender starts talking, and the old tail never replays. The trigger is
   TeamSpeak's `onTalkStatusChangeEvent` with talking set, through `tfar_ts3_host`'s
-  `on_talk_status_change`. Until both apps use that event, the 1.0 plugin resets on a remote
-  tangent press and after 200 ms without a voice block from the sender, and the 0.9 plugin resets
-  the sources only with the voices (`resetVoices`).
+  `on_talk_status_change`, in both plugins; the 1.0 plugin also resets them on the sender's remote
+  tangent press.
 - **The sphere file:** both plugins load it from `tfar_hrir/IRC_1002_C.bin` relative to
   TeamSpeak's plugins folder, beside `radio-sounds/`; `cargo xtask dist` copies the sphere and its
   `CREDITS.md` from `assets/hrir/` into `tfar_hrir/` of each version folder. When the file cannot
@@ -216,4 +219,5 @@ D3 accepts that sound differs: real HRTF instead of an ear delay (F-001), unit d
 the corrected error-level curves (F-011, F-019), one compressor run per path (F-013) and saturation
 instead of wrap (F-004). Wire formats do not change, so mixed sessions with Windows players work;
 only what each listener hears locally differs. Whether the `hrtf` crate's clicks on fast-moving
-sources are acceptable is an open question for M4 in the [roadmap](/documentation/roadmap.md).
+sources are acceptable is an open question of the [roadmap](/documentation/roadmap.md), settled by
+listening in the owner's live checks.
