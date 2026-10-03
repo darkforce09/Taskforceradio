@@ -5,7 +5,8 @@
 //! neutralised, and dropped on disconnect), the channel and client events that refresh the
 //! nickname list (`reference/tfar_0_9_12/ts/src/plugin.cpp:2398-2460`), a client leaving (its
 //! mute forgotten), our talking flag (the `VOLUME` broadcast, plugin.cpp:2897), a client starting
-//! to talk (`onTalkStatusChangeEvent`: their HRTF direction sources reset), `infoData` (the
+//! to talk or stopping (`onTalkStatusChangeEvent`: their mute decided again at once, and on a
+//! start their HRTF direction sources reset), `infoData` (the
 //! `<TFAR>` block of a client's metadata) and `onServerErrorEvent`.
 //!
 //! **Position:** methods of `PluginCore`, called from the `Ts3Plugin` event methods of
@@ -19,6 +20,7 @@
 //! broadcasts nothing.
 
 use tfar_plugin_commands_0_9::{PluginCommand, info_data_text};
+use tfar_radio_routing_0_9::{MuteQuery, set_game_client_mute_status};
 use tfar_ts3_host::{
     ChannelId, ClientId, ClientMove, ClientProperty, ConnectStatus, ErrorDisplay, InfoItem,
     ServerConnectionHandlerId, ServerError, TalkStatus,
@@ -49,20 +51,48 @@ impl PluginCore {
         }
     }
 
-    /// `client` on `server` started or stopped talking (`onTalkStatusChangeEvent`): when they
-    /// start, their HRTF direction sources are reset, so the tail of their last utterance never
-    /// replays. No TeamSpeak call is made.
+    /// `client` on `server` started or stopped talking (`onTalkStatusChangeEvent`): their mute is
+    /// decided again at once, and when they start their HRTF direction sources are reset, so the
+    /// tail of their last utterance never replays.
     pub fn handle_talk_status_change(
         &self,
         server: ServerConnectionHandlerId,
         status: TalkStatus,
         client: ClientId,
     ) {
-        if !status.is_talking() {
+        let is_talking = status.is_talking();
+        tracing::info!(client = ?client, is_talking, "talk status: changed");
+        if self.is_dormant() {
             return;
         }
-        let client = state_client_id(client);
-        self.with_state(server, |state| state.reset_direction_sources_of(client));
+        // The mute is decided again at once: a player muted between utterances is unmuted on
+        // the event that says they speak, not on their next `POS` or `VOLUME`, which would cut
+        // the start of every sentence.
+        let facts = self.mute_facts_of(server, client);
+        let sender = state_client_id(client);
+        let decision = self
+            .with_state(server, |state| {
+                if is_talking {
+                    state.reset_direction_sources_of(sender);
+                }
+                let me = state.my_client().filter(|me| *me != sender)?;
+                let query = MuteQuery {
+                    client_id: sender,
+                    my_client_id: me,
+                    is_in_serious_channel: facts
+                        .is_in_serious_channel(&state.radio.serious_channel_name),
+                    is_talking_in_teamspeak: is_talking || facts.is_talking_in_teamspeak,
+                };
+                Some(set_game_client_mute_status(
+                    &mut state.radio,
+                    &mut state.mutes,
+                    &query,
+                ))
+            })
+            .flatten();
+        if let Some(decision) = decision {
+            self.send_mute_decision(server, &decision);
+        }
     }
 
     /// A channel or client changed on `server`: the nickname list and the voice facts are read
