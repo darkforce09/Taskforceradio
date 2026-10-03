@@ -20,8 +20,21 @@ frequency, voice range, liveness, environment values, loudspeakers, the data fra
 push-to-talk state) and a `ClientDirectory` (one `ClientData` per TeamSpeak client, keyed by its
 real nickname with the client id beside it). Each game or plugin message has an apply function on
 `SessionState` (`apply_position`, `apply_frequencies`, `apply_killed`, `apply_speakers`,
-`next_data_frame`, `apply_remote_tangent`, `apply_remote_volume`, `apply_release_all_tangents`)
-that changes the state and returns what the plugin app must do in TeamSpeak afterwards.
+`next_data_frame`, `apply_local_tangent`, `apply_local_release_all_tangents`,
+`apply_remote_tangent`, `apply_remote_volume`, `apply_release_all_tangents`) that changes the
+state and returns what the plugin app must do in TeamSpeak afterwards.
+
+The local tangent (`TANGENT`, `TANGENT_LR`, `TANGENT_DD` from the game) acts only on a change of
+the tangent flag: it writes the local player's transmit state (`prev_` + frequency after a
+release), the half-duplex transmitting radio (set by a press that names its radio, cleared by a
+release) and returns the local sound with its level from the short-range list for `digital`, else
+the long-range list, and the broadcast; push-to-talk and VAD stay with the app. The game's
+`RELEASE_ALL_TANGENTS` clears the flag and the transmit state, so the next press acts again.
+
+A speaker's radio id and every vehicle descriptor (of a client and of a speaker) are held behind
+an `Arc`, so a `HeardVia` names them with a new handle instead of a copy of the text; the shared
+`local_radio_id` and `intercom_radio_id` stand for the carried radios and the intercom. A `POS`
+replaces a client's vehicle only when it changed.
 
 ### Lock and ownership contract
 
@@ -56,6 +69,7 @@ that changes the state and returns what the plugin app must do in TeamSpeak afte
 | proposed: one static object-interception strength for all clients | `every_client_redesigns_its_object_filters_when_the_strength_changes` |
 | proposed: a 0 Hz or negative object-interception cutoff | `an_object_cutoff_at_or_below_zero_is_silence` |
 | proposed: `rstflt` forgets the airborne effects | `resetting_radio_effects_drops_the_airborne_effects_too` |
+| F-081 | `release_all_tangents_clears_the_tangent_so_the_next_press_acts` |
 
 ## Getting started
 
@@ -75,14 +89,17 @@ cargo test -p tfar_client_state_1_0  # the unit tests
 
 - `SessionState` and its apply functions; `GameData`, `Speaker`; `ClientDirectory`, `ClientData`.
 - The reception vocabulary the routing crate fills: `HeardVia`, `SendingRadio`, `ReceivedOn`,
-  `TangentRadio`, `IgnoreTangents`, `LOCAL_RADIO_ID`, `INTERCOM_RADIO_ID`.
+  `TangentRadio`, `IgnoreTangents`, `LOCAL_RADIO_ID`, `INTERCOM_RADIO_ID`, `local_radio_id`,
+  `intercom_radio_id`.
 - The results: `PositionApplied`, `RenameRequest`, `KilledApplied`, `VolumeApplied`,
   `ReleaseAllApplied`, `TangentEffects`, `TangentTransition`, `RemoteRadioSounds`,
-  `RemoteSoundPlacement`.
-- `ClientEffects`, `DspRequirement`, `DspContext`, `ObjectInterceptionFilter`, the effect keys and
-  `object_interception_cutoff_hz`.
+  `RemoteSoundPlacement`, `LocalTangentApplied`, `LocalTangentSound`, `LocalReleaseAllApplied`,
+  `RELEASED_FREQUENCY_PREFIX`.
+- `ClientEffects`, `DspRequirement`, `DspContext`, `ObjectInterceptionFilter`, the effect keys,
+  the filter designs `CANT_SPEAK_LOW_PASS`, `SPEAKER_BAND_PASS`, `PHONE_BAND_PASS`,
+  `vehicle_low_pass`, and `object_interception_cutoff_hz`.
 - `GameLinkState`, `GameLinkPoll`, `GameLinkTransition`; `DataFrame`; `radio_volume_gain`,
-  `remote_radio_sound`; `ALIVE_TIMEOUT`, `PLUGIN_ENABLED_CACHE`, `TRANSITION_DEBOUNCE`.
+  `local_radio_sound`, `remote_radio_sound`; `ALIVE_TIMEOUT`, `PLUGIN_ENABLED_CACHE`, `TRANSITION_DEBOUNCE`.
 - `prelude` also re-exports the foreign types in public fields (`StereoMode`, `RadioSubtype`,
   `FrequencyEntry`, `VehicleDescriptor`, `TeamspeakClientId`, `TangentBroadcast`, `TangentKind`).
 

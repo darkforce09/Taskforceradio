@@ -16,6 +16,7 @@
 //! invalid); a frequency map holds the last entry the game listed for each frequency.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 use std::time::Duration;
 
 use tfar_arma_values::FrequencyEntry;
@@ -32,8 +33,8 @@ mod tests;
 /// One radio playing over a loudspeaker (`SPEAKER_DATA`, `task_force_radio.hpp:21-42`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct Speaker {
-    /// The radio's id, the key of its effects.
-    pub radio_id: String,
+    /// The radio's id, the key of its effects; shared, so a reception names it without copying.
+    pub radio_id: Arc<str>,
     /// The owner's TeamSpeak client, when the owner's nickname was known as the speakers
     /// arrived; the owner's position stands in for a speaker without one.
     pub owner: Option<TeamspeakClientId>,
@@ -41,8 +42,8 @@ pub struct Speaker {
     pub position: Option<Position>,
     /// The radio volume.
     pub volume: f64,
-    /// The vehicle the speaker is in.
-    pub vehicle: VehicleDescriptor,
+    /// The vehicle the speaker is in; shared, so a reception names it without copying.
+    pub vehicle: Arc<VehicleDescriptor>,
     /// The height that decides whether the speaker plays under water.
     pub wave_z: f64,
 }

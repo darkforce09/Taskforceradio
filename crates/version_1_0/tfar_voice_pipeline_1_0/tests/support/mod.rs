@@ -50,13 +50,13 @@ pub(crate) fn facing(x: f64, y: f64, z: f64) -> Direction {
     Direction::from_array([x, y, z]).unwrap()
 }
 
-pub(crate) fn in_vehicle(name: &str, isolation: f64, intercom_slot: i16) -> VehicleDescriptor {
-    VehicleDescriptor {
+pub(crate) fn in_vehicle(name: &str, isolation: f64, intercom_slot: i16) -> Arc<VehicleDescriptor> {
+    Arc::new(VehicleDescriptor {
         name: name.to_owned(),
         isolation,
         intercom_slot,
         velocity: [0.0; 3],
-    }
+    })
 }
 
 fn entry(frequency: &str, volume: f64) -> (String, FrequencyEntry) {
@@ -181,11 +181,11 @@ impl World {
             .entry(frequency.to_owned())
             .or_default()
             .push(Speaker {
-                radio_id: radio_id.to_owned(),
+                radio_id: radio_id.into(),
                 owner: None,
                 position: Some(position),
                 volume,
-                vehicle: VehicleDescriptor::not_in_vehicle(),
+                vehicle: Arc::new(VehicleDescriptor::not_in_vehicle()),
                 wave_z,
             });
     }

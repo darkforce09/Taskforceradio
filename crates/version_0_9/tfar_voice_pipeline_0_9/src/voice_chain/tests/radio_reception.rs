@@ -224,6 +224,44 @@ fn a_loudspeaker_to_the_right_is_louder_in_the_right_ear_through_the_hrtf() {
     );
 }
 
+/// The level of `Alpha`'s noise on `Bravo`'s loudspeaker straight ahead at 5 m, placed by the
+/// HRTF when `with_hrtf`, else by the simple ILD.
+fn loudspeaker_ahead_level(with_hrtf: bool) -> f64 {
+    let mut scene = if with_hrtf {
+        Scene::with_hrtf()
+    } else {
+        Scene::new()
+    };
+    scene.client("Alpha").position = at(0.0, 100.0, 0.0);
+    scene.transmit(
+        "Alpha",
+        TangentKind::ShortRange,
+        RadioSubtype::Digital,
+        1000,
+    );
+    scene.state.sw_frequencies.clear();
+    scene.add_loudspeaker(at(0.0, 5.0, 0.0), 10, 1.0);
+    scene.prepare("Alpha");
+    rms(
+        &scene.run(ALPHA, &Signal::Noise(8000.0), 100),
+        SETTLE_FRAMES,
+    )
+}
+
+#[test]
+fn a_loudspeaker_through_the_hrtf_gets_no_makeup_gain() {
+    // The ILD puts a sound straight ahead at 0.625 (-4.1 dB) in both ears, about the level the
+    // diffuse-field sphere gives it; with the +4 dB speech makeup the HRTF would be 4 dB louder.
+    let difference = decibels(
+        loudspeaker_ahead_level(true),
+        loudspeaker_ahead_level(false),
+    );
+    assert!(
+        difference.abs() < 2.0,
+        "the HRTF loudspeaker is {difference} dB from the ILD one"
+    );
+}
+
 #[test]
 fn a_loudspeaker_under_water_is_muffled_to_a_hundred_hertz() {
     let mut dry = loudspeaker_scene((0.0, 5.0, 0.0), 1.0);

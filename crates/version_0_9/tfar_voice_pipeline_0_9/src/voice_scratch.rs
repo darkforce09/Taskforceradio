@@ -1,19 +1,22 @@
 //! `VoiceScratch`: every buffer the voice chain works in, made once per server connection.
 //!
-//! **Role:** own the stereo, mono and route buffers the voice chain reuses from frame to frame,
+//! **Role:** own the stereo, mono, reception and route buffers the voice chain reuses from frame to frame,
 //! sized up front for the largest frame expected, and report their capacities.
 //!
 //! **Position:** a field of `VoiceProcessor`; made with it on the plugin's connect handling,
 //! used by `voice_chain/` and `own_voice.rs` on the TeamSpeak audio thread.
 //!
-//! **Signals and state:** the buffers' contents, valid only within one frame. Touched only by
-//! the thread that holds the processor, inside the server lock.
+//! **Signals and state:** the buffers' contents, valid only within one frame; the reception
+//! and route lists are emptied at the end of each frame, so the radio ids they share with the
+//! server state are released under the server lock and never freed by this thread. Touched only
+//! by the thread that holds the processor, inside the server lock.
 //!
 //! **Invariants:** a frame of at most the frames the scratch was made for, with at most
 //! [`ROUTE_CAPACITY`] receptions and a sender nickname of at most [`NICKNAME_CAPACITY`] bytes,
 //! changes no capacity.
 
 use tfar_radio_effects_0_9::MonoMixBuffer;
+use tfar_radio_routing_0_9::HeardVia;
 use tfar_sample_buffer::StereoBuffer;
 
 use crate::voice_chain::PlannedRoute;
@@ -46,7 +49,10 @@ pub struct VoiceScratch {
     pub(crate) own_voice: StereoBuffer,
     /// The mono block a radio effect runs on.
     pub(crate) mono_mix: MonoMixBuffer,
-    /// The receptions of the current sender, planned before the sound state is borrowed.
+    /// The receptions of the current sender, as the routing lists them; empty between frames.
+    pub(crate) heard: Vec<HeardVia>,
+    /// The receptions of the current sender, planned before the sound state is borrowed; empty
+    /// between frames.
     pub(crate) routes: Vec<PlannedRoute>,
     /// The current sender's nickname, which keys their entry once the plan is made.
     pub(crate) sender_nickname: String,
@@ -61,6 +67,8 @@ pub struct ScratchCapacities {
     pub mono_frames: usize,
     /// The receptions the route list holds.
     pub routes: usize,
+    /// The receptions the routing's reception list holds.
+    pub heard: usize,
     /// The bytes the nickname holds.
     pub nickname_bytes: usize,
 }
@@ -75,6 +83,7 @@ impl VoiceScratch {
             direction_output: StereoBuffer::with_frames(max_frames),
             own_voice: StereoBuffer::with_frames(max_frames),
             mono_mix: MonoMixBuffer::with_frames(max_frames),
+            heard: Vec::with_capacity(ROUTE_CAPACITY),
             routes: Vec::with_capacity(ROUTE_CAPACITY),
             sender_nickname: String::with_capacity(NICKNAME_CAPACITY),
         }
@@ -91,8 +100,17 @@ impl VoiceScratch {
             ],
             mono_frames: self.mono_mix.capacity_frames(),
             routes: self.routes.capacity(),
+            heard: self.heard.capacity(),
             nickname_bytes: self.sender_nickname.capacity(),
         }
+    }
+}
+
+impl VoiceScratch {
+    /// Empties the reception and route lists, keeping their capacity.
+    pub(crate) fn release_routes(&mut self) {
+        self.heard.clear();
+        self.routes.clear();
     }
 }
 

@@ -250,10 +250,10 @@ fn a_local_reception_comes_from_the_listeners_own_radio() {
     transmitter.usable_radios = ALL_RADIOS;
     let mut listener = ClientData::new(ClientId(1));
     listener.usable_radios = ALL_RADIOS;
-    listener.vehicle.vehicle_name = "1:7".to_owned();
+    Arc::make_mut(&mut listener.vehicle).vehicle_name = "1:7".to_owned();
     let heard =
         is_over_local_radio(&server, &transmitter, &listener, IgnoreTangents::NONE).unwrap();
-    assert_eq!(heard.radio_id, LOCAL_RADIO_ID);
+    assert_eq!(&*heard.radio_id, crate::LOCAL_RADIO_ID);
     assert_eq!(heard.position, Position::ORIGIN);
     assert!((heard.wave_z - 1.0).abs() < 1e-12);
     assert_eq!(heard.vehicle.vehicle_name, "1:7");

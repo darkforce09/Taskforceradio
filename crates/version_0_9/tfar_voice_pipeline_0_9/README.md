@@ -2,8 +2,8 @@
 
 The `tfar_voice_pipeline_0_9` crate: the 0.9.12 stereo function per sender, the path one
 TeamSpeak voice frame takes through the gates, the direct voice, the radio effects, the
-loudspeakers, the HRTF and the mix, plus the local player's own voice for loudspeakers. Used by
-`tfar_plugin_0_9`.
+loudspeakers, the HRTF and the mix, plus the local player's own voice for loudspeakers and the
+positional remote push-to-talk sound. Used by `tfar_plugin_0_9`.
 
 ## Contents
 
@@ -42,9 +42,9 @@ so the processor makes no TeamSpeak call under the lock.
 ### The chain
 
 Each frame is planned first (`src/voice_chain/sender_plan.rs`): with the state borrowed read-only it
-computes the direct voice's branch and level, asks `tfar_radio_routing_0_9::is_over_radio` for the
-receptions and plans each one's effect gain, effect error and loudspeaker stages into the scratch
-route list. Then the sender's entry is borrowed mutably and the frame renders over its `ClientDsp`
+computes the direct voice's branch and level, asks `tfar_radio_routing_0_9::is_over_radio_into` for
+the receptions in the scratch reception list and plans each one's effect gain, effect error and
+loudspeaker stages into the scratch route list. Then the sender's entry is borrowed mutably and the frame renders over its `ClientDsp`
 (`src/voice_chain/frame_render.rs`), in the original's order:
 
 ```text
@@ -88,9 +88,12 @@ frame ── × voice volume multiplier ──┬─▶ direct voice (in range, 
   level stage (gain or filter) runs first and the HRTF last. Both are linear, so the order changes
   only where a stage clips.
 - **HRTF makeup gain.** The IRCAM sphere is diffuse-field equalised and puts a source straight ahead
-  about 4 dB below its input; `HRTF_MAKEUP_GAIN_DB` (+4 dB) goes into the HRTF stage so direct speech
-  straight ahead keeps the original's level. Sources at the side and behind stay quieter, as the
-  sphere measures them. The ILD fallback gets no makeup.
+  about 4 dB below its input; `HRTF_MAKEUP_GAIN_DB` (+4 dB) goes into the HRTF stage of direct speech
+  so speech straight ahead keeps the original's level. Sources at the side and behind stay quieter,
+  as the sphere measures them. A loudspeaker's HRTF stage runs at unity, as the 1.0 pipeline renders
+  its speakers: the simple ILD it replaces already puts a loudspeaker straight ahead at 0.625, about
+  the sphere's front level (`a_loudspeaker_through_the_hrtf_gets_no_makeup_gain`). The ILD fallback
+  gets no makeup.
 - **Sound state is borrowed, never made.** The original makes every filter, effect and ear-delay
   stage on first use on the audio thread. Here they come from `ClientData::ensure_dsp`, which the
   plugin calls while handling commands with `tfar_radio_routing_0_9::dsp_requirements`. A path whose
@@ -113,9 +116,21 @@ without current data; `append_own_voice` appends the block to the playback mixer
 ### Memory on the audio path
 
 `VoiceScratch` holds every buffer the chain writes, sized once (`DEFAULT_MAX_FRAMES`, 100 ms) and
-reused, so a frame within that size changes no capacity. The reception list itself is built by
-`tfar_radio_routing_0_9::is_over_radio`, which returns a fresh `Vec` of receptions with owned radio
-ids each frame a sender has receptions; the pipeline moves them into its own list.
+reused, so a frame within that size changes no capacity. That includes the reception list:
+`tfar_radio_routing_0_9::is_over_radio_into` refills it in place, and each reception shares its
+radio id and vehicle with the server state (`Arc`), so routing copies no text. The reception and
+route lists are emptied at the end of each frame, still under the server lock, so the audio thread
+never drops the last handle on a radio id and never frees one.
+
+### Remote push-to-talk sound
+
+`render_remote_tangent_sound` shapes a decoded `remote_start` or `remote_end` WAV as the positional
+`playWavFile` does (plugin.cpp:711-785): the radio volume and global gain, then, with current
+listener data, the vehicle low-pass, on a loudspeaker the distance gain, the speaker band-pass and
+the under-water low-pass at `CANT_SPEAK_GAIN * 50`, and last the direction through a one-shot HRTF
+source at the makeup gain (its latency cut off) or the simple ILD without a sphere. The
+`RemoteSoundPlan` says what to apply. It builds filters and an HRTF source per sound, so the
+plugin calls it while handling the incoming command, never on the audio thread.
 
 ## Getting started
 
@@ -139,6 +154,8 @@ distance, terrain coefficient) arrive in `ServerRadioData` from the game's `FREQ
 - `VoiceFrameContext`, `OwnVoiceContext`, `VoiceOutcome`.
 - `VoiceScratch`, `ScratchCapacities`, `DEFAULT_MAX_FRAMES`, `ROUTE_CAPACITY`, `NICKNAME_CAPACITY`.
 - `append_own_voice`, `OWN_VOICE_STREAM_NAME`.
+- `render_remote_tangent_sound`, `RemoteSoundPlan`, `ListenerView`,
+  `UNDER_WATER_SOUND_GAIN_FACTOR`; used by `tfar_plugin_0_9` for an incoming push-to-talk.
 - `volume_from_distance`, `radio_volume_multiplier`, `CANT_SPEAK_DISTANCE`, `MINIMUM_AUDIBLE_GAIN`, also the
   volume curve of the remote push-to-talk sounds.
 - The gain constants `CANT_SPEAK_GAIN`, `SPEAKER_GAIN`, `RADIO_EFFECT_GAIN`,
@@ -153,12 +170,14 @@ distance, terrain coefficient) arrive in `ServerRadioData` from the game's `FREQ
   `tfar_radio_effects_0_9` (`process_radio_effect` and the effects); `tfar_dsp_filters` (the filters
   the sound state holds); `tfar_dynamics` (the compressor); `tfar_hrtf` (the HRTF sources and the
   listener-relative direction); `tfar_spatial_audio` (the 0.9 ILD fallback); `tfar_sample_buffer`
-  (the stereo buffer, saturating gain and mix); `tfar_playback_mixer` (the own-voice stream);
-  `thiserror` for the error type.
+  (the stereo buffer, saturating gain and mix); `tfar_playback_mixer` (the own-voice stream and the
+  remote sound's playback); `thiserror` for the error type; `tracing` for a refused remote sound
+  filter.
 - Used by: `tfar_plugin_0_9`.
 - Rules: no TeamSpeak call and no sound object made or dropped (the processor only borrows
   `ClientDsp`); no scratch capacity changes for frames within the scratch's size
-  (`a_thousand_frames_change_no_scratch_capacity`); the compressor runs once per frame
+  (`a_thousand_frames_change_no_scratch_capacity`, which also holds the reception list empty and the
+  shared radio ids unchanged between frames); the compressor runs once per frame
   (`the_compressor_envelope_advances_once_per_frame_whatever_the_receptions`); a missing sound object
   silences its path (`a_frame_missing_a_needed_filter_silences_that_path_and_is_counted`). Tier 5 in
   `crates/version_0_9`: every workspace dependency has a lower tier and follows the edge matrix in

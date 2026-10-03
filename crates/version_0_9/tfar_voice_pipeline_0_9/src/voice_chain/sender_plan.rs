@@ -10,20 +10,23 @@
 //! `direct_voice.rs` and `radio_reception.rs` borrow the sender's sound state; uses the
 //! reception rules of `tfar_radio_routing_0_9`.
 //!
-//! **Signals and state:** none of its own; reads the server state and fills the scratch route
-//! list on the TeamSpeak audio thread.
+//! **Signals and state:** none of its own; reads the server state and fills the scratch
+//! reception and route lists on the TeamSpeak audio thread; their radio ids are shared with the
+//! server state, so planning copies no text.
 //!
 //! **Invariants:** the direct voice is planned only for another player within their voice
 //! volume; a muffled voice is planned only when both sides can speak; the radio effect follows
 //! the transmitter's subtype; the underwater effect's error uses the raw distance and every
 //! other effect's the effective distance.
 
+use std::sync::Arc;
+
 use tfar_client_state_0_9::prelude::{Position, StereoMode};
 use tfar_client_state_0_9::{ClientData, RadioEffectKind, ServerRadioData, VehicleMuffling};
 use tfar_hrtf::ListenerRelativeDirection;
 use tfar_radio_routing_0_9::{
     HeardOn, HeardVia, IgnoreTangents, effect_error_from_distance, effective_distance,
-    is_over_radio, raw_distance,
+    is_over_radio_into, raw_distance,
 };
 use tfar_spatial_audio::{ILD_COEFFICIENT_0_9, stereo_pan_gains};
 
@@ -95,8 +98,8 @@ pub(crate) struct LoudspeakerPlan {
 /// One reception of the sender's radio, planned.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct PlannedRoute {
-    /// The radio id that keys the reception's sound state.
-    pub(crate) radio_id: String,
+    /// The radio id that keys the reception's sound state, shared with the server state.
+    pub(crate) radio_id: Arc<str>,
     /// The ear the receiving radio plays into.
     pub(crate) stereo_mode: StereoMode,
     /// The gain into the radio effect or the phone band-pass.
@@ -121,12 +124,14 @@ pub(crate) struct SenderPlan {
 }
 
 /// Plans the frame of `sender` (the entry of `sender_nickname`) for `listener`, the local
-/// player's entry, and refills `routes` with its receptions in the routing's order.
+/// player's entry: refills `heard` with its receptions and `routes` with their plans, in the
+/// routing's order, both reused without allocating once they hold every reception.
 pub(crate) fn plan_sender(
     server: &ServerRadioData,
     sender_nickname: &str,
     sender: &ClientData,
     listener: &ClientData,
+    heard: &mut Vec<HeardVia>,
     routes: &mut Vec<PlannedRoute>,
 ) -> SenderPlan {
     let should_player_hear = sender.can_speak && server.can_speak;
@@ -144,17 +149,19 @@ pub(crate) fn plan_sender(
         listener_distance: listener.position.distance_to(sender.position),
         should_player_hear,
     };
+    is_over_radio_into(
+        server,
+        sender_nickname,
+        sender,
+        listener,
+        IgnoreTangents::NONE,
+        heard,
+    );
     routes.clear();
     routes.extend(
-        is_over_radio(
-            server,
-            sender_nickname,
-            sender,
-            listener,
-            IgnoreTangents::NONE,
-        )
-        .into_iter()
-        .map(|heard| plan_route(server, sender, listener, &reception, heard)),
+        heard
+            .iter()
+            .map(|heard| plan_route(server, sender, listener, &reception, heard)),
     );
     SenderPlan {
         voice_volume_multiplier: sender.voice_volume_multiplier,
@@ -222,7 +229,7 @@ fn plan_route(
     sender: &ClientData,
     listener: &ClientData,
     reception: &ReceptionFacts,
-    heard: HeardVia,
+    heard: &HeardVia,
 ) -> PlannedRoute {
     let volume = radio_volume_multiplier(heard.volume);
     let error_over = |distance: f64| {
@@ -251,7 +258,7 @@ fn plan_route(
         placement: placement(server, listener, heard.position),
     });
     PlannedRoute {
-        radio_id: heard.radio_id,
+        radio_id: Arc::clone(&heard.radio_id),
         stereo_mode: heard.stereo_mode,
         effect_gain,
         effect_error,

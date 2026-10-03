@@ -35,6 +35,11 @@ in the order of `isOverRadio` (`reference/tfar_1_0/ts/src/clientData.cpp:267-364
 5. **Speakers** on the exact frequency, unless the speaker is the sender's own, its position is
    unknown (on an unknown owner), or it is under water (height below 0).
 
+`is_over_radio_into(context, sender, ignore, out)` does the same into a list the caller reuses,
+which it clears first; every `HeardVia` shares its radio id and vehicle with the session (`Arc`),
+so a list with room for every reception routes a frame without allocating. `is_over_radio` wraps
+it.
+
 `mute_decision` follows `setGameClientMuteStatus` (`plugin.cpp:68-94`); `MuteTracker` records who
 this plugin muted, so requests go out only on a change and `unmute_all` returns the tracked set;
 `killed_mute_matrix` follows `processUnitKilled` (`CommandProcessor.cpp:552-587`).
@@ -62,7 +67,8 @@ Read from `tfar_plugin_settings_1_0::PluginSettings` through the context:
 
 ## Public surface
 
-- `RoutingContext`; `is_over_radio`, `is_over_local_radio`; `apply_remote_tangent`.
+- `RoutingContext`; `is_over_radio`, `is_over_radio_into`, `is_over_local_radio`;
+  `apply_remote_tangent`.
 - `mute_decision`, `MuteDecision`, `VOICE_RANGE_MARGIN`; `MuteTracker`; `killed_mute_matrix`,
   `MuteChanges`.
 - `serious_mode_channel`, `ChannelId`, `CHANNEL_ID_PREFIX`.

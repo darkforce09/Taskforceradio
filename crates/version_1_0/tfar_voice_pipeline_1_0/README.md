@@ -27,8 +27,11 @@ plugin app has already copied to stereo, with the session locked. Step by step:
    or the 100 Hz can't-speak low-pass, each at the original's gain; then the placement; then the
    direct-speech compressor. A sender not heard directly is silenced unless both spectate.
 4. **Radios.** The radio compressor (its own instance) runs once over the original; each
-   reception of `is_over_radio` gets a copy through its path (carried radio by subtype, speaker
-   radio, intercom) and is mixed in, saturating.
+   reception of `is_over_radio_into` (refilled into the scratch reception list, each reception
+   sharing its radio id and vehicle with the session) gets a copy through its path (carried radio
+   by subtype, speaker radio, intercom) and is mixed in, saturating. The reception and route plan
+   lists are emptied at the end of the frame, under the lock, so the audio thread never drops the
+   last handle on a shared id.
 5. **Global volume.**
 
 `process_own_voice_for_speakers` runs the same chain on the captured voice as the local player's,
@@ -36,6 +39,15 @@ microphone path (no direct speech, no intercom), and returns the block for the `
 stream; `append_own_voice_for_speakers` appends it to a `PlaybackMixer`. `ensure_sender_dsp` plans
 a sender exactly as the audio path does and creates the objects its frames will borrow, off the
 audio thread.
+
+`render_remote_tangent_sound` shapes a decoded remote tangent WAV for one
+`RemoteSoundPlacement` of `SessionState::apply_remote_tangent`, as the positional `playWavFile`
+does (`reference/tfar_1_0/ts/src/PlaybackHandler.cpp:147-262`): the gain, then, with the local
+player known, the vehicle low-pass, and on a loudspeaker the distance attenuation, the speaker
+band-pass, the under-water low-pass at `CANT_SPEAK_GAIN * 50` and the simple ILD; a carried radio
+keeps only its ear (`apply_stereo_mode`). The radio sounds are plugin-folder files, which the
+original places by the ILD alone, so it takes no HRIR sphere. It builds its filters per sound and
+runs off the audio thread.
 
 ### Level and direction (replacing X3DAudio and clunk)
 
@@ -103,24 +115,29 @@ Read from `tfar_plugin_settings_1_0::PluginSettings` through `VoiceFrameContext`
 - `VoiceFrameContext` (settings, antennas, in game, serious mode, sender metadata, now) and
   `VoiceOutcome` (`Processed`, `Silenced`, `PassThrough`).
 - `ensure_sender_dsp`, `ensure_every_sender_dsp`.
+- `render_remote_tangent_sound`, `RemoteSoundPlan`, `RemoteSoundListener`,
+  `UNDER_WATER_SPEAKER_GAIN`, `apply_stereo_mode`; used by `tfar_plugin_1_0` for the remote and
+  local tangent sounds.
 - `volume_attenuation`, `vehicle_volume_loss`, `vehicle_loss_gain`, `speaker_audible_distance`,
   `CANT_SPEAK_DISTANCE`, `CANT_SPEAK_GAIN`, `SPEAKER_GAIN`, `UNDERWATER_LEVEL`, `MAX_VEHICLE_LOSS`,
   `NO_VEHICLE_LOSS`; `HRTF_MAKEUP_GAIN_DB`, `hrtf_makeup_gain`.
-- `Error` (`Dsp`, `Mixer`), `Result`, `CRATE_ROLE` and `prelude`.
+- `Error` (`Dsp`, `Mixer`, `RemoteTangentSound`), `Result`, `CRATE_ROLE` and `prelude`.
 
 ## Boundaries
 
 - Depends on: `tfar_client_state_1_0` (the session, the effects and their keys);
-  `tfar_radio_routing_1_0` (`is_over_radio`, the error levels); `tfar_radio_effects_1_0` (the
+  `tfar_radio_routing_1_0` (`is_over_radio_into`, the error levels); `tfar_radio_effects_1_0` (the
   effect mixdown); `tfar_plugin_settings_1_0` (the settings); `tfar_antennas_1_0` (the towers the
   routing reads); `tfar_geometry` (positions and directions); `tfar_dsp_filters` (the filters);
   `tfar_dynamics` (the compressors); `tfar_hrtf` (the HRTF sources and directions);
   `tfar_spatial_audio` (curve, cone, simple ILD); `tfar_sample_buffer` (the frame, gain and mixing);
-  `tfar_playback_mixer` (the `my_radio_voice` stream); `thiserror` for the error type.
+  `tfar_playback_mixer` (the `my_radio_voice` stream and the remote sound's playback); `thiserror`
+  for the error type; `tracing` for a refused remote sound filter.
 - Used by: `tfar_plugin_1_0`.
 - Rules: each compressor runs once per frame
   (`direct_speech_and_radio_each_advance_their_own_compressor_once_per_frame`); the scratch never
-  grows (`a_thousand_frames_leave_every_scratch_capacity_unchanged`); nothing pans twice. Tier 5
+  grows and no reception outlives its frame
+  (`a_thousand_frames_leave_every_scratch_capacity_unchanged`); nothing pans twice. Tier 5
   in `crates/version_1_0`: every workspace dependency has a lower tier and follows the edge matrix
   in `crates/README.md` (`cargo xtask verify crate-tiers`).
 

@@ -1,28 +1,48 @@
 //! Table-driven tests of `is_over_radio`: intercom, range, speakers and towers.
 
+use std::sync::Arc;
+
 use super::*;
 use crate::fixtures::{ALPHA, BRAVO, SW_FREQUENCY, World, at};
-use tfar_client_state_1_0::prelude::{ReceivedOn, Speaker, TangentRadio, VehicleDescriptor};
+use tfar_client_state_1_0::prelude::{
+    ReceivedOn, SendingRadio, Speaker, StereoMode, TangentRadio, VehicleDescriptor,
+};
 use tfar_geometry::Position;
 
+/// A reception of an earlier frame, left in a reused list.
+fn stale_reception() -> HeardVia {
+    HeardVia {
+        over: SendingRadio::DiverDigital,
+        on: ReceivedOn::LongRange,
+        volume: -1.0,
+        stereo_mode: StereoMode::Right,
+        radio_id: "stale".into(),
+        position: None,
+        wave_z: 0.0,
+        vehicle: Arc::new(VehicleDescriptor::not_in_vehicle()),
+        antenna_loss: None,
+    }
+}
+
+/// Where the local player hears `alpha`; every case also checks that `is_over_radio_into`, into
+/// a list holding a stale reception, gives the same list as `is_over_radio`.
 fn heard(world: &World) -> Vec<ReceivedOn> {
-    is_over_radio(
-        &world.context(),
-        world.sender("alpha"),
-        IgnoreTangents::NONE,
-    )
-    .into_iter()
-    .map(|via| via.on)
-    .collect()
+    let context = world.context();
+    let sender = world.sender("alpha");
+    let heard = is_over_radio(&context, sender, IgnoreTangents::NONE);
+    let mut reused = vec![stale_reception()];
+    is_over_radio_into(&context, sender, IgnoreTangents::NONE, &mut reused);
+    assert_eq!(reused, heard);
+    heard.into_iter().map(|via| via.on).collect()
 }
 
 fn in_vehicle(world: &mut World, nickname: &str, slot: i16) {
-    world.client(nickname).vehicle = VehicleDescriptor {
+    world.client(nickname).vehicle = Arc::new(VehicleDescriptor {
         name: "2:390".to_owned(),
         isolation: 0.5,
         intercom_slot: slot,
         velocity: [0.0; 3],
-    };
+    });
 }
 
 fn speaker(
@@ -30,11 +50,11 @@ fn speaker(
     position: Option<Position>,
 ) -> Speaker {
     Speaker {
-        radio_id: "2:500".to_owned(),
+        radio_id: "2:500".into(),
         owner,
         position,
         volume: 8.0,
-        vehicle: VehicleDescriptor::not_in_vehicle(),
+        vehicle: Arc::new(VehicleDescriptor::not_in_vehicle()),
         wave_z: 1.0,
     }
 }
@@ -58,7 +78,7 @@ fn the_intercom_carries_direct_speech_in_the_same_vehicle_and_slot() {
         world.sender("alpha"),
         IgnoreTangents::NONE,
     );
-    assert_eq!(via.first().unwrap().radio_id, "intercom");
+    assert_eq!(&*via.first().unwrap().radio_id, "intercom");
 }
 
 #[test]
@@ -70,12 +90,7 @@ fn the_intercom_case_table() {
             "no intercom slot",
             |world| {
                 in_vehicle(world, "alpha", -1);
-                world
-                    .session
-                    .clients
-                    .own_mut()
-                    .unwrap()
-                    .vehicle
+                Arc::make_mut(&mut world.session.clients.own_mut().unwrap().vehicle)
                     .intercom_slot = -1;
             },
             &[],
@@ -166,7 +181,7 @@ fn a_speaker_on_the_exact_frequency_plays_the_transmission() {
     );
     let ground = via.get(1).unwrap();
     assert_eq!(ground.position, Some(at(5.0, 5.0, 0.0)));
-    assert_eq!(ground.radio_id, "2:500");
+    assert_eq!(&*ground.radio_id, "2:500");
     assert!((ground.volume - 8.0).abs() < f64::EPSILON);
 }
 
@@ -290,4 +305,78 @@ fn terrain_lengthens_the_effective_distance() {
     assert_eq!(heard(&world), [ReceivedOn::ShortRange]);
     world.client("alpha").terrain_interception = 50;
     assert_eq!(heard(&world), []);
+}
+
+/// `alpha` transmits on short range 100 m away, heard on a carried radio and on two speakers.
+fn world_with_speakers() -> World {
+    let mut world = World::new();
+    world.transmit(
+        "alpha",
+        TangentRadio::ShortRange,
+        SW_FREQUENCY,
+        3000,
+        at(100.0, 0.0, 0.0),
+    );
+    with_speakers(
+        &mut world,
+        SW_FREQUENCY,
+        vec![
+            speaker(Some(BRAVO), Some(at(5.0, 5.0, 0.0))),
+            speaker(Some(BRAVO), Some(at(6.0, 5.0, 0.0))),
+        ],
+    );
+    world
+}
+
+#[test]
+fn a_reception_shares_its_radio_id_and_vehicle_with_the_session() {
+    let world = world_with_speakers();
+    let via = is_over_radio(
+        &world.context(),
+        world.sender("alpha"),
+        IgnoreTangents::NONE,
+    );
+    let own = world.session.clients.own().unwrap();
+    let speaker = &world.session.game.speakers_on(SW_FREQUENCY)[0];
+    assert_eq!(via.len(), 3);
+    assert!(Arc::ptr_eq(
+        &via[0].radio_id,
+        &tfar_client_state_1_0::local_radio_id()
+    ));
+    assert!(Arc::ptr_eq(&via[0].vehicle, &own.vehicle));
+    assert!(Arc::ptr_eq(&via[1].radio_id, &speaker.radio_id));
+    assert!(Arc::ptr_eq(&via[1].vehicle, &speaker.vehicle));
+}
+
+#[test]
+fn filling_a_list_with_nothing_heard_drops_what_it_held() {
+    let world = World::new();
+    let mut reused = vec![stale_reception(), stale_reception()];
+    is_over_radio_into(
+        &world.context(),
+        world.sender("alpha"),
+        IgnoreTangents::NONE,
+        &mut reused,
+    );
+    assert_eq!(reused, []);
+}
+
+#[test]
+fn a_thousand_frames_into_a_warm_list_never_reallocate_it() {
+    let world = world_with_speakers();
+    let context = world.context();
+    let (alpha, bravo) = (world.sender("alpha"), world.sender("bravo"));
+    let mut reused = Vec::new();
+    is_over_radio_into(&context, alpha, IgnoreTangents::NONE, &mut reused);
+    let (capacity, buffer) = (reused.capacity(), reused.as_ptr());
+    for frame in 0..1_000 {
+        let (sender, expected) = if frame % 3 == 0 {
+            (bravo, 0)
+        } else {
+            (alpha, 3)
+        };
+        is_over_radio_into(&context, sender, IgnoreTangents::NONE, &mut reused);
+        assert_eq!(reused.len(), expected);
+        assert_eq!((reused.capacity(), reused.as_ptr()), (capacity, buffer));
+    }
 }

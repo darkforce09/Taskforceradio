@@ -14,6 +14,7 @@
 //! stays right; every query is pure (time comes in as `now`); a client counts as alive for at
 //! most 20 s after its last activity and only within one data frame of the game's.
 
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use tfar_arma_values::RadioSubtype;
@@ -90,8 +91,9 @@ pub struct ClientData {
     pub position_updated_at: Option<Instant>,
     /// When the client was last active (`POS` or a tangent); the clock of liveness.
     pub last_activity_at: Option<Instant>,
-    /// The vehicle the client is in, with its velocity.
-    pub vehicle: VehicleDescriptor,
+    /// The vehicle the client is in, with its velocity; shared, so a reception names it without
+    /// copying.
+    pub vehicle: Arc<VehicleDescriptor>,
     /// The DSP objects of this client as a sender.
     pub effects: ClientEffects,
 }
@@ -125,7 +127,7 @@ impl ClientData {
             view_direction: Direction::ZERO,
             position_updated_at: None,
             last_activity_at: None,
-            vehicle: VehicleDescriptor::not_in_vehicle(),
+            vehicle: Arc::new(VehicleDescriptor::not_in_vehicle()),
             effects: ClientEffects::new(),
         }
     }

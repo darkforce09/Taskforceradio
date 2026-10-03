@@ -10,16 +10,16 @@
 //! **Signals and state:** reads the data frames and position times; `remove_expired` removes
 //! entries and drops their sound state, on the service thread under the server lock.
 //!
-//! **Invariants:** a frame is current within one of the current data frame; a lookup by client
-//! id returns a current entry whenever `has_fresh_data` is true for that id, and the entry most
-//! recently positioned when several current entries share the id; time comes in as `now`,
-//! never from the clock.
+//! **Invariants:** a frame is current within one of the current data frame, the invalid frame
+//! never; a lookup by client id returns a current entry whenever `has_fresh_data` is true for
+//! that id, and the entry most recently positioned when several current entries share the id;
+//! time comes in as `now`, never from the clock.
 
 use std::time::{Duration, Instant};
 
 use crate::client_data::ClientData;
 use crate::client_id::ClientId;
-use crate::server_radio_data::ServerRadioData;
+use crate::server_radio_data::{INVALID_DATA_FRAME, ServerRadioData};
 
 #[cfg(test)]
 #[path = "tests/data_frames.rs"]
@@ -34,9 +34,12 @@ pub const POSITION_EXPIRY: Duration = Duration::from_secs(20);
 pub const DATA_FRAME_WINDOW: u32 = 1;
 
 impl ServerRadioData {
-    /// Whether `data_frame` lies within [`DATA_FRAME_WINDOW`] of the current data frame.
+    /// Whether `data_frame` lies within [`DATA_FRAME_WINDOW`] of the current data frame. The
+    /// invalid frame, of an entry without a `POS` or of a killed player, is never current, also
+    /// outside a game, where the current frame sits at or just above it.
     pub fn is_frame_current(&self, data_frame: i32) -> bool {
-        self.current_data_frame.abs_diff(data_frame) <= DATA_FRAME_WINDOW
+        data_frame != INVALID_DATA_FRAME
+            && self.current_data_frame.abs_diff(data_frame) <= DATA_FRAME_WINDOW
     }
 
     /// Whether some entry names `client_id` and carries a current data frame.

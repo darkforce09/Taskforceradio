@@ -1,6 +1,8 @@
 //! Unit tests for `dsp_requirements`, against the branches of the stereo function in
 //! `reference/tfar_0_9_12/ts/src/plugin.cpp:2672-2797`.
 
+use std::sync::Arc;
+
 use super::*;
 use tfar_client_state_0_9::prelude::{
     Position, RadioSubtype, StereoMode, TangentKind, UsableRadios, VehicleDescriptor,
@@ -9,11 +11,11 @@ use tfar_client_state_0_9::{ClientData, FrequencySettings, SpeakerRadio};
 
 const ME: ClientId = ClientId(1);
 
-fn vehicle(name: &str, isolation: f64) -> VehicleDescriptor {
-    VehicleDescriptor {
+fn vehicle(name: &str, isolation: f64) -> Arc<VehicleDescriptor> {
+    Arc::new(VehicleDescriptor {
         vehicle_name: name.to_owned(),
         isolation,
-    }
+    })
 }
 
 /// `Me` (1) on foot and `Alpha` (2) 10 m away with a 20 m voice, a `digital` radio held on
@@ -153,7 +155,7 @@ fn a_loudspeaker_needs_its_band_pass_vehicle_and_under_water_stages() {
     server.speakers.insert(
         "30.1".to_owned(),
         vec![SpeakerRadio {
-            radio_id: "r1".to_owned(),
+            radio_id: "r1".into(),
             owner_nickname: "Me".to_owned(),
             position: Some(Position::from_array([3.0, 0.0, 0.0]).unwrap()),
             volume: 5,
@@ -165,7 +167,7 @@ fn a_loudspeaker_needs_its_band_pass_vehicle_and_under_water_stages() {
     assert_eq!(
         requirements.radios[1],
         RadioRequirement {
-            radio_id: "r1".to_owned(),
+            radio_id: "r1".into(),
             effect: RadioEffectKind::Personal,
             speaker: Some(SpeakerRequirement {
                 vehicle_isolation: Some(0.3),

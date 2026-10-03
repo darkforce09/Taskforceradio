@@ -87,7 +87,7 @@ pub fn dsp_requirements(
                 .muffling_isolation(),
             is_under_water: heard.is_under_water(),
         }),
-        radio_id: heard.radio_id,
+        radio_id: String::from(&*heard.radio_id),
         effect,
     })
     .collect();

@@ -10,7 +10,10 @@
 //! **Signals and state:** none; value types.
 //!
 //! **Invariants:** a reception on the listener's own radio carries [`LOCAL_RADIO_ID`], the origin
-//! as position and wave height 1; an ignore flag counts its family as held.
+//! as position and wave height 1; an ignore flag counts its family as held; a reception shares
+//! its radio id and vehicle with the server state, so making one copies no text.
+
+use std::sync::{Arc, LazyLock};
 
 use tfar_client_state_0_9::is_under_water;
 use tfar_client_state_0_9::prelude::{StereoMode, TangentKind, VehicleDescriptor};
@@ -19,6 +22,15 @@ use tfar_geometry::Position;
 /// The radio id of the local player's own radios, which keys their sound state
 /// (`reference/tfar_0_9_12/ts/src/plugin.cpp:1004`).
 pub const LOCAL_RADIO_ID: &str = "local_radio";
+
+/// [`LOCAL_RADIO_ID`] as the shared text every own-radio reception carries; made on first use.
+static SHARED_LOCAL_RADIO_ID: LazyLock<Arc<str>> = LazyLock::new(|| Arc::from(LOCAL_RADIO_ID));
+
+/// [`LOCAL_RADIO_ID`] as a shared id: a new handle on one text, so it allocates only on the first
+/// call of the process.
+pub fn local_radio_id() -> Arc<str> {
+    Arc::clone(&SHARED_LOCAL_RADIO_ID)
+}
 
 /// Where the local player hears the radio (`LISTED_ON`, plugin.cpp:87).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -44,15 +56,17 @@ pub struct HeardVia {
     pub volume: i32,
     /// The ear the receiving radio plays into; both for a diver radio and a loudspeaker.
     pub stereo_mode: StereoMode,
-    /// The radio id that keys the sound state: [`LOCAL_RADIO_ID`] or the loudspeaker radio's.
-    pub radio_id: String,
+    /// The radio id that keys the sound state: [`LOCAL_RADIO_ID`] or the loudspeaker radio's,
+    /// shared with the server state.
+    pub radio_id: Arc<str>,
     /// Where the sound comes from relative to the listener: the origin for the local player's
     /// own radios, the loudspeaker radio's position otherwise.
     pub position: Position,
     /// The receiving radio's height above sea level; 1 for the local player's own radios.
     pub wave_z: f64,
-    /// The vehicle the receiving radio is in: the listener's for their own radios.
-    pub vehicle: VehicleDescriptor,
+    /// The vehicle the receiving radio is in: the listener's for their own radios; shared with
+    /// the server state.
+    pub vehicle: Arc<VehicleDescriptor>,
 }
 
 impl HeardVia {

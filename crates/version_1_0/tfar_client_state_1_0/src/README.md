@@ -19,9 +19,9 @@ crates/version_1_0/tfar_client_state_1_0/src/
 ├── lib.rs                      the crate root: module header, `mod` lines and re-exports
 ├── plugin_enabled.rs           the 10 s plugin-enabled cache of a client
 ├── prelude.rs                  the public names, and the foreign types of public fields
-├── radio_volume.rs             `radio_volume_gain` and `remote_radio_sound`
+├── radio_volume.rs             `radio_volume_gain`, `local_radio_sound` and `remote_radio_sound`
 ├── receiving_transmissions.rs  the senders the local player receives, one count each
-├── reception.rs                `HeardVia` and the vocabulary of how a sender is heard
+├── reception.rs                `HeardVia`, the vocabulary of how a sender is heard, the shared ids
 ├── session/                    `SessionState` and the apply function of each message
 ├── session.rs                  the module lines and re-exports of `session/`
 └── tests/                      unit tests of the top-level modules and their shared builders
@@ -35,8 +35,9 @@ every change goes through it so the two always agree; the local player is the en
 directory marks as own. A `ClientData` keeps its position as reported and extrapolates it by the
 vehicle velocity for the time since the last `POS` (`client_position(now)`); liveness uses a
 separate activity clock, which tangents also refresh. Each `ClientData` owns a `ClientEffects`
-(in `effects/`). `reception.rs` holds `HeardVia`, which the routing crate produces and the tangent
-handling and voice pipeline read. `GameLinkState` stands apart: one per plugin.
+(in `effects/`) and shares its vehicle descriptor (`Arc`). `reception.rs` holds `HeardVia`,
+which the routing crate produces and the tangent handling and voice pipeline read; a `HeardVia`
+shares its radio id and vehicle with the session, so making one copies no text. `GameLinkState` stands apart: one per plugin.
 
 ## Public surface
 

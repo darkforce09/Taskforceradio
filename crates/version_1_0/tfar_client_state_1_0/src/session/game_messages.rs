@@ -12,6 +12,7 @@
 //! **Invariants:** the fields go where `reference/tfar_1_0/ts/src/CommandProcessor.cpp` puts
 //! them; an unknown nickname changes no client.
 
+use std::sync::Arc;
 use std::time::Instant;
 
 use tfar_game_commands_1_0::{FrequencyReport, PositionUpdate, SpeakerRecord};
@@ -79,7 +80,9 @@ impl SessionState {
             client.can_use_lr_radio = update.can_use_lr_radio;
             client.can_use_dd_radio = update.can_use_dd_radio;
         }
-        client.vehicle = update.vehicle.clone();
+        if *client.vehicle != update.vehicle {
+            client.vehicle = Arc::new(update.vehicle.clone());
+        }
         client.terrain_interception = update.terrain_interception;
         client.voice_volume_multiplier = update.voice_volume;
         client.object_interception = update.object_interception;
@@ -138,14 +141,14 @@ impl SessionState {
         self.game.speakers.clear();
         for record in records {
             let speaker = Speaker {
-                radio_id: record.radio_id.clone(),
+                radio_id: Arc::from(record.radio_id.as_str()),
                 owner: self
                     .clients
                     .get(&record.nickname)
                     .map(ClientData::client_id),
                 position: record.position,
                 volume: f64::from(record.volume),
-                vehicle: record.vehicle.clone(),
+                vehicle: Arc::new(record.vehicle.clone()),
                 wave_z: record.wave_z,
             };
             for frequency in &record.frequencies {

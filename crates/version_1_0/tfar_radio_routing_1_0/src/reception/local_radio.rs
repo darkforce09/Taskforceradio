@@ -15,10 +15,12 @@
 //! when the frequency is on both; in half-duplex mode the radio being transmitted on hears
 //! nothing.
 
+use std::sync::Arc;
+
 use tfar_antennas_1_0::AntennaConnection;
 use tfar_client_state_1_0::prelude::{
-    ClientData, FrequencyEntry, HeardVia, IgnoreTangents, LOCAL_RADIO_ID, ReceivedOn, SendingRadio,
-    TangentRadio,
+    ClientData, FrequencyEntry, HeardVia, IgnoreTangents, ReceivedOn, SendingRadio, TangentRadio,
+    local_radio_id,
 };
 use tfar_geometry::distance_underwater;
 
@@ -129,10 +131,10 @@ pub fn is_over_local_radio(
         on,
         volume: entry.volume,
         stereo_mode: entry.stereo_mode,
-        radio_id: LOCAL_RADIO_ID.to_owned(),
+        radio_id: local_radio_id(),
         position: None,
         wave_z: CARRIED_RADIO_WAVE_Z,
-        vehicle: listener.vehicle.clone(),
+        vehicle: Arc::clone(&listener.vehicle),
         antenna_loss: antenna.map(AntennaConnection::loss),
     })
 }

@@ -30,3 +30,26 @@ fn only_digital_long_range_and_airborne_radios_have_remote_sounds() {
         None
     );
 }
+
+#[test]
+fn only_digital_long_range_and_airborne_radios_have_local_sounds() {
+    assert_eq!(
+        local_radio_sound(&RadioSubtype::Digital, true),
+        Some("radio-sounds/sw/local_start")
+    );
+    assert_eq!(
+        local_radio_sound(&RadioSubtype::DigitalLongRange, false),
+        Some("radio-sounds/lr/local_end")
+    );
+    assert_eq!(
+        local_radio_sound(&RadioSubtype::Airborne, true),
+        Some("radio-sounds/ab/local_start")
+    );
+    for subtype in [
+        RadioSubtype::DiverDigital,
+        RadioSubtype::Phone,
+        RadioSubtype::Unknown("radio".to_owned()),
+    ] {
+        assert_eq!(local_radio_sound(&subtype, true), None);
+    }
+}

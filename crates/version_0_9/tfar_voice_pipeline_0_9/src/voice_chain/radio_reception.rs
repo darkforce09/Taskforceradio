@@ -14,14 +14,15 @@
 //!
 //! **Invariants:** a reception whose sound object is not made yet is left out of the mix and
 //! reported, never run unfiltered; a silent subtype mixes nothing; the loudspeaker band-pass
-//! runs before the level, the under-water low-pass after it, the direction last.
+//! runs before the level, the under-water low-pass after it, the direction last, through the
+//! HRTF at unity (no makeup gain).
 
 use tfar_client_state_0_9::{RadioDsp, RadioEffectKind};
 use tfar_radio_effects_0_9::{MonoMixBuffer, RadioEffect, process_radio_effect};
 use tfar_sample_buffer::{StereoBuffer, apply_gain};
 
 use super::sender_plan::{DistanceLevel, LoudspeakerPlan, PlannedRoute};
-use super::sound_placement::place_sound;
+use super::sound_placement::{HrtfLevel, place_sound};
 use crate::voice_gains::{CANT_SPEAK_GAIN, SPEAKER_GAIN, as_stage_gain};
 
 #[cfg(test)]
@@ -147,6 +148,7 @@ fn render_loudspeaker(
         buffers.radio,
         buffers.direction_output,
         plan.placement,
+        HrtfLevel::Unity,
     );
     true
 }

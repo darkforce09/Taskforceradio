@@ -32,12 +32,12 @@ pub use distances::{
 };
 pub use dsp_planning::dsp_requirements;
 pub use error::{Error, Result};
-pub use heard_via::{HeardOn, HeardVia, IgnoreTangents, LOCAL_RADIO_ID};
+pub use heard_via::{HeardOn, HeardVia, IgnoreTangents, LOCAL_RADIO_ID, local_radio_id};
 pub use mute_decisions::{
     GameClientMute, MuteDecision, MuteQuery, MuteTracker, game_client_mute,
     set_game_client_mute_status, set_mute_for_dead_players,
 };
-pub use reception::{is_over_local_radio, is_over_radio, receptions};
+pub use reception::{is_over_local_radio, is_over_radio, is_over_radio_into, receptions};
 pub use serious_mode::{
     OTHER_RADIO_PLUGIN_CHANNELS, is_other_radio_plugin_channel, is_serious_mode,
 };

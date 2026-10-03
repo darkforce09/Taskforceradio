@@ -13,8 +13,8 @@
 //! **Signals and state:** the [`VoiceScratch`] buffers; every DSP object belongs to the sender's
 //! `ClientEffects` in the session. Runs on the TeamSpeak audio threads under the server lock.
 //!
-//! **Invariants:** no allocation on the audio path once the scratch fits the frame (the routing
-//! crate's reception list aside); direct speech and radio each run their own compressor once per
+//! **Invariants:** no allocation on the audio path once the scratch fits the frame, the
+//! reception list included; direct speech and radio each run their own compressor once per
 //! frame; nothing pans twice; the frame keeps its length.
 
 use core::mem;
@@ -141,10 +141,17 @@ impl VoiceProcessor {
             is_from_microphone,
             now: context.now,
         };
-        let Some(plan) = FramePlan::build(session, inputs, &mut self.scratch.route_plans) else {
+        let scratch = &mut self.scratch;
+        let Some(plan) = FramePlan::build(
+            session,
+            inputs,
+            &mut scratch.routes,
+            &mut scratch.route_plans,
+        ) else {
             return VoiceOutcome::PassThrough;
         };
         let Some(sender_data) = session.clients.by_id_mut(sender) else {
+            scratch.release_routes();
             return VoiceOutcome::PassThrough;
         };
         let effects = &mut sender_data.effects;
@@ -154,9 +161,10 @@ impl VoiceProcessor {
             rendered,
             previous_frame,
             mono_mix,
+            routes,
             route_plans,
             ..
-        } = &mut self.scratch;
+        } = &mut *scratch;
 
         apply_gain(samples.as_mut_slice(), plan.voice_volume_multiplier);
         original.copy_from(samples);
@@ -171,13 +179,14 @@ impl VoiceProcessor {
         if let Some(compressor) = effects.radio_compressor_mut() {
             compressor.process_stereo_i16(original);
         }
-        for (route, route_plan) in plan.routes.iter().zip(route_plans.iter()) {
+        for (route, route_plan) in routes.iter().zip(route_plans.iter()) {
             radio.copy_from(original);
             if render_route(effects, route, route_plan, radio, rendered, mono_mix) {
                 mix_into_additive(samples.as_mut_slice(), radio.as_slice());
             }
         }
         apply_gain(samples.as_mut_slice(), plan.global_volume);
+        scratch.release_routes();
         VoiceOutcome::Processed
     }
 }

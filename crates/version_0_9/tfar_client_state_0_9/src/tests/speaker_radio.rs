@@ -14,7 +14,7 @@ fn records(message: &str) -> Vec<SpeakerRecord> {
 fn a_radio_takes_every_field_of_its_record_but_the_frequencies() {
     let record = &records("SPEAKERS\t\u{b}radio_1\n30.1|40.2\nAlpha\n[1,2,3]\n7\n2:5_0.5\n-3")[0];
     let radio = SpeakerRadio::from_record(record);
-    assert_eq!(radio.radio_id, "radio_1");
+    assert_eq!(&*radio.radio_id, "radio_1");
     assert_eq!(radio.owner_nickname, "Alpha");
     assert_eq!(radio.position.unwrap().to_array(), [1.0, 2.0, 3.0]);
     assert_eq!(radio.volume, 7);

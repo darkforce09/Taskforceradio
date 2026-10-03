@@ -12,7 +12,10 @@ fn an_unknown_nickname_gets_a_fresh_entry_with_its_id() {
     ]);
     assert_eq!(server.client_id_of("Me"), Some(ClientId(1)));
     assert_eq!(server.client_id_of("Alpha"), Some(ClientId(2)));
-    assert_eq!(server.client("Alpha").unwrap().data_frame, 0);
+    assert_eq!(
+        server.client("Alpha").unwrap().data_frame,
+        crate::server_radio_data::INVALID_DATA_FRAME
+    );
 }
 
 #[test]

@@ -1,7 +1,9 @@
 //! The vehicle intercom rule.
 
+use std::sync::Arc;
+
 use tfar_client_state_1_0::prelude::{
-    ClientData, HeardVia, INTERCOM_RADIO_ID, ReceivedOn, SendingRadio, StereoMode,
+    ClientData, HeardVia, ReceivedOn, SendingRadio, StereoMode, intercom_radio_id,
 };
 
 /// The intercom slot of a vehicle without intercom.
@@ -31,10 +33,10 @@ pub(crate) fn intercom_reception(
         on: ReceivedOn::Intercom,
         volume: INTERCOM_LISTED_VOLUME,
         stereo_mode: StereoMode::Both,
-        radio_id: INTERCOM_RADIO_ID.to_owned(),
+        radio_id: intercom_radio_id(),
         position: None,
         wave_z: 0.0,
-        vehicle: vehicle.clone(),
+        vehicle: Arc::clone(vehicle),
         antenna_loss: None,
     })
 }

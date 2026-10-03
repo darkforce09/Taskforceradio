@@ -4,7 +4,8 @@
 //! **Role:** the 1.0 audio path for one voice frame: gates the sender, applies direct speech
 //! (muffling, the distance curve and voice cone level, HRTF direction, its compressor) and every
 //! radio reception (the radio compressor, the effects, speakers, intercom), then the global
-//! volume; and creates the DSP objects those frames need, off the audio thread.
+//! volume; creates the DSP objects those frames need, off the audio thread; and shapes the
+//! positional remote tangent sound.
 //!
 //! **Position:** `crates/version_1_0`, tier 5, depending on `tfar_client_state_1_0`,
 //! `tfar_radio_routing_1_0`, `tfar_radio_effects_1_0`, `tfar_plugin_settings_1_0`,
@@ -14,7 +15,8 @@
 //!
 //! **Signals and state:** a [`VoiceProcessor`] per server connection with its scratch buffers;
 //! the DSP objects live in the senders' client state. Called on the TeamSpeak audio threads
-//! with the server lock held; [`ensure_sender_dsp`] runs off them.
+//! with the server lock held; [`ensure_sender_dsp`] and [`render_remote_tangent_sound`] run off
+//! them.
 //!
 //! **Invariants:** each compressor runs once per frame; nothing pans twice; the audio path
 //! allocates nothing once its scratch fits the frame.
@@ -29,6 +31,7 @@ mod frame_plan;
 mod placement;
 pub mod prelude;
 mod radio_paths;
+mod remote_tangent_sound;
 mod scene;
 mod sender_gate;
 mod voice_context;
@@ -44,6 +47,10 @@ pub use distance_gain::{
 pub use dsp_needs::{ensure_every_sender_dsp, ensure_sender_dsp};
 pub use error::{Error, Result};
 pub use placement::{HRTF_MAKEUP_GAIN_DB, hrtf_makeup_gain};
+pub use remote_tangent_sound::{
+    RemoteSoundListener, RemoteSoundPlan, UNDER_WATER_SPEAKER_GAIN, apply_stereo_mode,
+    render_remote_tangent_sound,
+};
 pub use voice_context::{VoiceFrameContext, VoiceOutcome};
 pub use voice_processor::{OWN_RADIO_VOICE_STREAM, VoiceProcessor};
 pub use voice_scratch::VoiceScratchCapacities;

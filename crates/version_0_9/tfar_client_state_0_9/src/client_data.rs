@@ -12,8 +12,10 @@
 //!
 //! **Invariants:** every field starts at a defined value, including the plugin-enabled flag,
 //! its check time and the view angle, which the original leaves uninitialised; the client id is
-//! set when the entry is made, so an entry always names a TeamSpeak client.
+//! set when the entry is made, so an entry always names a TeamSpeak client; an entry is not
+//! current before its first `POS`.
 
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use tfar_game_commands_0_9::prelude::RadioSubtype;
@@ -24,6 +26,7 @@ use tfar_hrtf::HrirLibrary;
 use crate::client_id::ClientId;
 use crate::dsp_state::{ClientDsp, DspRequirements};
 use crate::error::Result;
+use crate::server_radio_data::INVALID_DATA_FRAME;
 
 #[cfg(test)]
 #[path = "tests/client_data.rs"]
@@ -58,14 +61,14 @@ pub struct ClientData {
     pub can_speak: bool,
     /// Whether the player talks now, by their last `VOLUME`.
     pub is_talking_now: bool,
-    /// The data frame of the player's last `POS`.
+    /// The data frame of the player's last `POS`; [`INVALID_DATA_FRAME`] before the first.
     pub data_frame: i32,
     /// Which radio families the player can use.
     pub usable_radios: UsableRadios,
     /// The subtype of the radio the player last keyed.
     pub subtype: RadioSubtype,
-    /// The vehicle the player sits in.
-    pub vehicle: VehicleDescriptor,
+    /// The vehicle the player sits in; shared, so a reception names it without copying.
+    pub vehicle: Arc<VehicleDescriptor>,
     /// How much terrain lies between the player and the local listener.
     pub terrain_interception: i32,
     /// The direction the player looks; kept for the local player only, where it turns the
@@ -78,8 +81,10 @@ pub struct ClientData {
 }
 
 impl ClientData {
-    /// A player with client id `client_id` and the original's defaults: can speak, no radio
-    /// usable, no push-to-talk, at the origin, data frame 0, multiplier 1.
+    /// A player with client id `client_id`: can speak, no radio usable, no push-to-talk, at the
+    /// origin, multiplier 1, as the original; and at [`INVALID_DATA_FRAME`] until the first
+    /// `POS`, where the original starts at frame 0 and so counts an entry that never sent a
+    /// position as current in the first frames of a game.
     pub fn new(client_id: ClientId) -> Self {
         Self {
             client_id,
@@ -93,17 +98,17 @@ impl ClientData {
             range: 0,
             can_speak: true,
             is_talking_now: false,
-            data_frame: 0,
+            data_frame: INVALID_DATA_FRAME,
             usable_radios: UsableRadios {
                 short_range: false,
                 long_range: false,
                 diver: false,
             },
             subtype: RadioSubtype::Unknown(String::new()),
-            vehicle: VehicleDescriptor {
+            vehicle: Arc::new(VehicleDescriptor {
                 vehicle_name: String::new(),
                 isolation: 0.0,
-            },
+            }),
             terrain_interception: 0,
             view_angle: Angle::ZERO,
             voice_volume_multiplier: 1.0,

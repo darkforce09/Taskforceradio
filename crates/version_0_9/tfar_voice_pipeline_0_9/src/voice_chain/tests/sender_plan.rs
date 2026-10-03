@@ -15,6 +15,7 @@ fn plan(scene: &Scene) -> (SenderPlan, Vec<PlannedRoute>) {
         "Alpha",
         server.client("Alpha").unwrap(),
         server.client("Me").unwrap(),
+        &mut Vec::new(),
         &mut routes,
     );
     (plan, routes)
@@ -25,7 +26,7 @@ fn the_listener_hears_no_direct_voice_of_their_own() {
     let scene = Scene::new();
     let server = &scene.state;
     let me = server.client("Me").unwrap();
-    let plan = plan_sender(server, "Me", me, me, &mut Vec::new());
+    let plan = plan_sender(server, "Me", me, me, &mut Vec::new(), &mut Vec::new());
     assert_eq!(plan.direct_voice, None);
 }
 

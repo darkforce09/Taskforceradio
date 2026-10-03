@@ -114,3 +114,39 @@ fn an_entry_never_positioned_expires_at_the_next_sweep() {
         vec!["Alpha".to_owned()]
     );
 }
+
+#[test]
+fn an_entry_without_a_position_is_not_current_in_or_outside_a_game() {
+    let mut server = ServerRadioData::new("Me".to_owned());
+    server.update_nicknames(&[(ClientId(2), "Alpha".to_owned())]);
+    for frame in [0, 1, INVALID_DATA_FRAME, INVALID_DATA_FRAME + 1] {
+        server.current_data_frame = frame;
+        assert!(!server.has_fresh_data(ClientId(2)), "current frame {frame}");
+    }
+    let update = match tfar_game_commands_0_9::GameCommand::parse(
+        "POS\tAlpha\t1\t2\t0\t0\ttrue\ttrue\tfalse\tfalse\tno\t0\t1\t0",
+    )
+    .unwrap()
+    {
+        tfar_game_commands_0_9::GameCommand::Position(update) => update,
+        other => panic!("not a POS: {other:?}"),
+    };
+    server.current_data_frame = 0;
+    server.apply_position(&update, Some(ClientId(2)), Instant::now());
+    assert!(server.has_fresh_data(ClientId(2)));
+}
+
+#[test]
+fn a_killed_players_invalid_frame_is_not_current_outside_a_game() {
+    let mut server = server_at_frame(INVALID_DATA_FRAME);
+    insert(
+        &mut server,
+        "Alpha",
+        2,
+        INVALID_DATA_FRAME,
+        Some(Instant::now()),
+    );
+    assert!(!server.has_fresh_data(ClientId(2)));
+    server.current_data_frame = INVALID_DATA_FRAME + 1;
+    assert!(!server.has_fresh_data(ClientId(2)));
+}

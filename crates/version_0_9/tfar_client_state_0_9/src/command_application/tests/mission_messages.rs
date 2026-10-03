@@ -47,7 +47,7 @@ fn speakers_are_filed_under_every_frequency_in_the_games_order() {
     let on_30: Vec<_> = server
         .speakers_on("30")
         .iter()
-        .map(|s| s.radio_id.as_str())
+        .map(|s| &*s.radio_id)
         .collect();
     assert_eq!(on_30, ["r1", "r2"]);
     assert_eq!(server.speakers_on("31").len(), 1);

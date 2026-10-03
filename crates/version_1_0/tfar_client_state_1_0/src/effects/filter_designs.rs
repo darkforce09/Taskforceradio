@@ -15,20 +15,20 @@ pub const CANT_SPEAK_FILTER_KEY: &str = "local_cantspeak";
 pub const VEHICLE_FILTER_KEY: &str = "local_vehicle";
 
 /// The can't-speak and underwater-speaker low-pass: Butterworth, 4 poles, 100 Hz.
-pub(crate) const CANT_SPEAK: FilterDesign = FilterDesign::ButterworthLowPass {
+pub const CANT_SPEAK_LOW_PASS: FilterDesign = FilterDesign::ButterworthLowPass {
     order: 4,
     cutoff_hz: 100.0,
 };
 
 /// The loudspeaker band-pass: Butterworth order 1, centre 2000 Hz, width 1000 Hz.
-pub(crate) const SPEAKER: FilterDesign = FilterDesign::ButterworthBandPass {
+pub const SPEAKER_BAND_PASS: FilterDesign = FilterDesign::ButterworthBandPass {
     order: 1,
     centre_hz: 2000.0,
     width_hz: 1000.0,
 };
 
 /// The phone band-pass: Butterworth order 2, centre 1850 Hz, width 1550 Hz.
-pub(crate) const PHONE: FilterDesign = FilterDesign::ButterworthBandPass {
+pub const PHONE_BAND_PASS: FilterDesign = FilterDesign::ButterworthBandPass {
     order: 2,
     centre_hz: 1850.0,
     width_hz: 1550.0,
@@ -36,7 +36,7 @@ pub(crate) const PHONE: FilterDesign = FilterDesign::ButterworthBandPass {
 
 /// The vehicle low-pass at `vehicle_volume_loss`: Butterworth, 2 poles, cutoff
 /// `20000 · (1 − loss) / 4` (`clientData.hpp:192-203`).
-pub(crate) fn vehicle(vehicle_volume_loss: f64) -> FilterDesign {
+pub fn vehicle_low_pass(vehicle_volume_loss: f64) -> FilterDesign {
     FilterDesign::ButterworthLowPass {
         order: 2,
         cutoff_hz: 20_000.0 * (1.0 - vehicle_volume_loss) / 4.0,

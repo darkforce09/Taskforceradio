@@ -226,14 +226,15 @@ fn a_carried_radio_reports_its_entry_and_the_listeners_vehicle() {
         3000,
         Position::ORIGIN,
     );
-    world.session.clients.own_mut().unwrap().vehicle.name = "2:77".to_owned();
+    std::sync::Arc::make_mut(&mut world.session.clients.own_mut().unwrap().vehicle).name =
+        "2:77".to_owned();
     let via = heard(&world, IgnoreTangents::NONE).unwrap();
     assert!((via.volume - 7.0).abs() < f64::EPSILON);
     assert_eq!(
         via.stereo_mode,
         tfar_client_state_1_0::prelude::StereoMode::Left
     );
-    assert_eq!(via.radio_id, LOCAL_RADIO_ID);
+    assert_eq!(&*via.radio_id, tfar_client_state_1_0::LOCAL_RADIO_ID);
     assert_eq!(via.position, None);
     assert!((via.wave_z - 1.0).abs() < f64::EPSILON);
     assert_eq!(via.vehicle.name, "2:77");

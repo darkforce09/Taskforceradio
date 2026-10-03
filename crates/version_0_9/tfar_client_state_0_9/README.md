@@ -52,10 +52,22 @@ nickname, in nickname order as the original's `std::map`, with every `CLIENT_DAT
   once at game end (`confirm_rename`, `end_game`).
 - A lookup by client id returns only an entry with a current data frame, and of several the one
   positioned last, so a rename's stale entry never stands in for the fresh one.
+- An entry starts at the invalid data frame (9999) until its first `POS`, where the original starts
+  it at frame 0 and so counts a player who never sent a position as current in the first frames of
+  a game; the invalid frame is never current, also outside a game, where the current frame sits at
+  or just above it (`an_entry_without_a_position_is_not_current_in_or_outside_a_game`,
+  `a_killed_players_invalid_frame_is_not_current_outside_a_game`).
 - Every field starts at a defined value, where the original leaves the plugin-enabled flag, its
   check time, the view angle, the local position, alive, can-speak and the levels uninitialised.
 - A vehicle low-pass is redesigned when the isolation changes instead of one filter being kept per
   isolation until the voices reset.
+
+### Shared ids
+
+A loudspeaker radio's id and every vehicle descriptor (of a `ClientData` and of a `SpeakerRadio`)
+are held behind an `Arc`, so a reception of `tfar_radio_routing_0_9` names them with a new handle
+instead of a copy of the text, and the audio path routes without allocating. A `POS` replaces a
+player's vehicle only when it changed.
 
 ## Getting started
 

@@ -120,12 +120,22 @@ impl VoiceProcessor {
             };
             scratch.sender_nickname.clear();
             scratch.sender_nickname.push_str(nickname);
-            plan_sender(server, nickname, sender, listener, &mut scratch.routes)
+            plan_sender(
+                server,
+                nickname,
+                sender,
+                listener,
+                &mut scratch.heard,
+                &mut scratch.routes,
+            )
         };
         let Some(sender) = state.clients.get_mut(scratch.sender_nickname.as_str()) else {
+            scratch.release_routes();
             return VoiceOutcome::PassThrough;
         };
-        if !render_frame(&plan, &mut sender.dsp, samples, scratch) {
+        let is_complete = render_frame(&plan, &mut sender.dsp, samples, scratch);
+        scratch.release_routes();
+        if !is_complete {
             self.frames_missing_sound_state = self.frames_missing_sound_state.saturating_add(1);
         }
         VoiceOutcome::Processed

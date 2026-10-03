@@ -1,6 +1,7 @@
 //! Unit tests for the remote tangent apply function.
 
 use std::cell::Cell;
+use std::sync::Arc;
 use std::time::Duration;
 
 use super::*;
@@ -157,14 +158,15 @@ fn the_intercom_plays_no_radio_sound() {
 #[test]
 fn a_speaker_sound_carries_its_place_vehicle_loss_and_water() {
     let mut session = session();
-    session.clients.own_mut().unwrap().vehicle.isolation = 0.3;
+    Arc::make_mut(&mut session.clients.own_mut().unwrap().vehicle).isolation = 0.3;
     let effects = session
         .apply_remote_tangent(&tangent("alpha", true, "100"), now(), |_, _, _| {
             let mut via = heard_on(ReceivedOn::Ground);
             via.position = Some(at(1.0, 2.0, -3.0));
             via.wave_z = -2.0;
-            via.vehicle.isolation = 0.9;
-            via.vehicle.name = "2:5".to_owned();
+            let vehicle = Arc::make_mut(&mut via.vehicle);
+            vehicle.isolation = 0.9;
+            vehicle.name = "2:5".to_owned();
             vec![via]
         })
         .unwrap();
@@ -182,7 +184,7 @@ fn a_tangent_press_keeps_the_position_extrapolation_clock() {
     let mut session = session();
     let alpha = session.clients.get_mut("alpha").unwrap();
     alpha.position_updated_at = Some(start);
-    alpha.vehicle.velocity = [10.0, 0.0, 0.0];
+    Arc::make_mut(&mut alpha.vehicle).velocity = [10.0, 0.0, 0.0];
     let later = start + Duration::from_secs(1);
     session.apply_remote_tangent(&tangent("alpha", true, "100"), later, heard_on_radio);
     let alpha = session.clients.get("alpha").unwrap();

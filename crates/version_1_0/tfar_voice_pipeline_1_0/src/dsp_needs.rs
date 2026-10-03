@@ -119,9 +119,9 @@ impl SenderDspNeeds {
             is_from_microphone: scene.is_own_voice,
             now,
         };
-        let plan = FramePlan::build(session, inputs, route_plans)?;
-        let route_losses = plan
-            .routes
+        let mut routes = Vec::new();
+        let plan = FramePlan::build(session, inputs, &mut routes, route_plans)?;
+        let route_losses = routes
             .iter()
             .map(|route| speaker_vehicle_loss(&scene, route))
             .collect();
@@ -129,7 +129,7 @@ impl SenderDspNeeds {
             vehicles: VehicleRelation::of(&scene),
             object_count: scene.sender.object_interception,
             is_heard_directly: plan.direct_speech.is_some(),
-            routes: plan.routes,
+            routes,
             route_losses,
         })
     }
@@ -158,13 +158,7 @@ impl SenderDspNeeds {
         }
         let routes = self.routes.iter().zip(&self.route_losses);
         for ((route, &loss), plan) in routes.zip(route_plans) {
-            route_requirements(
-                route.radio_id.as_str(),
-                loss,
-                plan,
-                has_hrtf,
-                &mut requirements,
-            );
+            route_requirements(&route.radio_id, loss, plan, has_hrtf, &mut requirements);
         }
         requirements
     }

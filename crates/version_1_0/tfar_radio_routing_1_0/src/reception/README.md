@@ -9,7 +9,7 @@ carries, and the loudspeaker radios.
 crates/version_1_0/tfar_radio_routing_1_0/src/reception/
 ├── intercom.rs     the intercom rule: same vehicle, same slot, no radio tangent
 ├── local_radio.rs  `is_over_local_radio`: the carried-radio rule with underwater range and towers
-├── over_radio.rs   `is_over_radio`: the rules in the original's order
+├── over_radio.rs   `is_over_radio`, `is_over_radio_into`: the rules in the original's order
 ├── speakers.rs     the loudspeaker rule: exact frequency, not the sender's, known, above water
 └── tests/          table-driven tests of every rule
 ```
@@ -19,7 +19,9 @@ crates/version_1_0/tfar_radio_routing_1_0/src/reception/
 `is_over_radio` checks the intercom, stops for a sender without range, finds the best tower with
 `AntennaManager::find_connection` (not for the listener itself), adds the carried-radio reception,
 stops when the sender is beyond range without a tower, and adds the speakers with the tower's loss.
-Each `HeardVia` carries the tower's loss when one connects the two.
+Each `HeardVia` carries the tower's loss when one connects the two, and shares its radio id and
+vehicle with the session; `is_over_radio_into` fills a reused list, so routing a frame allocates
+nothing once the list holds every reception.
 
 ## Boundaries
 
@@ -28,4 +30,5 @@ Each `HeardVia` carries the tower's loss when one connects the two.
 - Used by: the crate root, `mute_decision` and `apply_remote_tangent`.
 - Rules: the carried-radio cases route as the original
   (`every_carried_radio_case_routes_as_the_original`); speakers follow their four exclusions
-  (`the_speaker_case_table`); the intercom comes first (`the_intercom_case_table`).
+  (`the_speaker_case_table`); the intercom comes first (`the_intercom_case_table`); a warm list
+  never reallocates (`a_thousand_frames_into_a_warm_list_never_reallocate_it`).

@@ -11,7 +11,10 @@
 //!
 //! **Invariants:** a `HeardVia` always names a real reception (`LISTED_ON_NONE` and
 //! `LISTEN_TO_NONE` of `reference/tfar_1_0/ts/src/clientData.hpp:14-28` are never stored); an
-//! antenna loss, when present, is below 1.
+//! antenna loss, when present, is below 1; a `HeardVia` shares its radio id and vehicle with the
+//! session, so making one copies no text.
+
+use std::sync::{Arc, LazyLock};
 
 use tfar_arma_values::StereoMode;
 use tfar_game_commands_1_0::VehicleDescriptor;
@@ -27,6 +30,25 @@ pub const LOCAL_RADIO_ID: &str = "local_radio";
 
 /// The radio id of an intercom reception (`"intercom"`), also the key of its effect.
 pub const INTERCOM_RADIO_ID: &str = "intercom";
+
+/// [`LOCAL_RADIO_ID`] as the shared text every carried-radio reception carries.
+static SHARED_LOCAL_RADIO_ID: LazyLock<Arc<str>> = LazyLock::new(|| Arc::from(LOCAL_RADIO_ID));
+
+/// [`INTERCOM_RADIO_ID`] as the shared text every intercom reception carries.
+static SHARED_INTERCOM_RADIO_ID: LazyLock<Arc<str>> =
+    LazyLock::new(|| Arc::from(INTERCOM_RADIO_ID));
+
+/// [`LOCAL_RADIO_ID`] as a shared id: a new handle on one text, so it allocates only on the first
+/// call of the process.
+pub fn local_radio_id() -> Arc<str> {
+    Arc::clone(&SHARED_LOCAL_RADIO_ID)
+}
+
+/// [`INTERCOM_RADIO_ID`] as a shared id: a new handle on one text, so it allocates only on the
+/// first call of the process.
+pub fn intercom_radio_id() -> Arc<str> {
+    Arc::clone(&SHARED_INTERCOM_RADIO_ID)
+}
 
 /// The radio a client holds the tangent of: what `TANGENT` (short range, also `TANGENT_DD`)
 /// and `TANGENT_LR` set (`currentTransmittingTangentOverType`).
@@ -102,8 +124,8 @@ pub struct HeardVia {
     /// The ear the receiving radio plays into.
     pub stereo_mode: StereoMode,
     /// [`LOCAL_RADIO_ID`], [`INTERCOM_RADIO_ID`], or the speaker radio's id; the key of the
-    /// radio's effects.
-    pub radio_id: String,
+    /// radio's effects; shared with the session.
+    pub radio_id: Arc<str>,
     /// Where the sound comes from: the speaker's position; `None` for a carried radio and the
     /// intercom, which play at the listener.
     pub position: Option<Position>,
@@ -111,8 +133,8 @@ pub struct HeardVia {
     /// for the intercom).
     pub wave_z: f64,
     /// The vehicle the sound is in: the listener's for a carried radio, the speaker's for a
-    /// speaker, the sender's for the intercom.
-    pub vehicle: VehicleDescriptor,
+    /// speaker, the sender's for the intercom; shared with the session.
+    pub vehicle: Arc<VehicleDescriptor>,
     /// The loss of the best radio tower between sender and listener, if one connects them.
     pub antenna_loss: Option<f64>,
 }

@@ -17,14 +17,14 @@ fn at(x: f64) -> Position {
 
 fn speaker(radio_id: &str, owner: &str, position: Option<Position>) -> SpeakerRadio {
     SpeakerRadio {
-        radio_id: radio_id.to_owned(),
+        radio_id: radio_id.into(),
         owner_nickname: owner.to_owned(),
         position,
         volume: 8,
-        vehicle: VehicleDescriptor {
+        vehicle: Arc::new(VehicleDescriptor {
             vehicle_name: "1:9".to_owned(),
             isolation: 0.4,
-        },
+        }),
         wave_z: -2.0,
     }
 }
@@ -61,14 +61,42 @@ fn server() -> ServerRadioData {
     server
 }
 
+/// A reception of an earlier frame, left in a reused list.
+fn stale_reception() -> HeardVia {
+    HeardVia {
+        over: TangentKind::DiverDigital,
+        on: HeardOn::Diver,
+        volume: -1,
+        stereo_mode: StereoMode::Right,
+        radio_id: "stale".into(),
+        position: at(9.0),
+        wave_z: 0.0,
+        vehicle: Arc::new(VehicleDescriptor {
+            vehicle_name: "stale".to_owned(),
+            isolation: 0.0,
+        }),
+    }
+}
+
+/// The receptions of `Alpha` by `Me`; every case also checks that `is_over_radio_into`, into a
+/// list holding a stale reception, gives the same list.
 fn heard_by_me(server: &ServerRadioData, ignore: IgnoreTangents) -> Vec<HeardVia> {
-    receptions(server, "Alpha", ClientId(1), ignore)
+    let heard = receptions(server, "Alpha", ClientId(1), ignore);
+    if let (Some(alpha), Some((_, me))) = (
+        server.client("Alpha"),
+        server.fresh_client_by_id(ClientId(1)),
+    ) {
+        let mut reused = vec![stale_reception()];
+        is_over_radio_into(server, "Alpha", alpha, me, ignore, &mut reused);
+        assert_eq!(reused, heard);
+    }
+    heard
 }
 
 fn summary(heard: &[HeardVia]) -> Vec<(HeardOn, String)> {
     heard
         .iter()
-        .map(|heard| (heard.on, heard.radio_id.clone()))
+        .map(|heard| (heard.on, heard.radio_id.to_string()))
         .collect()
 }
 
@@ -122,7 +150,7 @@ fn a_speaker_on_frequency_owned_by_another_is_heard_and_the_senders_own_is_not()
     let ids: Vec<_> = heard_by_me(&server, IgnoreTangents::NONE)
         .into_iter()
         .filter(|heard| heard.on == HeardOn::Loudspeaker)
-        .map(|heard| heard.radio_id)
+        .map(|heard| heard.radio_id.to_string())
         .collect();
     assert_eq!(ids, ["other"]);
 }
@@ -234,4 +262,88 @@ fn a_missing_sender_or_a_listener_without_current_data_hears_nothing() {
     );
     server.client_mut("Me").unwrap().data_frame = 0;
     assert_eq!(heard_by_me(&server, IgnoreTangents::NONE).len(), 0);
+}
+
+#[test]
+fn filling_a_list_with_nothing_heard_drops_what_it_held() {
+    let mut server = server();
+    server.client_mut("Alpha").unwrap().range = 10;
+    let (alpha, me) = (
+        server.client("Alpha").unwrap(),
+        server.client("Me").unwrap(),
+    );
+    let mut reused = vec![stale_reception(), stale_reception()];
+    is_over_radio_into(
+        &server,
+        "Alpha",
+        alpha,
+        me,
+        IgnoreTangents::NONE,
+        &mut reused,
+    );
+    assert_eq!(reused, []);
+    assert_eq!(
+        is_over_radio(&server, "Alpha", alpha, me, IgnoreTangents::NONE),
+        []
+    );
+}
+
+#[test]
+fn a_reception_shares_its_radio_id_and_vehicle_with_the_server_state() {
+    let mut server = server();
+    server.speakers.insert(
+        "30.1".to_owned(),
+        vec![speaker("r1", "Bravo", Some(at(5.0)))],
+    );
+    let heard = heard_by_me(&server, IgnoreTangents::NONE);
+    let me = server.client("Me").unwrap();
+    let radio = &server.speakers_on("30.1")[0];
+    assert!(Arc::ptr_eq(&heard[0].vehicle, &me.vehicle));
+    assert!(Arc::ptr_eq(&heard[0].radio_id, &crate::local_radio_id()));
+    assert!(Arc::ptr_eq(&heard[1].radio_id, &radio.radio_id));
+    assert!(Arc::ptr_eq(&heard[1].vehicle, &radio.vehicle));
+}
+
+#[test]
+fn a_thousand_frames_into_a_warm_list_never_reallocate_it() {
+    let mut server = server();
+    server.speakers.insert(
+        "30.1".to_owned(),
+        vec![
+            speaker("r1", "Bravo", Some(at(5.0))),
+            speaker("r2", "Bravo", Some(at(6.0))),
+        ],
+    );
+    let (alpha, me) = (
+        server.client("Alpha").unwrap(),
+        server.client("Me").unwrap(),
+    );
+    let silent = server.client("Bravo").unwrap();
+    let mut reused = Vec::new();
+    is_over_radio_into(
+        &server,
+        "Alpha",
+        alpha,
+        me,
+        IgnoreTangents::NONE,
+        &mut reused,
+    );
+    let (capacity, buffer) = (reused.capacity(), reused.as_ptr());
+    for frame in 0..1_000 {
+        let (nickname, transmitter, expected) = if frame % 3 == 0 {
+            ("Bravo", silent, 0)
+        } else {
+            ("Alpha", alpha, 3)
+        };
+        is_over_radio_into(
+            &server,
+            nickname,
+            transmitter,
+            me,
+            IgnoreTangents::NONE,
+            &mut reused,
+        );
+        assert_eq!(reused.len(), expected);
+        assert_eq!((reused.capacity(), reused.as_ptr()), (capacity, buffer));
+    }
 }

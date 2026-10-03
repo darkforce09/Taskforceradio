@@ -12,14 +12,16 @@
 //! range on short range, long range on short range, long range on long range, then diver; short
 //! and long range compare the effective distance with the sender's range, the diver radio the
 //! raw distance with its reach; a family counts only when the sender holds it or the ignore flag
-//! is set, and both sides can use their radio.
+//! is set, and both sides can use their radio; a reception copies no text.
+
+use std::sync::Arc;
 
 use tfar_client_state_0_9::prelude::{StereoMode, TangentKind};
 use tfar_client_state_0_9::{ClientData, FrequencySettings, ServerRadioData};
 use tfar_geometry::Position;
 
 use crate::distances::{diver_radio_distance, effective_distance, raw_distance};
-use crate::heard_via::{HeardOn, HeardVia, IgnoreTangents, LOCAL_RADIO_ID};
+use crate::heard_via::{HeardOn, HeardVia, IgnoreTangents, local_radio_id};
 
 #[cfg(test)]
 #[path = "tests/local_radio.rs"]
@@ -91,10 +93,10 @@ pub fn is_over_local_radio(
         on,
         volume: settings.volume,
         stereo_mode: settings.stereo_mode,
-        radio_id: LOCAL_RADIO_ID.to_owned(),
+        radio_id: local_radio_id(),
         position: Position::ORIGIN,
         wave_z: OWN_RADIO_WAVE_Z,
-        vehicle: listener.vehicle.clone(),
+        vehicle: Arc::clone(&listener.vehicle),
     })
 }
 

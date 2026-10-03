@@ -4,7 +4,7 @@ use tfar_client_state_0_9::DirectVoiceDsp;
 use tfar_sample_buffer::{StereoBuffer, apply_gain};
 
 use super::sender_plan::{DirectVoiceLevel, DirectVoicePlan, DistanceLevel};
-use super::sound_placement::place_sound;
+use super::sound_placement::{HrtfLevel, place_sound};
 use crate::voice_gains::as_stage_gain;
 
 #[cfg(test)]
@@ -52,6 +52,7 @@ pub(crate) fn render_direct_voice(
         voice,
         direction_output,
         plan.placement,
+        HrtfLevel::WithMakeup,
     );
     true
 }

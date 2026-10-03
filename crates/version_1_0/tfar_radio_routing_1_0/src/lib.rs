@@ -35,7 +35,7 @@ pub use error::{Error, Result};
 pub use mute::{
     MuteChanges, MuteDecision, MuteTracker, VOICE_RANGE_MARGIN, killed_mute_matrix, mute_decision,
 };
-pub use reception::{is_over_local_radio, is_over_radio};
+pub use reception::{is_over_local_radio, is_over_radio, is_over_radio_into};
 pub use remote_tangent::apply_remote_tangent;
 pub use routing_context::RoutingContext;
 pub use serious_mode::{CHANNEL_ID_PREFIX, ChannelId, serious_mode_channel};

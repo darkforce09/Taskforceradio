@@ -14,6 +14,7 @@
 //! another player never touches theirs but sets the local player's from field 13; an unknown
 //! nickname changes no entry and asks for the client list, as the original refreshes it first.
 
+use std::sync::Arc;
 use std::time::Instant;
 
 use tfar_game_commands_0_9::PositionUpdate;
@@ -107,7 +108,9 @@ fn write_position(client: &mut ClientData, update: &PositionUpdate, data_frame: 
     client.position_time = Some(now);
     client.can_speak = update.can_speak;
     client.usable_radios = update.usable_radios;
-    client.vehicle.clone_from(&update.vehicle);
+    if *client.vehicle != update.vehicle {
+        client.vehicle = Arc::new(update.vehicle.clone());
+    }
     client.terrain_interception = update.terrain_interception;
     client.data_frame = data_frame;
     client.voice_volume_multiplier = update.voice_volume_multiplier;

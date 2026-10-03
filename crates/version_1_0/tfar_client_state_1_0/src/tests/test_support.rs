@@ -1,5 +1,6 @@
 //! Builders the unit tests of `tfar_client_state_1_0` share.
 
+use std::sync::Arc;
 use std::time::Instant;
 
 use tfar_arma_values::{FrequencyEntry, RadioSubtype, StereoMode};
@@ -92,10 +93,10 @@ pub(crate) fn heard_on(on: ReceivedOn) -> HeardVia {
         on,
         volume: 7.0,
         stereo_mode: StereoMode::Both,
-        radio_id: crate::reception::LOCAL_RADIO_ID.to_owned(),
+        radio_id: crate::reception::local_radio_id(),
         position: None,
         wave_z: 1.0,
-        vehicle: VehicleDescriptor::not_in_vehicle(),
+        vehicle: Arc::new(VehicleDescriptor::not_in_vehicle()),
         antenna_loss: None,
     }
 }

@@ -10,6 +10,9 @@ pub use crate::distance_gain::{
 };
 pub use crate::dsp_needs::{ensure_every_sender_dsp, ensure_sender_dsp};
 pub use crate::placement::{HRTF_MAKEUP_GAIN_DB, hrtf_makeup_gain};
+pub use crate::remote_tangent_sound::{
+    RemoteSoundListener, RemoteSoundPlan, apply_stereo_mode, render_remote_tangent_sound,
+};
 pub use crate::voice_context::{VoiceFrameContext, VoiceOutcome};
 pub use crate::voice_processor::{OWN_RADIO_VOICE_STREAM, VoiceProcessor};
 pub use crate::voice_scratch::VoiceScratchCapacities;

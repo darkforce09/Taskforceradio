@@ -9,7 +9,7 @@ diver radios, and the radios playing on loudspeaker.
 crates/version_0_9/tfar_radio_routing_0_9/src/reception/
 ├── local_radio.rs       `is_over_local_radio`: the five own-radio checks in the original's order
 ├── mod.rs               the module lines and the re-exports
-├── radio_receptions.rs  `is_over_radio` and `receptions`: own radio first, then loudspeakers
+├── radio_receptions.rs  `is_over_radio(_into)` and `receptions`: own radio first, then loudspeakers
 └── tests/               table-driven tests per rule
 ```
 
@@ -24,7 +24,8 @@ below the sender's range; the diver radio compares the raw distance with its rea
 `is_over_radio` adds the local reception for another client, then, while the sender is in range on
 a held short- or long-range radio it can use, one reception per loudspeaker radio on the sender's
 frequency that the sender does not carry, at its position or at its owner's while the owner's data
-is current.
+is current. `is_over_radio_into` does the same into a list the caller reuses; every reception
+shares its radio id and vehicle with the server state, so it copies no text.
 
 ## Boundaries
 
@@ -35,4 +36,5 @@ is current.
 - Rules: the check order, the strict `<` comparisons and the overwrite rule
   (`every_short_and_long_range_rule_of_the_local_reception`,
   `every_diver_radio_rule_of_the_local_reception`); the local reception first and loudspeakers in
-  the game's order (`the_local_reception_comes_first_then_the_loudspeakers_in_the_games_order`).
+  the game's order (`the_local_reception_comes_first_then_the_loudspeakers_in_the_games_order`);
+  a warm list never reallocates (`a_thousand_frames_into_a_warm_list_never_reallocate_it`).

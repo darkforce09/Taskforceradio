@@ -17,6 +17,8 @@ targets = "any"
 [dependencies]
 # Derives the crate's `Error`.
 thiserror.workspace = true
+# The warning when a remote tangent sound's filter cannot be built.
+tracing.workspace = true
 # The 1.0 per-client state.
 tfar_client_state_1_0.workspace = true
 # The 1.0 reception decisions.

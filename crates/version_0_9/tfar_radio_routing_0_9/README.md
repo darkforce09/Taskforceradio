@@ -21,7 +21,11 @@ match overwriting an earlier one, and return one `HeardVia` per reception: the l
 [SW](/documentation/glossary.md#sw), [LR](/documentation/glossary.md#lr) or
 [DD](/documentation/glossary.md#dd) radio first, then each
 [speaker radio](/documentation/glossary.md#speaker-radio) on the sender's frequency.
-`IgnoreTangents::for_kind` routes an incoming push-to-talk whose
+`is_over_radio_into` fills a list the caller reuses instead, which it clears first: each
+`HeardVia` shares its radio id and vehicle with the server state (`Arc`, and `local_radio_id` for
+the listener's own radios), so a list with room for every reception routes a frame without
+allocating; `is_over_radio` wraps it. `IgnoreTangents::for_kind` routes an incoming push-to-talk
+whose
 [tangent](/documentation/glossary.md#tangent) is already released, so its end sound still finds
 its listeners.
 
@@ -49,8 +53,8 @@ None: the crate reads no setting.
 
 ## Public surface
 
-- `is_over_local_radio`, `is_over_radio`, `receptions`, `HeardVia`, `HeardOn`, `IgnoreTangents`,
-  `LOCAL_RADIO_ID`.
+- `is_over_local_radio`, `is_over_radio`, `is_over_radio_into`, `receptions`, `HeardVia`,
+  `HeardOn`, `IgnoreTangents`, `LOCAL_RADIO_ID`, `local_radio_id`.
 - `raw_distance`, `effective_distance`, `diver_radio_distance`, `effect_error_from_distance` and
   the diver reach constants.
 - `MuteTracker`, `MuteDecision`, `MuteQuery`, `GameClientMute`, `game_client_mute`,

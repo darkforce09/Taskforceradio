@@ -1,5 +1,7 @@
 //! `SpeakerRadio`: one radio playing on loudspeaker, filed under one of its frequencies.
 
+use std::sync::Arc;
+
 use tfar_game_commands_0_9::{SpeakerRecord, VehicleDescriptor};
 use tfar_geometry::Position;
 
@@ -16,8 +18,9 @@ pub const UNDER_WATER_WAVE_Z: f64 = -1.1;
 /// frequency the radio listens on.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SpeakerRadio {
-    /// The radio's id (a network id or a radio class name), which keys its sound state.
-    pub radio_id: String,
+    /// The radio's id (a network id or a radio class name), which keys its sound state; shared,
+    /// so a reception names it without copying the text.
+    pub radio_id: Arc<str>,
     /// The nickname of the player who carries the radio.
     pub owner_nickname: String,
     /// The radio's position relative to the local listener; `None` when its owner carries it,
@@ -25,8 +28,8 @@ pub struct SpeakerRadio {
     pub position: Option<Position>,
     /// The radio's volume.
     pub volume: i32,
-    /// The vehicle the radio is in.
-    pub vehicle: VehicleDescriptor,
+    /// The vehicle the radio is in; shared, so a reception names it without copying.
+    pub vehicle: Arc<VehicleDescriptor>,
     /// The radio's height above sea level.
     pub wave_z: f64,
 }
@@ -35,11 +38,11 @@ impl SpeakerRadio {
     /// The radio `record` describes, without its frequency list.
     pub fn from_record(record: &SpeakerRecord) -> Self {
         Self {
-            radio_id: record.radio_id.clone(),
+            radio_id: Arc::from(record.radio_id.as_str()),
             owner_nickname: record.owner_nickname.clone(),
             position: record.position,
             volume: record.volume,
-            vehicle: record.vehicle.clone(),
+            vehicle: Arc::new(record.vehicle.clone()),
             wave_z: record.wave_z,
         }
     }

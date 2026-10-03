@@ -12,6 +12,8 @@
 #[cfg(test)]
 mod support;
 
+use std::sync::Arc;
+
 use support::{ALPHA, BRAVO, FRAMES, SPEAKER_FREQUENCY, SW_FREQUENCY, World, at, facing, sine};
 use tfar_client_state_1_0::prelude::{LOCAL_RADIO_ID, RadioSubtype, TangentRadio};
 use tfar_dynamics::{Compressor, CompressorSettings};
@@ -105,10 +107,23 @@ fn a_thousand_frames_leave_every_scratch_capacity_unchanged() {
     let mut world = busy_world();
     let before = world.processor.scratch_capacities();
     assert!(before.stereo_frames.iter().all(|&frames| frames >= FRAMES));
+    assert!(before.routes >= 3 && before.route_plans >= 3);
+    let speaker = &world.session.game.speakers_on(SW_FREQUENCY)[0];
+    let (speaker_id, speaker_vehicle) =
+        (Arc::clone(&speaker.radio_id), Arc::clone(&speaker.vehicle));
+    let handles = || {
+        (
+            Arc::strong_count(&speaker_id),
+            Arc::strong_count(&speaker_vehicle),
+        )
+    };
+    let shared_before = handles();
     for index in 0..1000 {
         let input = sine(700.0, 6000.0, index);
-        world.process(ALPHA, &input);
-        world.process(BRAVO, &input);
+        for sender in [ALPHA, BRAVO] {
+            world.process(sender, &input);
+            assert_eq!(handles(), shared_before, "no reception outlives its frame");
+        }
     }
     assert_eq!(world.processor.scratch_capacities(), before);
 }

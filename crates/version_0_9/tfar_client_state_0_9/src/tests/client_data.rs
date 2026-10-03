@@ -11,7 +11,8 @@ fn a_new_entry_has_the_original_defaults() {
     assert_eq!(client.tangent, None);
     assert_eq!(client.position, Position::ORIGIN);
     assert_eq!(client.position_time, None);
-    assert_eq!(client.data_frame, 0);
+    // Not the original's frame 0: an entry without a `POS` is not current.
+    assert_eq!(client.data_frame, INVALID_DATA_FRAME);
     assert_eq!(client.voice_volume, 0);
     assert_eq!(client.range, 0);
     assert_eq!(client.terrain_interception, 0);

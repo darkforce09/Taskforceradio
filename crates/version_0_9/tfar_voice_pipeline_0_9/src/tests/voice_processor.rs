@@ -2,6 +2,7 @@
 //! its missing sound state, the compressor pass and its allocation, against the stereo function
 //! in `reference/tfar_0_9_12/ts/src/plugin.cpp:2653-2828`.
 
+use std::sync::Arc;
 use std::time::Duration;
 
 use tfar_client_state_0_9::ClientId;
@@ -10,7 +11,7 @@ use tfar_dynamics::{Compressor, CompressorSettings};
 use tfar_sample_buffer::StereoBuffer;
 
 use super::*;
-use crate::test_scene::{ALPHA, FRAMES, ME, Scene, Signal, at, rms};
+use crate::test_scene::{ALPHA, FRAMES, FREQUENCY, ME, Scene, Signal, at, rms};
 
 const TONE: Signal = Signal::Tone(1000.0, 8000.0);
 
@@ -241,6 +242,8 @@ fn a_thousand_frames_change_no_scratch_capacity() {
     scene.client("Alpha").position = at(3.0, 4.0, 0.0);
     scene.prepare("Alpha");
     let before = scene.processor.scratch().capacities();
+    let speaker_id = Arc::clone(&scene.state.speakers_on(FREQUENCY)[0].radio_id);
+    let shared_handles = Arc::strong_count(&speaker_id);
     let mut frame = StereoBuffer::with_frames(4 * FRAMES);
     let signal = Signal::Noise(6000.0);
     let mut start = 0;
@@ -252,6 +255,9 @@ fn a_thousand_frames_change_no_scratch_capacity() {
             scene.process_with(&Scene::context(ALPHA), &mut frame),
             VoiceOutcome::Processed
         );
+        let scratch = scene.processor.scratch();
+        assert!(scratch.heard.is_empty() && scratch.routes.is_empty());
+        assert_eq!(Arc::strong_count(&speaker_id), shared_handles);
     }
     assert_eq!(scene.processor.scratch().capacities(), before);
     assert_eq!(scene.processor.frames_missing_sound_state(), 0);

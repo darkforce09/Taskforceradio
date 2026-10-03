@@ -14,6 +14,10 @@ fn server() -> ServerRadioData {
         (ClientId(2), "Alpha".to_owned()),
     ]);
     server.current_data_frame = 0;
+    // Both players have sent a `POS` in frame 0.
+    for client in server.clients.values_mut() {
+        client.data_frame = 0;
+    }
     server.is_alive = true;
     server
 }

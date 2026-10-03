@@ -2,23 +2,28 @@
 //!
 //! **Role:** own every block the 1.0 chain needs besides the frame itself: the compressed
 //! original for the radios, the per-reception copy, the HRTF output, the object look-back copy,
-//! the captured voice, the radio effects' mono block and the route plans, all sized once.
+//! the captured voice, the radio effects' mono block, the receptions and the route plans, all
+//! sized once.
 //!
 //! **Position:** a module of `tfar_voice_pipeline_1_0`; part of [`crate::VoiceProcessor`], one
 //! per server connection.
 //!
 //! **Signals and state:** the buffers, used on the TeamSpeak audio threads under the server lock
-//! that guards the processor.
+//! that guards the processor. The receptions and route plans are emptied at the end of each
+//! frame, still under the lock, so the audio thread never drops the last handle on a radio id
+//! or vehicle the session shares and never frees one.
 //!
 //! **Invariants:** created once off the audio thread for the largest block; a frame no longer
 //! than that never grows a buffer.
 
+use tfar_client_state_1_0::prelude::HeardVia;
 use tfar_radio_effects_1_0::MonoMixBuffer;
 use tfar_sample_buffer::StereoBuffer;
 
 use crate::radio_paths::RoutePlan;
 
-/// The receptions one sender is planned for without growing the plan list; more grow it once.
+/// The receptions one sender is planned for without growing the reception and plan lists; more
+/// grow them once.
 const ROUTE_PLAN_CAPACITY: usize = 32;
 
 /// The reusable buffers of one voice processor.
@@ -36,7 +41,9 @@ pub(crate) struct VoiceScratch {
     pub(crate) own_voice: StereoBuffer,
     /// The radio effects' mono block.
     pub(crate) mono_mix: MonoMixBuffer,
-    /// The plan of each reception of the current frame.
+    /// Every way the local player hears the current sender over radio; empty between frames.
+    pub(crate) routes: Vec<HeardVia>,
+    /// The plan of each reception of the current frame; empty between frames.
     pub(crate) route_plans: Vec<RoutePlan>,
 }
 
@@ -50,6 +57,8 @@ pub struct VoiceScratchCapacities {
     pub mono_frames: usize,
     /// The receptions the route plan list holds.
     pub route_plans: usize,
+    /// The receptions the reception list holds.
+    pub routes: usize,
 }
 
 impl VoiceScratch {
@@ -67,8 +76,15 @@ impl VoiceScratch {
             previous_frame: stereo(),
             own_voice: stereo(),
             mono_mix: MonoMixBuffer::with_frames(max_frames),
+            routes: Vec::with_capacity(ROUTE_PLAN_CAPACITY),
             route_plans: Vec::with_capacity(ROUTE_PLAN_CAPACITY),
         }
+    }
+
+    /// Empties the reception and route plan lists, keeping their capacity.
+    pub(crate) fn release_routes(&mut self) {
+        self.routes.clear();
+        self.route_plans.clear();
     }
 
     /// The capacities of every buffer now.
@@ -83,6 +99,7 @@ impl VoiceScratch {
             ],
             mono_frames: self.mono_mix.capacity_frames(),
             route_plans: self.route_plans.capacity(),
+            routes: self.routes.capacity(),
         }
     }
 }

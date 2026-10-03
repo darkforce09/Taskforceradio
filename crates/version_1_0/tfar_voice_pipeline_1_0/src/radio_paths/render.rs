@@ -90,7 +90,7 @@ fn render_carried_radio(
     buffer: &mut StereoBuffer,
     mono_mix: &mut MonoMixBuffer,
 ) -> bool {
-    let key = route.radio_id.as_str();
+    let key: &str = &route.radio_id;
     match sound {
         CarriedRadioSound::Personal => {
             run_effect(effects.personal_radio_mut(key), run, buffer, mono_mix)
@@ -125,7 +125,7 @@ fn render_speaker(
     rendered: &mut StereoBuffer,
     mono_mix: &mut MonoMixBuffer,
 ) -> bool {
-    let key = route.radio_id.as_str();
+    let key: &str = &route.radio_id;
     let Some(band_pass) = effects.speaker_filter_mut(key) else {
         return false;
     };

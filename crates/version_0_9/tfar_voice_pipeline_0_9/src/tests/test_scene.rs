@@ -55,12 +55,12 @@ pub(crate) fn at(x: f64, y: f64, z: f64) -> Position {
     Position::from_array([x, y, z]).unwrap()
 }
 
-/// A vehicle descriptor.
-pub(crate) fn vehicle(name: &str, isolation: f64) -> VehicleDescriptor {
-    VehicleDescriptor {
+/// A vehicle descriptor, shared as the client state holds it.
+pub(crate) fn vehicle(name: &str, isolation: f64) -> Arc<VehicleDescriptor> {
+    Arc::new(VehicleDescriptor {
         vehicle_name: name.to_owned(),
         isolation,
-    }
+    })
 }
 
 /// A listener, a sender and a loudspeaker owner on one server, with the processor and the
@@ -149,7 +149,7 @@ impl Scene {
             .entry(FREQUENCY.to_owned())
             .or_default()
             .push(SpeakerRadio {
-                radio_id: "bravo_speaker".to_owned(),
+                radio_id: "bravo_speaker".into(),
                 owner_nickname: "Bravo".to_owned(),
                 position: Some(position),
                 volume,

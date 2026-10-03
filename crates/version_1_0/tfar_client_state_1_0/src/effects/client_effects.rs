@@ -27,7 +27,9 @@ use tfar_radio_effects_1_0::{
 use tfar_sample_buffer::StereoBuffer;
 
 use crate::effects::dsp_requirement::{DspContext, DspRequirement};
-use crate::effects::filter_designs::{CANT_SPEAK, PHONE, SPEAKER, stereo, vehicle};
+use crate::effects::filter_designs::{
+    CANT_SPEAK_LOW_PASS, PHONE_BAND_PASS, SPEAKER_BAND_PASS, stereo, vehicle_low_pass,
+};
 use crate::effects::object_interception::{ObjectInterceptionFilter, ObjectInterceptionFilters};
 use crate::error::{Error, Result};
 
@@ -130,7 +132,9 @@ impl ClientEffects {
                 Ok(HrtfSource::new(library))
             }),
             DspRequirement::CantSpeakFilter(key) => {
-                ensure(&mut self.cant_speak_filters, key, || stereo(CANT_SPEAK))
+                ensure(&mut self.cant_speak_filters, key, || {
+                    stereo(CANT_SPEAK_LOW_PASS)
+                })
             }
             DspRequirement::VehicleFilter {
                 key,
@@ -144,14 +148,14 @@ impl ClientEffects {
                 if by_loss.contains_key(&loss_key) {
                     return Ok(false);
                 }
-                by_loss.insert(loss_key, stereo(vehicle(vehicle_volume_loss))?);
+                by_loss.insert(loss_key, stereo(vehicle_low_pass(vehicle_volume_loss))?);
                 Ok(true)
             }
             DspRequirement::SpeakerFilter(key) => {
-                ensure(&mut self.speaker_filters, key, || stereo(SPEAKER))
+                ensure(&mut self.speaker_filters, key, || stereo(SPEAKER_BAND_PASS))
             }
             DspRequirement::PhoneFilter(key) => {
-                ensure(&mut self.phone_filters, key, || stereo(PHONE))
+                ensure(&mut self.phone_filters, key, || stereo(PHONE_BAND_PASS))
             }
             DspRequirement::ObjectInterceptionFilter { object_count } => self
                 .object_interception

@@ -9,12 +9,12 @@ fn moving_client(velocity: [f64; 3], updated_at: Instant) -> ClientData {
     let mut client = ClientData::new(ALPHA, "alpha");
     client.position = at(100.0, 200.0, 10.0);
     client.position_updated_at = Some(updated_at);
-    client.vehicle = VehicleDescriptor {
+    client.vehicle = Arc::new(VehicleDescriptor {
         name: "2:390".to_owned(),
         isolation: 0.5,
         intercom_slot: 1,
         velocity,
-    };
+    });
     client
 }
 
