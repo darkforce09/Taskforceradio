@@ -1,6 +1,8 @@
 //! Unit tests for `HrtfSource` over the real IRCAM sphere: the ear-energy balance of each
 //! direction, silence, the exact latency across variable frame sizes, stable buffers, `reset` and
-//! the reversal guard.
+//! the reversal guard, and the idle restart.
+
+use std::time::Duration;
 
 use tfar_geometry::{Angle, Position};
 
@@ -327,6 +329,46 @@ fn reset_silences_the_source_and_starts_a_new_first_fill() {
         1.0,
     );
     assert!(output.as_slice().iter().all(|sample| *sample == 0));
+}
+
+/// A source that rendered noise, its last input moved `idle` into the past.
+fn source_idle_for(library: &HrirLibrary, idle: Duration) -> HrtfSource {
+    let mut source = HrtfSource::new(library);
+    let mut output = StereoBuffer::with_frames(0);
+    source.process_mono(&noise(4_800, 21), &mut output, axes(1.0, 0.0, 0.0), 1.0);
+    source.last_input = Instant::now().checked_sub(idle);
+    source
+}
+
+#[test]
+fn a_frame_after_a_long_gap_starts_from_silence() {
+    let library = real_library();
+    let mut source = source_idle_for(&library, IDLE_RESET_AFTER * 2);
+    let mut output = StereoBuffer::with_frames(0);
+    source.process_mono(
+        &noise(ADDED_LATENCY_FRAMES, 22),
+        &mut output,
+        axes(1.0, 0.0, 0.0),
+        1.0,
+    );
+    assert!(output.as_slice().iter().all(|sample| *sample == 0));
+}
+
+#[test]
+fn a_frame_after_a_short_gap_continues_the_utterance() {
+    let library = real_library();
+    let mut source = source_idle_for(&library, IDLE_RESET_AFTER / 2);
+    let mut output = StereoBuffer::with_frames(0);
+    source.process_mono(
+        &vec![0; ADDED_LATENCY_FRAMES],
+        &mut output,
+        axes(1.0, 0.0, 0.0),
+        1.0,
+    );
+    assert!(
+        output.as_slice().iter().any(|sample| *sample != 0),
+        "the pending block of the noise still plays"
+    );
 }
 
 #[test]

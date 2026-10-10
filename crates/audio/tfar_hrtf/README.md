@@ -27,6 +27,10 @@ D19 replaces clunk's ear delay (F-001) with real binaural rendering through the 
   the block is rendered, and both restart. Any frame sizes (480, 960, 441, 1) pass with no sample
   dropped or repeated and a constant added latency of exactly **480 frames, 10 ms**
   (`ADDED_LATENCY_FRAMES`); only the first 480 frames of a source (and after `reset`) are silence.
+- **Idle restart.** A source fed nothing for more than `IDLE_RESET_AFTER` (200 ms) resets itself
+  on its next frame, so the pending block and tails of one utterance never replay at the start of
+  the next. The rule runs on the audio thread at the frame that ends the gap, so it never cuts
+  into a running utterance the way a reset from another thread can.
 - **Down-mix.** Stereo input becomes `(left + right) / 2`. The originals fed only the left
   channel to the direction stage; for the duplicated mono voice the mean is the same, and where
   the channels differ it keeps both.
@@ -60,7 +64,7 @@ None: the crate reads no setting. The caller passes the sphere path to `HrirLibr
 - `ListenerRelativeDirection`: `from_arma`, `from_listener_axes`, `STRAIGHT_AHEAD`, `right`,
   `forward`, `up`.
 - `SAMPLE_RATE_HZ`, `CONVOLUTION_BLOCK_FRAMES`, `INTERPOLATION_STEPS`, `RENDER_BLOCK_FRAMES`,
-  `ADDED_LATENCY_FRAMES`; `Error`, `Result`, `CRATE_ROLE`, `prelude`.
+  `ADDED_LATENCY_FRAMES`, `IDLE_RESET_AFTER`; `Error`, `Result`, `CRATE_ROLE`, `prelude`.
 
 ## Boundaries
 

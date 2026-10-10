@@ -36,3 +36,13 @@ pub const RENDER_BLOCK_FRAMES: usize = INTERPOLATION_STEPS * CONVOLUTION_BLOCK_F
 /// The head-related impulse responses add their own acoustic onset on top (the sound reaching
 /// the far ear later), which is part of the binaural effect and not counted here.
 pub const ADDED_LATENCY_FRAMES: usize = RENDER_BLOCK_FRAMES;
+
+/// How long a source may go without input before its next frame starts it afresh, as after
+/// `reset`: 200 ms.
+///
+/// TeamSpeak delivers a talking client's voice every 10 to 20 ms, so a longer gap means the client
+/// stopped (the end of a sentence, a mute, out of range). Restarting then drops the last
+/// utterance's pending block and convolution tails, so they never replay at the start of the next
+/// one; decided on the frame that ends the gap, on the audio thread, it can never land in the
+/// middle of a running utterance.
+pub const IDLE_RESET_AFTER: core::time::Duration = core::time::Duration::from_millis(200);

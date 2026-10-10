@@ -36,6 +36,6 @@ pub use hrir_library::HrirLibrary;
 pub use hrtf_source::HrtfSource;
 pub use listener_relative_direction::ListenerRelativeDirection;
 pub use render_timing::{
-    ADDED_LATENCY_FRAMES, CONVOLUTION_BLOCK_FRAMES, INTERPOLATION_STEPS, RENDER_BLOCK_FRAMES,
-    SAMPLE_RATE_HZ,
+    ADDED_LATENCY_FRAMES, CONVOLUTION_BLOCK_FRAMES, IDLE_RESET_AFTER, INTERPOLATION_STEPS,
+    RENDER_BLOCK_FRAMES, SAMPLE_RATE_HZ,
 };

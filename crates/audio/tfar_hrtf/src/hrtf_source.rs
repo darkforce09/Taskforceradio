@@ -11,13 +11,17 @@
 //! **Signals and state:** per-source state only, used from the TeamSpeak audio thread. `new`
 //! allocates (a copy of the prepared sphere, about two megabytes, and the pre-sized tails and
 //! blocks); `process`, `process_mono` and `reset` allocate nothing, except that `output` grows
-//! when a frame is longer than any before it.
+//! when a frame is longer than any before it. `process` and `process_mono` read the monotonic
+//! clock once per frame for the idle restart.
 //!
 //! **Invariants:** the output lags the input by exactly [`ADDED_LATENCY_FRAMES`]; zero input gives
-//! zero output; the processor is only ever called with whole render blocks, so the `hrtf` crate's
-//! length assertions always hold; between two blocks the direction swings by less than about 154°
-//! (a reversal snaps instead), so the crate's interpolated sampling vector never passes near the
-//! sphere's centre, where it would find no triangle.
+//! zero output; a frame arriving more than [`IDLE_RESET_AFTER`] after the previous one starts
+//! from silence, as after `reset`; the processor is only ever called with whole render blocks, so
+//! the `hrtf` crate's length assertions always hold; between two blocks the direction swings by
+//! less than about 154° (a reversal snaps instead), so the crate's interpolated sampling vector
+//! never passes near the sphere's centre, where it would find no triangle.
+
+use std::time::Instant;
 
 use hrtf::{HrtfContext, HrtfProcessor};
 use tfar_sample_buffer::{StereoBuffer, float_to_sample, sample_to_float};
@@ -27,7 +31,7 @@ use crate::hrir_library::HrirLibrary;
 use crate::listener_relative_direction::ListenerRelativeDirection;
 #[cfg(doc)]
 use crate::render_timing::ADDED_LATENCY_FRAMES;
-use crate::render_timing::RENDER_BLOCK_FRAMES;
+use crate::render_timing::{IDLE_RESET_AFTER, RENDER_BLOCK_FRAMES};
 
 #[cfg(test)]
 #[path = "tests/hrtf_source.rs"]
@@ -42,11 +46,14 @@ const REVERSAL_COSINE: f32 = -0.9;
 ///
 /// Create one per source with [`HrtfSource::new`] outside the audio callbacks if possible, and
 /// keep it for as long as the source sounds; call [`HrtfSource::reset`] when the source jumps
-/// (a new speaker on the same slot, a teleport), so nothing of the old sound rings on.
+/// (a new speaker on the same slot, a teleport), so nothing of the old sound rings on. A source
+/// fed nothing for longer than [`IDLE_RESET_AFTER`] resets itself on its next frame, so the end
+/// of one utterance never replays at the start of the next.
 #[derive(Debug)]
 pub struct HrtfSource {
     adapter: HrtfBlockAdapter,
     renderer: SourceRenderer,
+    last_input: Option<Instant>,
 }
 
 impl HrtfSource {
@@ -66,6 +73,7 @@ impl HrtfSource {
                     .sphere_sampling_vector(),
                 target_distance_gain: 0.0,
             },
+            last_input: None,
         }
     }
 
@@ -88,6 +96,7 @@ impl HrtfSource {
         direction: ListenerRelativeDirection,
         distance_gain: f32,
     ) {
+        self.restart_after_idle(Instant::now());
         self.renderer.set_target(direction, distance_gain);
         output.set_frames(input.frames());
         let input_frames = input.as_slice().as_chunks::<{ StereoBuffer::CHANNELS }>().0;
@@ -110,6 +119,7 @@ impl HrtfSource {
         direction: ListenerRelativeDirection,
         distance_gain: f32,
     ) {
+        self.restart_after_idle(Instant::now());
         self.renderer.set_target(direction, distance_gain);
         output.set_frames(input.len());
         let output_frames = output
@@ -127,6 +137,20 @@ impl HrtfSource {
     pub fn reset(&mut self) {
         self.adapter.reset();
         self.renderer.reset();
+        self.last_input = None;
+    }
+
+    /// Resets the source when its last input lies more than [`IDLE_RESET_AFTER`] before `now`,
+    /// then stamps `now` as its last input. Takes the time as `now`, so tests choose it.
+    fn restart_after_idle(&mut self, now: Instant) {
+        if self
+            .last_input
+            .is_some_and(|last| now.saturating_duration_since(last) > IDLE_RESET_AFTER)
+        {
+            self.adapter.reset();
+            self.renderer.reset();
+        }
+        self.last_input = Some(now);
     }
 
     /// One mono sample in, one stereo frame out (one block older).
