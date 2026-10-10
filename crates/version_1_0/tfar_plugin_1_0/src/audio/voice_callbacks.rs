@@ -9,11 +9,15 @@
 //! from its `ArcSwap`.
 //!
 //! **Signals and state:** reads the settings snapshot and the server state; the server registry
-//! and the server lock are taken with `try_read` and `try_lock` only.
+//! is taken with `try_read` (a block passes through while a connection is added or removed), the
+//! server lock is waited for, as the original waits on its critical section, because a block
+//! passed through unprocessed between processed ones is an audible jump. Each wait and skipped
+//! block is counted in the runtime's `AudioDiagnostics`.
 //!
-//! **Invariants:** no callback blocks, calls TeamSpeak or allocates once the scratch fits the
-//! block: a busy lock, a dormant plugin, no game or an unknown sender passes the block through
-//! untouched, as the original does when its data is missing; metadata comes from the cache the
+//! **Invariants:** no callback calls TeamSpeak or allocates once the scratch fits the block, and
+//! the only wait is for a server lock, whose holders never call TeamSpeak or take another lock; a
+//! dormant plugin, no game or an unknown sender passes the block through untouched, as the
+//! original does when its data is missing; metadata comes from the cache the
 //! event handlers and the service thread fill.
 
 use std::time::Instant;
@@ -23,25 +27,38 @@ use tfar_ts3_host::{CapturedVoiceData, MixedPlaybackVoiceData, PostProcessVoiceD
 use tfar_voice_pipeline_1_0::prelude::{VoiceFrameContext, VoiceOutcome};
 
 use crate::runtime::PluginRuntime;
-use crate::runtime::server_state::{ServerState, state_client_id};
+use crate::runtime::server_state::{ServerState, SharedServerState, state_client_id};
 
 /// The `edited` bit TeamSpeak sets while the captured block is going to be sent.
 const CAPTURE_IS_SENT: i32 = 2;
 
+/// `shared` for a voice callback: taken at once when free, else waited for and counted. The
+/// holders never call TeamSpeak or take another lock under it, so the wait is one short
+/// decision; a block passed through unprocessed instead would be an audible jump.
+fn lock_for_audio<'state>(
+    runtime: &PluginRuntime,
+    shared: &'state SharedServerState,
+) -> parking_lot::MutexGuard<'state, ServerState> {
+    shared.try_lock().unwrap_or_else(|| {
+        runtime.audio_diagnostics.record_contended_state_lock();
+        shared.lock()
+    })
+}
+
 /// A speaker's voice block: copied to stereo, through `process_sender`, written back; passed
-/// through untouched when the chain leaves it as it is or the state is busy.
+/// through untouched when the chain leaves it as it is.
 pub fn post_process_voice(runtime: &PluginRuntime, data: &mut PostProcessVoiceData<'_>) {
     profiling::scope!("post_process_voice");
     if runtime.is_dormant() || !runtime.is_in_game() {
         return;
     }
-    let Some(shared) = runtime.servers.try_get(data.server) else {
+    let Some(shared) = runtime
+        .servers
+        .try_get(data.server, &runtime.audio_diagnostics)
+    else {
         return;
     };
-    // Busy means the game link or an event writes the state: pass the block through.
-    let Some(mut state) = shared.try_lock() else {
-        return;
-    };
+    let mut state = lock_for_audio(runtime, &shared);
     let settings = runtime.settings_snapshot();
     let now = Instant::now();
     let sender = state_client_id(data.client);
@@ -90,12 +107,13 @@ pub fn captured_voice(runtime: &PluginRuntime, data: &mut CapturedVoiceData<'_>)
     if runtime.is_dormant() || !runtime.is_in_game() || *data.edited & CAPTURE_IS_SENT == 0 {
         return;
     }
-    let Some(shared) = runtime.servers.try_get(data.server) else {
+    let Some(shared) = runtime
+        .servers
+        .try_get(data.server, &runtime.audio_diagnostics)
+    else {
         return;
     };
-    let Some(mut state) = shared.try_lock() else {
-        return;
-    };
+    let mut state = lock_for_audio(runtime, &shared);
     let settings = runtime.settings_snapshot();
     let now = Instant::now();
     let ServerState {

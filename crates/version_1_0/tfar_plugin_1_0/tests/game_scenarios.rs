@@ -1,7 +1,7 @@
 //! The built 1.0 plugin `.so` in the mock TeamSpeak host, driven by a real game link client:
 //! the full game scenario, the dormant plugin, the return to dormant after a game end, the mission
 //! end and the tangent release it cancels, needcfg, radio towers, the debug window without a
-//! display, the HRTF reset when a sender starts talking, and a shutdown that joins every thread
+//! display, the HRTF restart after an idle gap (never on a talk start), and a shutdown that joins every thread
 //! within 2 s.
 //!
 //! The plugin reads its port and switches from the process environment, so each test re-runs its
@@ -347,8 +347,21 @@ mod scenarios {
         wait_for(host, "the rename", |calls| {
             own_text_values(calls, ClientProperty::Nickname) == ["Alpha"]
         });
+        // The rename call above is recorded before the plugin takes the new own nickname into its
+        // state, and `POS` goes the sync way, so the own `POS` is sent until it is taken as ours.
+        wait_until("the own POS taken as the local player's", || {
+            assert_eq!(sync(client, &position("Alpha", [0.0, 0.0, 0.0])), "00");
+            host.calls().into_iter().any(|call| {
+                matches!(
+                    call,
+                    HostCall::Systemset3DListenerAttributes {
+                        position: Some(_),
+                        ..
+                    }
+                )
+            })
+        });
         for update in [
-            position("Alpha", [0.0, 0.0, 0.0]),
             position("Bravo", [300.0, 0.0, 0.0]),
             position("Charlie", [900.0, 0.0, 0.0]),
         ] {
@@ -837,7 +850,7 @@ mod scenarios {
         host.post_process_voice(bravo, &samples, 1).unwrap().samples
     }
 
-    pub(crate) fn hrtf_reset_on_talk_start() {
+    pub(crate) fn hrtf_restart_after_an_idle_gap() {
         let (mut host, folder) = load_plugin_with_hrir("hrtf");
         let (own, bravo, charlie) = connect_three_clients(&host);
         let client = game_client();
@@ -866,13 +879,18 @@ mod scenarios {
             "a stop leaves the voice's tail"
         );
         host.talk_status_change(bravo, true).unwrap();
-        let first = bravo_block(&host, bravo, block + 1);
+        assert!(
+            rms(&bravo_block(&host, bravo, block + 1)) > 100.0,
+            "a talk start never cuts into the running voice"
+        );
+        std::thread::sleep(tfar_hrtf::IDLE_RESET_AFTER + Duration::from_millis(50));
+        let first = bravo_block(&host, bravo, block + 2);
         assert!(
             rms(&first) < 1.0,
-            "a new utterance starts from a fresh HRTF source, whose first block is silence: {}",
+            "after the idle gap the source starts afresh, whose first block is silence: {}",
             rms(&first)
         );
-        assert!(rms(&bravo_block(&host, bravo, block + 2)) > 100.0);
+        assert!(rms(&bravo_block(&host, bravo, block + 3)) > 100.0);
         host.shutdown();
         assert!(host.leak_report().is_clean());
         let _ = std::fs::remove_dir_all(folder);
@@ -880,7 +898,7 @@ mod scenarios {
 }
 
 use scenarios::{
-    dormant_again_after_game_end, dormant_plugin, full_scenario, hrtf_reset_on_talk_start,
+    dormant_again_after_game_end, dormant_plugin, full_scenario, hrtf_restart_after_an_idle_gap,
     mission_end_and_needcfg, radio_towers_and_debug_window, run_in_child, run_in_child_with,
     shutdown_joins_every_thread, slow_proxy,
 };
@@ -920,10 +938,10 @@ fn shutdown_joins_every_thread_the_plugin_started_within_two_seconds() {
 }
 
 #[test]
-fn a_sender_that_starts_talking_gets_a_fresh_hrtf_source() {
+fn a_sender_silent_past_the_idle_gap_gets_a_fresh_hrtf_source() {
     run_in_child(
-        "a_sender_that_starts_talking_gets_a_fresh_hrtf_source",
-        hrtf_reset_on_talk_start,
+        "a_sender_silent_past_the_idle_gap_gets_a_fresh_hrtf_source",
+        hrtf_restart_after_an_idle_gap,
     );
 }
 

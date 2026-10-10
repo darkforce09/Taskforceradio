@@ -28,8 +28,8 @@ use tfar_plugin_commands_1_0::prelude::info_data_text;
 use tfar_ts3_host::{
     CapturedVoiceData, ChannelId, ClientId, ClientMove, CommandHandling, ConnectStatus,
     ErrorDisplay, InfoItem, InitStatus, Invoker, LoggingGuard, MixedPlaybackVoiceData,
-    PluginCommand, PostProcessVoiceData, ServerConnectionHandlerId, ServerError, TalkStatus, Ts3,
-    Ts3Plugin, install_logging, print_to_current_tab,
+    PluginCommand, PostProcessVoiceData, ServerConnectionHandlerId, ServerError, Ts3, Ts3Plugin,
+    install_logging, print_to_current_tab,
 };
 use tfar_ts3_settings_db::prelude::{read_push_to_talk_delay, settings_database_path};
 use tfar_web_requests::prelude::{UPDATE_AVAILABLE_MESSAGE, spawn_cancellable_update_check};
@@ -336,18 +336,6 @@ impl Ts3Plugin for TfarPlugin {
         new_value: &str,
     ) {
         self.with_runtime(|runtime| own_variable_changed(runtime, server, flag, new_value));
-    }
-
-    fn on_talk_status_change(
-        &self,
-        server: ServerConnectionHandlerId,
-        status: TalkStatus,
-        _is_received_whisper: bool,
-        client: ClientId,
-    ) {
-        if status.is_talking() {
-            self.with_runtime(|runtime| runtime.client_started_talking(server, client));
-        }
     }
 
     fn on_plugin_command(&self, command: PluginCommand<'_>) {

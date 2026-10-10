@@ -187,7 +187,7 @@ fn resetting_radio_effects_drops_the_airborne_effects_too() {
 }
 
 #[test]
-fn resetting_voices_drops_the_cant_speak_and_vehicle_filters() {
+fn resetting_voices_keeps_the_cant_speak_and_vehicle_filters_and_clears_their_memory() {
     let mut effects = ClientEffects::new();
     let requirements = [
         DspRequirement::CantSpeakFilter("a"),
@@ -198,8 +198,23 @@ fn resetting_voices_drops_the_cant_speak_and_vehicle_filters() {
         DspRequirement::PersonalRadio("a"),
     ];
     effects.ensure_dsp(&requirements, &context(400.0)).unwrap();
+    let fresh = effects
+        .vehicle_filter_mut("a", 0.2)
+        .unwrap()
+        .process_frame([0.5, 0.5]);
+    let _ = effects
+        .vehicle_filter_mut("a", 0.2)
+        .unwrap()
+        .process_frame([0.5, 0.5]);
     effects.reset_voices();
-    assert!(effects.cant_speak_filter_mut("a").is_none());
-    assert!(effects.vehicle_filter_mut("a", 0.2).is_none());
+    assert!(effects.cant_speak_filter_mut("a").is_some());
+    assert_eq!(
+        effects
+            .vehicle_filter_mut("a", 0.2)
+            .unwrap()
+            .process_frame([0.5, 0.5]),
+        fresh,
+        "the filter starts from silence again"
+    );
     assert!(effects.personal_radio_mut("a").is_some());
 }

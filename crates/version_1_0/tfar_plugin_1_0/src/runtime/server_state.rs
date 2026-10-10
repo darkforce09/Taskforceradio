@@ -6,13 +6,15 @@
 //! channel cache and the nickname and channel to restore, so one lock guards all of it.
 //!
 //! **Position:** owned by `runtime::PluginRuntime`; locked by the game link threads, TeamSpeak's
-//! main thread, the service thread and, with `try_lock` only, the audio callbacks.
+//! main thread, the service thread and the audio callbacks, which wait for it as the original
+//! waits on its critical section.
 //!
 //! **Signals and state:** one `parking_lot::Mutex<ServerState>` per connection inside an `Arc`, in
 //! a `parking_lot::RwLock` map written only when a connection is established or closed.
 //!
-//! **Invariants:** no TeamSpeak call happens while a server lock is held; the audio callbacks
-//! never block on either lock; every scratch buffer is sized before the first frame.
+//! **Invariants:** no TeamSpeak call happens, and no other lock is taken, while a server lock is
+//! held, so an audio callback waiting for it waits only for a short decision; the audio callbacks
+//! never wait for the registry; every scratch buffer is sized before the first frame.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -20,10 +22,10 @@ use std::time::Duration;
 
 use parking_lot::{Mutex, RwLock};
 use tfar_antennas_1_0::AntennaManager;
-use tfar_client_state_1_0::prelude::{SessionState, TeamspeakClientId, VOICE_HRTF_KEY};
+use tfar_client_state_1_0::prelude::{SessionState, TeamspeakClientId};
 use tfar_radio_routing_1_0::MuteTracker;
 use tfar_sample_buffer::StereoBuffer;
-use tfar_ts3_host::{ChannelId, ClientId, ServerConnectionHandlerId};
+use tfar_ts3_host::{AudioDiagnostics, ChannelId, ClientId, ServerConnectionHandlerId};
 use tfar_voice_pipeline_1_0::VoiceProcessor;
 
 /// The largest voice block, in frames, the scratch buffers hold without growing: 100 ms at
@@ -80,24 +82,6 @@ impl ServerState {
             is_serious_mode: false,
         }
     }
-
-    /// Resets every direction source of `sender`: the direct-speech one and one per speaker radio,
-    /// so a new utterance never replays the tail of the last one. Runs when TeamSpeak reports the
-    /// sender starts talking and when a remote tangent press arrives.
-    pub fn reset_direction_sources(&mut self, sender: TeamspeakClientId) {
-        let Self { session, .. } = self;
-        let Some(client) = session.clients.by_id_mut(sender) else {
-            return;
-        };
-        if let Some(source) = client.effects.hrtf_source_mut(VOICE_HRTF_KEY) {
-            source.reset();
-        }
-        for speaker in session.game.speakers.values().flatten() {
-            if let Some(source) = client.effects.hrtf_source_mut(&speaker.radio_id) {
-                source.reset();
-            }
-        }
-    }
 }
 
 /// The client id of the client state for a TeamSpeak client id.
@@ -130,10 +114,18 @@ impl ServerRegistry {
         self.servers.read().get(&server).cloned()
     }
 
-    /// The state of `server` without waiting: `None` while the map is being written or the
-    /// connection is unknown. The audio callbacks use it.
-    pub fn try_get(&self, server: ServerConnectionHandlerId) -> Option<SharedServerState> {
-        self.servers.try_read()?.get(&server).cloned()
+    /// The state of `server` without waiting: `None` while the map is being written (counted in
+    /// `diagnostics` as a skipped block) or the connection is unknown. The audio callbacks use it.
+    pub fn try_get(
+        &self,
+        server: ServerConnectionHandlerId,
+        diagnostics: &AudioDiagnostics,
+    ) -> Option<SharedServerState> {
+        let Some(servers) = self.servers.try_read() else {
+            diagnostics.record_skipped_block();
+            return None;
+        };
+        servers.get(&server).cloned()
     }
 
     /// The state of `server`, created with `create` when it is new.

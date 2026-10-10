@@ -16,7 +16,7 @@
 
 use std::time::Instant;
 
-use tfar_client_state_1_0::prelude::{RemoteRadioSounds, TangentTransition};
+use tfar_client_state_1_0::prelude::RemoteRadioSounds;
 use tfar_plugin_commands_1_0::prelude::{PluginCommand, accepts_sender, decode, encode};
 use tfar_radio_routing_1_0::apply_remote_tangent;
 use tfar_ts3_host::{ClientProperty, PluginCommandTarget, ServerConnectionHandlerId};
@@ -61,9 +61,6 @@ pub fn plugin_command_received(
                 else {
                     return;
                 };
-                if effects.transition == TangentTransition::Pressed {
-                    state.reset_direction_sources(effects.client_id);
-                }
                 let heard = Some(!effects.heard.is_empty());
                 let mute = decide_client_mute(&mut state, &settings, effects.client_id, heard, now);
                 runtime.ensure_sender_dsp(&mut state, &settings, effects.client_id);

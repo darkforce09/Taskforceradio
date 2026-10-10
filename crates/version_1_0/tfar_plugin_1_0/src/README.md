@@ -32,9 +32,8 @@ crates/version_1_0/tfar_plugin_1_0/src/
 loads the radio sounds and the HRIR sphere, reads TeamSpeak's push-to-talk delay, builds the
 `PluginRuntime`, starts the `GameLinkServer` on both ports with a `LinkHandler`, the service
 thread and the cancellable update check, and publishes the runtime in an `ArcSwapOption`. Every
-callback loads it: the event callbacks call runtime methods, the audio callbacks the non-blocking
-functions of `audio::voice_callbacks`; `on_talk_status_change` resets the HRTF sources of a sender
-that starts talking. All TeamSpeak traffic goes through `TeamSpeakActions`; side effects only
+callback loads it: the event callbacks call runtime methods, the audio callbacks the functions of
+`audio::voice_callbacks`, which wait only for a server lock whose holders never call TeamSpeak. All TeamSpeak traffic goes through `TeamSpeakActions`; side effects only
 through `PluginRuntime::act`, which is `None` while the plugin is dormant. `TfarPlugin::shutdown`
 takes the runtime out, runs `PluginRuntime::shut_down` (web requests cancelled, game end, metadata
 cleared, mutes lifted, link server, service, release thread and debug window stopped and joined,
@@ -55,5 +54,5 @@ web requests joined within 1 s) and drops the log forwarder last, all within 2 s
 - Used by: TeamSpeak, which loads the cdylib, and the tests that load the `.so` in the mock host.
 - Rules: production files hold no `unwrap`, `expect`, `panic` or indexing (clippy deny list); tests
   live in `tests/` folders (`cargo xtask verify test-placement`); the only `unsafe` is the code
-  `ts3_plugin!` expands; no TeamSpeak call while a server lock is held; the audio callbacks only
-  `try_lock`.
+  `ts3_plugin!` expands; no TeamSpeak call while a server lock is held; the audio callbacks wait
+  only for a server lock.

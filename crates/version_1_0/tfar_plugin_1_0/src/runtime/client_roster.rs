@@ -53,16 +53,6 @@ impl PluginRuntime {
         self.servers.remove(server);
     }
 
-    /// TeamSpeak reports `client` on `server` starts talking: a new utterance begins, so the
-    /// client's direction sources forget the tail of the last one.
-    pub fn client_started_talking(&self, server: ServerConnectionHandlerId, client: ClientId) {
-        if let Some(state) = self.servers.get(server) {
-            state
-                .lock()
-                .reset_direction_sources(state_client_id(client));
-        }
-    }
-
     /// The local client entered `channel`: every other client is forgotten and the clients of the
     /// new channel join; serious mode is checked again.
     pub fn own_channel_switched(&self, server: ServerConnectionHandlerId, channel: ChannelId) {

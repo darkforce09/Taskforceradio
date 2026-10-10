@@ -14,9 +14,9 @@ crates/version_1_0/tfar_plugin_1_0/src/audio/
 
 ## How it works
 
-The post-process callback takes the server state with `try_lock`, copies the block to stereo,
-runs `VoiceProcessor::process_sender` and writes the result back; a busy lock, no game, a dormant
-plugin or an unknown sender leaves the block untouched. The captured callback runs
+The post-process callback waits for the server state (counting the wait in the runtime's
+`AudioDiagnostics`), copies the block to stereo, runs `VoiceProcessor::process_sender` and writes
+the result back; no game, a dormant plugin or an unknown sender leaves the block untouched. The captured callback runs
 `VoiceProcessor::process_own_voice_for_speakers` and pushes the result through the mixer's
 `StreamProducer` for the stream `my_radio_voice`, which never blocks or allocates. The
 mixed-playback callback adds the mixer's playbacks and streams into channels 0 and 1 of the

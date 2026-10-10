@@ -271,10 +271,21 @@ impl ClientEffects {
         self.phone_filters.clear();
     }
 
-    /// Drops the can't-speak and vehicle low-passes (`resetVoices`), as a mute does.
+    /// Clears the memory of the can't-speak and vehicle low-passes (`resetVoices`), as a mute
+    /// does, and keeps them: a reset runs under the session lock the audio thread waits for and
+    /// can land while a sender's voice still plays, where a dropped filter would leave its frames
+    /// unfiltered until the next ensure.
     pub fn reset_voices(&mut self) {
-        self.cant_speak_filters.clear();
-        self.vehicle_filters.clear();
+        for filter in self.cant_speak_filters.values_mut() {
+            filter.reset();
+        }
+        for filter in self
+            .vehicle_filters
+            .values_mut()
+            .flat_map(HashMap::values_mut)
+        {
+            filter.reset();
+        }
     }
 }
 

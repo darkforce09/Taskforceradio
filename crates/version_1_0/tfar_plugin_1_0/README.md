@@ -33,9 +33,12 @@ The TeamSpeak plugin for the 1.0 mod, wiring the 1.0 library crates to TeamSpeak
   sets needcfg.
 - **Audio.** The post-process callback runs `tfar_voice_pipeline_1_0`, the captured callback feeds
   speaker radios through the mixer's own-voice `StreamProducer`, the mixed-playback callback adds
-  the radio sounds; all three only `try_lock`. A remote tangent sound is shaped by
-  `render_remote_tangent_sound`. When TeamSpeak reports a sender starts talking, the sender's
-  HRTF direction sources are reset, so an utterance never replays the last one's tail.
+  the radio sounds. The voice callbacks wait for the server lock, as the original waits on its
+  critical section, since a block passed through unprocessed is an audible jump; no holder calls
+  TeamSpeak or takes another lock under it, and the waits are logged at debug level once a second
+  when any occurred. A remote tangent sound is shaped by `render_remote_tangent_sound`. An HRTF
+  direction source restarts itself after 200 ms without input (`tfar_hrtf`), so an utterance
+  never replays the last one's tail and no other thread cuts into a running one.
 - **Plugin folder.** `init` loads `radio-sounds/` and `tfar_hrir/` from `Ts3::plugin_folder`:
   `getPluginPath` under the plugin ID TeamSpeak registered last (its "Reload" keeps the `.so`
   loaded but registers a new ID, and the plugin commands go out under it too), else the folder of

@@ -4,7 +4,8 @@
 //! timeout and transitions every tick; every 4 s the serious-channel move while in game (gated by
 //! Arma's focus unless `moveWhileTabbedOut`, and by `noAutomoveSpectator`), the expiry sweep with
 //! the mute refresh, the client metadata, the DSP objects and the own metadata; every 500 ms a
-//! debug window snapshot while the window is open; finished radio sounds are freed every tick.
+//! debug window snapshot while the window is open; every second the audio callbacks' lock waits
+//! logged when any occurred; finished radio sounds are freed every tick.
 //! The periods come from `ServicePeriods`, which a test may shorten.
 //!
 //! **Position:** started in `ts3plugin_init`, stopped and joined in `ts3plugin_shutdown`.
@@ -27,6 +28,9 @@ use crate::service::service_periods::ServicePeriods;
 
 /// The name of the service thread.
 pub const SERVICE_THREAD_NAME: &str = "tfar-service";
+
+/// The time between two logs of the audio callbacks' lock waits; a quiet second logs nothing.
+const AUDIO_DIAGNOSTICS_PERIOD: Duration = Duration::from_secs(1);
 
 /// The running service thread.
 #[derive(Debug)]
@@ -73,8 +77,9 @@ impl ServiceThread {
 /// When the periodic work last ran.
 #[derive(Debug, Default)]
 struct Timers {
-    last_sweep: Option<Instant>,
-    last_debug_snapshot: Option<Instant>,
+    sweep: Option<Instant>,
+    debug_snapshot: Option<Instant>,
+    audio_diagnostics: Option<Instant>,
 }
 
 /// Whether `period` has passed since `last`, updating `last` when it has.
@@ -94,14 +99,29 @@ fn tick(runtime: &PluginRuntime, periods: &ServicePeriods, timers: &mut Timers, 
     }
     runtime.poll_game_link(now);
     runtime.sounds.release_finished();
+    if is_due(&mut timers.audio_diagnostics, AUDIO_DIAGNOSTICS_PERIOD, now) {
+        log_audio_diagnostics(runtime);
+    }
     if runtime.is_dormant() {
         return;
     }
-    if is_due(&mut timers.last_sweep, periods.sweep, now) {
+    if is_due(&mut timers.sweep, periods.sweep, now) {
         sweep(runtime, now);
     }
-    if is_due(&mut timers.last_debug_snapshot, periods.debug_snapshot, now) {
+    if is_due(&mut timers.debug_snapshot, periods.debug_snapshot, now) {
         publish_debug_snapshot(runtime);
+    }
+}
+
+/// Logs the audio callbacks' lock waits and skipped blocks since the last log, when any occurred.
+fn log_audio_diagnostics(runtime: &PluginRuntime) {
+    let counts = runtime.audio_diagnostics.take();
+    if !counts.is_zero() {
+        tracing::debug!(
+            contended_state_locks = counts.contended_state_locks,
+            skipped_blocks = counts.skipped_blocks,
+            "audio: callback lock waits in the last second"
+        );
     }
 }
 

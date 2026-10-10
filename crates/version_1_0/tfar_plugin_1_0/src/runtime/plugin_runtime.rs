@@ -29,7 +29,7 @@ use tfar_client_state_1_0::prelude::{DspContext, GameLinkState, TeamspeakClientI
 use tfar_debug_window::prelude::DebugWindowHandle;
 use tfar_game_link_server::prelude::GameLinkServer;
 use tfar_plugin_settings_1_0::PluginSettings;
-use tfar_ts3_host::ServerConnectionHandlerId;
+use tfar_ts3_host::{AudioDiagnostics, ServerConnectionHandlerId};
 use tfar_voice_pipeline_1_0::prelude::{ensure_every_sender_dsp, ensure_sender_dsp};
 
 use crate::audio::radio_sounds::RadioSounds;
@@ -97,6 +97,8 @@ pub struct PluginRuntime {
     dropout_seed: AtomicU64,
     /// When the plugin last asked to move into the serious channel.
     pub last_serious_move_at: Mutex<Option<Instant>>,
+    /// The audio callbacks' lock waits and skipped blocks, logged by the service thread.
+    pub audio_diagnostics: AudioDiagnostics,
 }
 
 impl core::fmt::Debug for PluginRuntime {
@@ -138,6 +140,7 @@ impl PluginRuntime {
             has_warned_minimum_version: AtomicBool::new(false),
             has_warned_short_nickname: AtomicBool::new(false),
             web_requests: BackgroundRequests::new(),
+            audio_diagnostics: AudioDiagnostics::new(),
             dropout_seed: AtomicU64::new(0x5446_4152),
             last_serious_move_at: Mutex::new(None),
         })
