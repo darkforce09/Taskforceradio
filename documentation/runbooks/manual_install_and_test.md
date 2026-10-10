@@ -6,7 +6,7 @@ Builds both mods' artifacts, installs the plugins into the Flatpak TeamSpeak and
 into an installed mod, and checks the link from TeamSpeak, from Proton's wine and from Arma. No
 script copies anything into TeamSpeak or a mod folder (decision D13); every copy below is done by
 the owner. Run the build from the repository root,
-`/run/media/system/Disk_2/Projects/Taskforceradio`.
+`/run/media/system/Main_storage/Projects/Taskforceradio`.
 
 Every step below works with the code of M8: both plugins and both extensions are complete, and the
 mock scenarios of both versions pass. What is left is this live check, deferred by the owner.

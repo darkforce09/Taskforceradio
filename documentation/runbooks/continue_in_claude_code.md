@@ -9,8 +9,8 @@ only changes when the way the program runs changes.
 ## Prerequisites
 
 - Claude Code (the Code tab of Claude Desktop, or the `claude` command line), signed in.
-- This repository at `/run/media/system/Disk_2/Projects/Taskforceradio`, with both reference trees
-  present: `reference/tfar_1_0` (its own upstream clone, gitignored here) and
+- This repository at `/run/media/system/Main_storage/Projects/Taskforceradio`, with both
+  reference trees present: `reference/tfar_1_0` (its own upstream clone, gitignored here) and
   `reference/tfar_0_9_12` (committed).
 - The toolchain from `rust-toolchain.toml`, `cargo-deny` and `typos` installed (`cargo deny
   --version`, `typos --version`).
@@ -20,7 +20,7 @@ only changes when the way the program runs changes.
 1. Open Claude Code in the repository folder.
 
    ```bash
-   cd /run/media/system/Disk_2/Projects/Taskforceradio
+   cd /run/media/system/Main_storage/Projects/Taskforceradio
    claude
    ```
 
@@ -37,8 +37,8 @@ only changes when the way the program runs changes.
 ```text
 You're continuing the TFAR Rust port: a from-scratch Rust rewrite of both Task Force Arrowhead Radio
 versions (0.9.12 and 1.0) so Arma 3 under Proton talks to the native Linux Flatpak TeamSpeak 3.
-The repo is /run/media/system/Disk_2/Projects/Taskforceradio. Each mod gets a Rust TeamSpeak plugin
-(.so, Linux x86_64) and a Rust Arma extension (task_force_radio_pipe_x64.dll, x86_64-pc-windows-gnu);
+The repo is /run/media/system/Main_storage/Projects/Taskforceradio. Each mod gets a Rust TeamSpeak
+plugin (.so, Linux x86_64) and a Rust Arma extension (task_force_radio_pipe_x64.dll, x86_64-pc-windows-gnu);
 they talk over localhost TCP. The original mods sit read-only under reference/.
 
 1. Read first: CLAUDE.md (the laws are binding), then documentation/program/progress.md (Current

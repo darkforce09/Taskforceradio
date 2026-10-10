@@ -145,9 +145,9 @@ That is 38 crates: 4 deliverables (the apps), 30 libraries and 4 tools. The crat
   stubs that GitHub refuses, so a fresh clone restores both trees by hand
   ([reference README](/reference/README.md#restore-tfar_0_9_12)).
 - **Remote:** `origin` is `https://github.com/darkforce09/Taskforceradio` (public).
-- **Paths:** the repository is `/run/media/system/Disk_2/Projects/Taskforceradio`. Nothing builds or
-  copies into the game or TeamSpeak folders; `cargo xtask dist` writes only under target/ and the
-  owner installs by hand.
+- **Paths:** the repository is `/run/media/system/Main_storage/Projects/Taskforceradio`. Nothing
+  builds or copies into the game or TeamSpeak folders; `cargo xtask dist` writes only under target/
+  and the owner installs by hand.
 
 ## 4. Commands
 
