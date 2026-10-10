@@ -13,7 +13,7 @@ members = [
 
 # Package fields a member inherits with `<field>.workspace = true`.
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.99"
 # The licence is decided later; cargo-deny ignores private crates until then.

@@ -13,7 +13,7 @@ fresh session reads Current state and Handoff first, then the
 |---|---|
 | Branch | `main` |
 | Current milestone | M8 — closed by C1 in code (M0–M8 code-complete); only the owner's live checks remain |
-| Last green commit | 450c626 — the first commit on which `cargo xtask ci ci-local` holds every step (21 of 21, run by C1 on 0ced2f5 plus the C1 changes, 2026-10-03); the orchestrator fills the hash |
+| Last green commit | 4918aea — `cargo xtask ci ci-local` holds every step (21 of 21, 2026-10-10, after the D27 audio fix) |
 | Next action | Commit C1 and fill its hash above; then the owner's live checks OC-ts, OC-arma and OC-install from the [install runbook](/documentation/runbooks/manual_install_and_test.md) |
 | Blocked on | nothing |
 
@@ -147,6 +147,7 @@ Owner checkpoints, after C1:
 | 2026-10-03 | C1 dist | `CARGO_TARGET_DIR=target-c1 cargo xtask dist` wrote target-c1/dist/: tfar_0_9 with `task_force_radio_linux_amd64.so` (6 065 280 B) and `task_force_radio_pipe_x64.dll` (964 608 B), tfar_1_0 with `TFAR_linux_amd64.so` (12 954 080 B) and `task_force_radio_pipe_x64.dll` (967 168 B), each with radio-sounds/ (18 files, identical across the versions) and tfar_hrir/ (`IRC_1002_C.bin` 772 656 B, `CREDITS.md` 2 167 B). Each `.so` exports the 40 `ts3plugin_*` functions; each DLL exports `RVExtension` and `RVExtensionVersion` and imports only Windows system DLLs (kernel32, user32, ntdll, msvcrt, ws2_32, userenv, bcryptprimitives, api-ms-win-core-synch), no libgcc or libwinpthread | target/agent-logs/c1-dist.log |
 | 2026-10-10 | Layout | The four deliverables move from `apps/` into `crates/version_0_9/` and `crates/version_1_0/`; the gates key the deliverable rules by crate name ([decision](/documentation/decisions/workspace.md#2026-10-10--deliverables-live-in-their-version-category-no-apps-folder-d7)) | — |
 | 2026-10-10 | Audio fix | The owner heard clicks and stutters in other players' voices with the 0.9 plugin in game. The cause was voice blocks passed through unprocessed whenever a command thread held the state lock. Both plugins now wait for that lock, keep sound state across resets and restart a direction source only after 200 ms idle. Each voice block runs with flush-to-zero; lock waits are logged once a second ([D27](/documentation/decisions/audio.md#2026-10-10--voice-callbacks-wait-for-the-state-and-sound-state-is-kept-across-resets-d27)) | — |
+| 2026-10-10 | Owner check | The owner ran the fixed 0.9 plugin in game: the voices sound much better. Release v0.1.1 carries the D27 fix | — |
 
 ## Amendments
 

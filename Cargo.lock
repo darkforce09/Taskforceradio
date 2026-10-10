@@ -2934,7 +2934,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_antennas_1_0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_arma_values",
  "tfar_geometry",
@@ -2943,7 +2943,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_arma_extension_abi"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "thiserror 2.0.21",
  "windows-sys 0.61.2",
@@ -2951,7 +2951,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_arma_values"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_geometry",
  "thiserror 2.0.21",
@@ -2959,7 +2959,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_client_state_0_9"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_dsp_filters",
  "tfar_dynamics",
@@ -2972,7 +2972,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_client_state_1_0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_arma_values",
  "tfar_dsp_filters",
@@ -2989,7 +2989,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_debug_window"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arc-swap",
  "eframe",
@@ -3001,7 +3001,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_dsp_filters"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "biquad",
  "sci-rs",
@@ -3011,7 +3011,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_dynamics"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_sample_buffer",
  "thiserror 2.0.21",
@@ -3019,7 +3019,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_extension_0_9"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_arma_extension_abi",
  "tfar_game_link_client",
@@ -3030,7 +3030,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_extension_1_0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_arma_extension_abi",
  "tfar_game_link_client",
@@ -3041,7 +3041,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_extension_probe"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "libloading 0.9.0",
@@ -3049,7 +3049,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_game_commands_0_9"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_arma_values",
  "tfar_geometry",
@@ -3058,7 +3058,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_game_commands_1_0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_arma_values",
  "tfar_geometry",
@@ -3068,7 +3068,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_game_link_client"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_game_link_protocol",
  "thiserror 2.0.21",
@@ -3077,7 +3077,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_game_link_protocol"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "postcard",
  "serde",
@@ -3086,7 +3086,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_game_link_server"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossbeam-channel",
  "parking_lot",
@@ -3097,7 +3097,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_geometry"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "glam",
  "thiserror 2.0.21",
@@ -3105,7 +3105,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_golden_vectors"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cc",
  "tfar_dsp_filters",
@@ -3118,7 +3118,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_hrtf"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "glam",
  "hrtf",
@@ -3129,7 +3129,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_playback_mixer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "hound",
  "parking_lot",
@@ -3140,7 +3140,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_plugin_0_9"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossbeam-channel",
  "parking_lot",
@@ -3168,7 +3168,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_plugin_1_0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arc-swap",
  "crossbeam-channel",
@@ -3199,7 +3199,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_plugin_commands_0_9"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_arma_values",
  "thiserror 2.0.21",
@@ -3207,7 +3207,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_plugin_commands_1_0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_arma_values",
  "thiserror 2.0.21",
@@ -3215,14 +3215,14 @@ dependencies = [
 
 [[package]]
 name = "tfar_plugin_settings_1_0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "thiserror 2.0.21",
 ]
 
 [[package]]
 name = "tfar_radio_effects_0_9"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "fastrand",
  "tfar_arma_values",
@@ -3233,7 +3233,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_radio_effects_1_0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "fastrand",
  "tfar_arma_values",
@@ -3244,7 +3244,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_radio_routing_0_9"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_client_state_0_9",
  "tfar_geometry",
@@ -3253,7 +3253,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_radio_routing_1_0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_antennas_1_0",
  "tfar_arma_values",
@@ -3265,14 +3265,14 @@ dependencies = [
 
 [[package]]
 name = "tfar_sample_buffer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "thiserror 2.0.21",
 ]
 
 [[package]]
 name = "tfar_spatial_audio"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_geometry",
  "tfar_sample_buffer",
@@ -3281,7 +3281,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_ts3_host"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arc-swap",
  "crossbeam-channel",
@@ -3294,7 +3294,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_ts3_mock"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "libc",
  "libloading 0.9.0",
@@ -3308,7 +3308,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_ts3_settings_db"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rusqlite",
  "thiserror 2.0.21",
@@ -3316,7 +3316,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_voice_pipeline_0_9"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_client_state_0_9",
  "tfar_dsp_filters",
@@ -3333,7 +3333,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_voice_pipeline_1_0"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "tfar_antennas_1_0",
  "tfar_client_state_1_0",
@@ -3353,7 +3353,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_web_requests"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "thiserror 2.0.21",
  "tracing",
@@ -4371,7 +4371,7 @@ checksum = "32ac00cd3f8ec9c1d33fb3e7958a82df6989c42d747bd326c822b1d625283547"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "cargo_metadata",
