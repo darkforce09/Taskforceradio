@@ -120,7 +120,7 @@ fn core_with_sphere(fake: &std::sync::Arc<FakeTeamSpeak>) -> PluginCore {
 }
 
 #[test]
-fn a_client_who_starts_talking_has_every_direction_source_reset() {
+fn a_talk_start_leaves_the_direction_sources_and_outside_serious_mode_sends_nothing() {
     let fake = FakeTeamSpeak::with_players(&["Alpha"]);
     let core = core_with_sphere(&fake);
     let now = std::time::Instant::now();
@@ -145,16 +145,15 @@ fn a_client_who_starts_talking_has_every_direction_source_reset() {
         },
         now,
     );
-    let alpha = state_client_id(ClientId(2));
-    let reset = core.with_state(SERVER, |state| state.reset_direction_sources_of(alpha));
-    assert!(reset.is_some_and(|reset| reset >= 1), "{reset:?}");
-    let nobody = state_client_id(ClientId(9));
-    assert_eq!(
-        core.with_state(SERVER, |state| state.reset_direction_sources_of(nobody)),
-        Some(0)
-    );
     fake.take_actions();
     core.handle_talk_status_change(SERVER, TalkStatus::Talking, ClientId(2));
     core.handle_talk_status_change(SERVER, TalkStatus::NotTalking, ClientId(2));
     assert_eq!(fake.take_actions(), Vec::<FakeAction>::new());
+    let has_source = core.with_state(SERVER, |state| {
+        state
+            .radio
+            .client_mut("Alpha")
+            .is_some_and(|alpha| alpha.dsp.direct_voice_mut().hrtf_source_mut().is_some())
+    });
+    assert_eq!(has_source, Some(true));
 }

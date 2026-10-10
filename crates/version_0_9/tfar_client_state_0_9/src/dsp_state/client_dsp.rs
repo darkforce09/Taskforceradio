@@ -1,7 +1,8 @@
 //! `ClientDsp`: every sound object one sender's voice passes through.
 //!
 //! **Role:** own a sender's compressor, direct-voice state and per-radio state, make what a
-//! `DspRequirements` names, and drop them by the original's two resets.
+//! `DspRequirements` names, and apply the original's two resets: the radio effect reset drops
+//! objects, the voice reset only clears filter memory.
 //!
 //! **Position:** a field of `ClientData`; filled by `ClientData::ensure_dsp` on the command
 //! threads, borrowed by the voice pipeline on the TeamSpeak audio thread.
@@ -12,8 +13,8 @@
 //!
 //! **Invariants:** `ensure` never replaces an object that exists (a vehicle low-pass is
 //! redesigned only for a new isolation), so the audio thread keeps its filter memory from frame
-//! to frame; the compressor is made once and never reset, as the original's; a radio entry that
-//! holds nothing after a reset is removed.
+//! to frame; the compressor is made once and never reset, as the original's; `reset_voices`
+//! frees nothing; a radio entry that holds nothing after `reset_radio_effects` is removed.
 
 use std::collections::BTreeMap;
 
@@ -116,14 +117,15 @@ impl ClientDsp {
         self.radios.retain(|_, radio| !radio.is_empty());
     }
 
-    /// Drops every direction source and the can't-speak, under-water and vehicle filters
-    /// (`resetVoices`).
+    /// Clears the memory of the can't-speak, under-water and vehicle filters (`resetVoices`),
+    /// keeping every object: in serious mode this runs on every `POS` of a silent player, so it
+    /// must neither free nor rebuild a two-megabyte direction source under the server lock the
+    /// audio thread waits for. The direction sources restart themselves after an idle gap.
     pub fn reset_voices(&mut self) {
         self.direct_voice.reset();
         for radio in self.radios.values_mut() {
             radio.reset_voices();
         }
-        self.radios.retain(|_, radio| !radio.is_empty());
     }
 }
 

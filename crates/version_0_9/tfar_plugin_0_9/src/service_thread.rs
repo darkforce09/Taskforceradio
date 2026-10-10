@@ -4,13 +4,14 @@
 //! every tick the game timeout (4 s without game activity ends the game and puts the plugin back
 //! to dormant, or lifts the plugin's mutes); every 4 s the sweep (expired players removed, the nickname list and voice facts read
 //! again, and in game the players without current data muted in serious mode) and the status
-//! metadata; every tick the finished radio sounds freed off the audio thread.
+//! metadata; every second the audio callbacks' lock waits and incomplete frames logged when any
+//! occurred; every tick the finished radio sounds freed off the audio thread.
 //!
 //! **Position:** started by `ts3plugin_init` as the thread `tfar-service`, stopped and joined by
 //! `ts3plugin_shutdown`; works through `PluginCore`.
 //!
 //! **Signals and state:** a stop channel it waits on between ticks, and the times of the last
-//! sweep and metadata update; every TeamSpeak call is made with no lock held.
+//! sweep, metadata update and diagnostics log; every TeamSpeak call is made with no lock held.
 //!
 //! **Invariants:** a dormant plugin makes no mute request and writes no metadata; the thread
 //! ends within one tick of the stop signal.
@@ -35,6 +36,9 @@ pub const SERVICE_TICK: Duration = Duration::from_millis(100);
 
 /// The time between two sweeps and between two status metadata updates (`MILLIS_TO_EXPIRE`).
 pub const SWEEP_INTERVAL: Duration = Duration::from_secs(4);
+
+/// The time between two logs of the audio diagnostics; a quiet second logs nothing.
+pub const AUDIO_DIAGNOSTICS_INTERVAL: Duration = Duration::from_secs(1);
 
 /// The thread's name.
 const SERVICE_THREAD_NAME: &str = "tfar-service";
@@ -81,11 +85,14 @@ fn run_service(core: &PluginCore, stopped: &Receiver<()>) {
     }
 }
 
-/// When the service tick last swept and last wrote the status metadata.
+/// When the service tick last swept, wrote the status metadata and logged the audio
+/// diagnostics, and the voice frames without sound state counted at that log.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ServiceSchedule {
     last_sweep: Instant,
     last_metadata: Instant,
+    last_audio_diagnostics: Instant,
+    logged_frames_missing_sound_state: u64,
 }
 
 impl ServiceSchedule {
@@ -94,6 +101,8 @@ impl ServiceSchedule {
         Self {
             last_sweep: now,
             last_metadata: now,
+            last_audio_diagnostics: now,
+            logged_frames_missing_sound_state: 0,
         }
     }
 }
@@ -113,6 +122,12 @@ impl PluginCore {
             schedule.last_metadata = now;
             self.publish_status_metadata(server);
         }
+        if now.saturating_duration_since(schedule.last_audio_diagnostics)
+            >= AUDIO_DIAGNOSTICS_INTERVAL
+        {
+            schedule.last_audio_diagnostics = now;
+            self.log_audio_diagnostics(server, schedule);
+        }
         for connection in self.connections() {
             connection.mixer.release_finished();
         }
@@ -127,22 +142,19 @@ impl PluginCore {
         }
     }
 
-    /// The 4 s sweep of `server` at `now`: expired players removed, the channel read again, and
-    /// in game the players without current data muted while the local player lives in serious
-    /// mode.
+    /// The 4 s sweep of `server` at `now`: expired players removed (and freed after the lock is
+    /// released), the channel read again, and in game the players without current data muted
+    /// while the local player lives in serious mode.
     pub fn sweep(&self, server: ServerConnectionHandlerId, now: Instant) {
         if !self.team_speak().is_connected(server) {
             return;
         }
         let snapshot = read_channel_snapshot(self.team_speak(), server);
         let is_muting = self.is_in_game() && !self.is_dormant();
-        let decision = self.with_state(server, |state| {
+        let swept = self.with_state(server, |state| {
             let removed = state.radio.remove_expired(now);
-            if !removed.is_empty() {
-                tracing::debug!(?removed, "players without news for 20 s were removed");
-            }
             state.apply_channel_snapshot(&snapshot);
-            match state.my_client() {
+            let decision = match state.my_client() {
                 Some(me) if is_muting => {
                     let is_serious =
                         is_serious_mode(&snapshot.channel_name, &state.radio.serious_channel_name);
@@ -155,10 +167,48 @@ impl PluginCore {
                     )
                 }
                 _ => MuteDecision::default(),
-            }
+            };
+            (removed, decision)
         });
-        if let Some(decision) = decision {
-            self.send_mute_decision(server, &decision);
+        let Some((removed, decision)) = swept else {
+            return;
+        };
+        if !removed.is_empty() {
+            let nicknames: Vec<&str> = removed
+                .iter()
+                .map(|(nickname, _)| nickname.as_str())
+                .collect();
+            tracing::debug!(?nicknames, "players without news for 20 s were removed");
         }
+        // Their sound state is freed here, outside the lock the audio thread waits for.
+        drop(removed);
+        self.send_mute_decision(server, &decision);
+    }
+}
+
+impl PluginCore {
+    /// Logs, when any is non-zero, the audio callbacks' lock waits and skipped blocks and the
+    /// voice frames of `server` without sound state since the last log.
+    fn log_audio_diagnostics(
+        &self,
+        server: ServerConnectionHandlerId,
+        schedule: &mut ServiceSchedule,
+    ) {
+        let counts = self.audio_diagnostics().take();
+        let frames_missing_sound_state = self
+            .with_state(server, |state| state.voice.frames_missing_sound_state())
+            .unwrap_or(schedule.logged_frames_missing_sound_state);
+        let new_frames_missing_sound_state =
+            frames_missing_sound_state.saturating_sub(schedule.logged_frames_missing_sound_state);
+        schedule.logged_frames_missing_sound_state = frames_missing_sound_state;
+        if counts.is_zero() && new_frames_missing_sound_state == 0 {
+            return;
+        }
+        tracing::debug!(
+            contended_state_locks = counts.contended_state_locks,
+            skipped_blocks = counts.skipped_blocks,
+            frames_missing_sound_state = new_frames_missing_sound_state,
+            "audio: callback lock waits and incomplete frames in the last second"
+        );
     }
 }

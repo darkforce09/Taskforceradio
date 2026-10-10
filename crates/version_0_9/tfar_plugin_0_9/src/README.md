@@ -27,7 +27,7 @@ crates/version_0_9/tfar_plugin_0_9/src/
 ├── radio_sounds.rs              the `radio-sounds/` and `tfar_hrir/` paths by subtype and moment
 ├── running_plugin.rs            `RunningPlugin`: what `init` starts and the order `shutdown` stops it
 ├── server_connection.rs         `ServerConnection` and `ServerState`: one connection behind one lock
-├── service_thread.rs            the 100 ms tick: game timeout and dormancy, 4 s sweep, metadata, sounds
+├── service_thread.rs            the 100 ms tick: game timeout, dormancy, 4 s sweep, metadata, audio log
 ├── status_metadata.rs           the `<TFAR>` status in our metadata, and the disabled text
 ├── team_speak/                  the `TeamSpeak` traits and their function-table implementation
 ├── team_speak_events.rs         connection, channel, client and talk events, the talking flag, info panel

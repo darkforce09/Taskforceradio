@@ -1,6 +1,6 @@
 //! The built plugin `.so` in the mock TeamSpeak host around the end of a game and the end of the
 //! plugin: dormant again after the game times out until game activity resumes, a sender's HRTF
-//! sources reset when they start talking, and a shutdown that joins every thread the plugin
+//! sources restarting after an idle gap but never on a talk start, and a shutdown that joins every thread the plugin
 //! started within TeamSpeak's 2 s, also when a web request hangs.
 //!
 //! Each scenario runs in a child process of this test binary (`scenario_support::run_in_child`),
@@ -170,22 +170,31 @@ mod scenarios {
     }
 
     #[test]
-    fn a_sender_who_starts_talking_again_never_replays_the_old_tail() {
+    fn a_sender_silent_past_the_idle_gap_never_replays_the_old_tail() {
         run_in_child(
-            "scenarios::a_sender_who_starts_talking_again_never_replays_the_old_tail",
+            "scenarios::a_sender_silent_past_the_idle_gap_never_replays_the_old_tail",
             talk_start_scenario,
         );
     }
 
     /// Alpha's voice, then a silent block: the HRTF's held tail of the voice comes out unless
-    /// Alpha's talk start reset the sources in between.
-    fn silent_block_after_voice(host: &MockHost, alpha: ClientId, starts_talking: bool) -> bool {
+    /// the sources restarted in between. `starts_talking` sends a talk start before the silent
+    /// block, `pauses` waits past the idle gap.
+    fn silent_block_after_voice(
+        host: &MockHost,
+        alpha: ClientId,
+        starts_talking: bool,
+        pauses: bool,
+    ) -> bool {
         for block in 0..5 {
             let voice = stereo_tone(700.0, 8_000.0, block * BLOCK_FRAMES, BLOCK_FRAMES);
             host.post_process_voice(alpha, &voice, 2).unwrap();
         }
         if starts_talking {
             host.talk_status_change(alpha, true).unwrap();
+        }
+        if pauses {
+            std::thread::sleep(tfar_hrtf::IDLE_RESET_AFTER + Duration::from_millis(50));
         }
         let silence = vec![0_i16; BLOCK_FRAMES * 2];
         let output = host.post_process_voice(alpha, &silence, 2).unwrap().samples;
@@ -200,13 +209,18 @@ mod scenarios {
         let link = game_link();
         let alpha = start_a_game(&host, &link);
         assert!(
-            !silent_block_after_voice(&host, alpha, false),
-            "without a talk start the tail of the voice plays on"
+            !silent_block_after_voice(&host, alpha, false, false),
+            "without a gap the tail of the voice plays on"
         );
         assert_eq!(send(&link, ALPHA_POSITION), "NOT_SPEAKING");
         assert!(
-            silent_block_after_voice(&host, alpha, true),
-            "the talk start reset the sources"
+            !silent_block_after_voice(&host, alpha, true, false),
+            "a talk start never cuts into the running voice"
+        );
+        assert_eq!(send(&link, ALPHA_POSITION), "NOT_SPEAKING");
+        assert!(
+            silent_block_after_voice(&host, alpha, false, true),
+            "the idle gap restarted the sources"
         );
         host.take_calls();
         host.talk_status_change(alpha, true).unwrap();

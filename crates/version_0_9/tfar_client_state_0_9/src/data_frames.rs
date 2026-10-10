@@ -83,21 +83,20 @@ impl ServerRadioData {
 
     /// Removes every entry whose player sent no `POS` or push-to-talk within
     /// [`POSITION_EXPIRY`] before `now` (or never), or whose data frame is more than
-    /// [`DATA_FRAME_WINDOW`] from the current one; returns the removed nicknames in order.
-    pub fn remove_expired(&mut self, now: Instant) -> Vec<String> {
+    /// [`DATA_FRAME_WINDOW`] from the current one; returns the removed entries by nickname, in
+    /// order. The caller drops them after releasing the server lock, so freeing their sound state
+    /// (direction sources of about two megabytes each) never holds up the audio thread.
+    pub fn remove_expired(&mut self, now: Instant) -> Vec<(String, ClientData)> {
         let current_data_frame = self.current_data_frame;
-        let mut removed = Vec::new();
-        self.clients.retain(|nickname, client| {
-            let is_timed_out = client.position_time.is_none_or(|positioned| {
-                now.saturating_duration_since(positioned) > POSITION_EXPIRY
-            });
-            let is_frame_stale = current_data_frame.abs_diff(client.data_frame) > DATA_FRAME_WINDOW;
-            let expires = is_timed_out || is_frame_stale;
-            if expires {
-                removed.push(nickname.clone());
-            }
-            !expires
-        });
-        removed
+        self.clients
+            .extract_if(.., |_, client| {
+                let is_timed_out = client.position_time.is_none_or(|positioned| {
+                    now.saturating_duration_since(positioned) > POSITION_EXPIRY
+                });
+                let is_frame_stale =
+                    current_data_frame.abs_diff(client.data_frame) > DATA_FRAME_WINDOW;
+                is_timed_out || is_frame_stale
+            })
+            .collect()
     }
 }

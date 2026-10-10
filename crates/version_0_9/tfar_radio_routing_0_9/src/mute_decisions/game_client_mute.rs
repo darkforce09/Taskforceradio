@@ -9,7 +9,8 @@
 //! `MuteTracker`.
 //!
 //! **Signals and state:** `game_client_mute` reads the server state; `set_game_client_mute_status`
-//! also drops the voice state of a player it mutes and updates the tracker.
+//! also resets the voice state of a player it mutes (`reset_voices`: filter memory cleared,
+//! nothing freed, since this runs on every `POS` of a silent player) and updates the tracker.
 //!
 //! **Invariants:** outside serious mode the wanted state is always unmuted; a player without an
 //! entry is muted and no voice state is touched; the requests follow the tracker's rules.
@@ -44,7 +45,7 @@ pub struct MuteQuery {
 pub struct GameClientMute {
     /// Whether the player is to be muted.
     pub should_mute: bool,
-    /// The nickname whose voice state a mute drops: the player's current entry, or `None` when
+    /// The nickname whose voice state a mute resets: the player's current entry, or `None` when
     /// the player has none.
     pub resets_voices_of: Option<String>,
 }
@@ -77,7 +78,7 @@ pub fn game_client_mute(server: &ServerRadioData, query: &MuteQuery) -> GameClie
     }
 }
 
-/// Decides `query`'s player's mute state, drops their voice state when muting them, and returns
+/// Decides `query`'s player's mute state, resets their voice state when muting them, and returns
 /// the requests `tracker` needs to reach it.
 pub fn set_game_client_mute_status(
     server: &mut ServerRadioData,

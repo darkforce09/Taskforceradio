@@ -146,6 +146,7 @@ Owner checkpoints, after C1:
 | 2026-10-03 | C1 ci-local | `CARGO_TARGET_DIR=target-c1 cargo xtask ci ci-local` on 0ced2f5 plus the C1 changes: all 21 steps held (fmt, clippy, clippy-windows, test with 1830 passed, 0 failed, 3 ignored doc examples in 114 suites, deny, typos, and the 15 verify gates) | target/agent-logs/c1-ci-local-1.log, target/agent-logs/c1-ci-run1/ |
 | 2026-10-03 | C1 dist | `CARGO_TARGET_DIR=target-c1 cargo xtask dist` wrote target-c1/dist/: tfar_0_9 with `task_force_radio_linux_amd64.so` (6 065 280 B) and `task_force_radio_pipe_x64.dll` (964 608 B), tfar_1_0 with `TFAR_linux_amd64.so` (12 954 080 B) and `task_force_radio_pipe_x64.dll` (967 168 B), each with radio-sounds/ (18 files, identical across the versions) and tfar_hrir/ (`IRC_1002_C.bin` 772 656 B, `CREDITS.md` 2 167 B). Each `.so` exports the 40 `ts3plugin_*` functions; each DLL exports `RVExtension` and `RVExtensionVersion` and imports only Windows system DLLs (kernel32, user32, ntdll, msvcrt, ws2_32, userenv, bcryptprimitives, api-ms-win-core-synch), no libgcc or libwinpthread | target/agent-logs/c1-dist.log |
 | 2026-10-10 | Layout | The four deliverables move from `apps/` into `crates/version_0_9/` and `crates/version_1_0/`; the gates key the deliverable rules by crate name ([decision](/documentation/decisions/workspace.md#2026-10-10--deliverables-live-in-their-version-category-no-apps-folder-d7)) | — |
+| 2026-10-10 | Audio fix | The owner heard clicks and stutters in other players' voices with the 0.9 plugin in game. The cause was voice blocks passed through unprocessed whenever a command thread held the state lock. Both plugins now wait for that lock, keep sound state across resets and restart a direction source only after 200 ms idle. Each voice block runs with flush-to-zero; lock waits are logged once a second ([D27](/documentation/decisions/audio.md#2026-10-10--voice-callbacks-wait-for-the-state-and-sound-state-is-kept-across-resets-d27)) | — |
 
 ## Amendments
 
@@ -390,7 +391,9 @@ F-002 (OF-029).
 2. **Owner, live checks only:** OC-ts (both plugins load in the Flatpak TeamSpeak), OC-arma (the
    probe's `PONG` under Proton's wine, then `TS_INFO\tPING` in Arma with BattlEye off) and
    OC-install (play both mods), each from the install runbook; the `hrtf` click question of the
-   roadmap is part of the listening.
+   roadmap is part of the listening. The listening also confirms the D27 fix: no clicks in other players'
+   voices in game. A TeamSpeak client log at debug level shows any "audio: callback lock waits"
+   line with its counts.
 3. **Owner, before any release:** the licence (D16) and the IRCAM terms of the sphere (OF-021).
 4. Open FIX findings, small and outside the live checks: OF-020 (`split_keeping_every_field` made
    public in `tfar_arma_values`) and OF-032 (`append_own_voice_for_speakers` of 1.0). OF-029 and

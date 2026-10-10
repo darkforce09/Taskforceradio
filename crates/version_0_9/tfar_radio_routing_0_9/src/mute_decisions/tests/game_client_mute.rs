@@ -55,6 +55,18 @@ fn give_alpha_voice_state(server: &mut ServerRadioData) {
         .unwrap();
 }
 
+/// One frame through Alpha's can't-speak low-pass.
+fn alpha_cant_speak_frame(server: &mut ServerRadioData) -> [f64; 2] {
+    server
+        .client_mut("Alpha")
+        .unwrap()
+        .dsp
+        .direct_voice_mut()
+        .cant_speak_filter_mut()
+        .unwrap()
+        .process_frame([0.5, 0.5])
+}
+
 fn alpha_has_voice_state(server: &mut ServerRadioData) -> bool {
     !server
         .client_mut("Alpha")
@@ -84,13 +96,23 @@ fn outside_serious_mode_unmute_goes_only_to_clients_this_plugin_muted() {
 }
 
 #[test]
-fn in_serious_mode_a_silent_player_out_of_voice_range_is_muted_once_and_loses_voice_state() {
+fn in_serious_mode_a_silent_player_out_of_voice_range_is_muted_once_and_has_voice_state_reset() {
     let mut server = server();
     give_alpha_voice_state(&mut server);
+    let fresh = alpha_cant_speak_frame(&mut server);
+    let _ = alpha_cant_speak_frame(&mut server);
     let mut tracker = MuteTracker::new();
     let decision = set_game_client_mute_status(&mut server, &mut tracker, &query(true, false));
     assert_eq!(decision.mute, [ALPHA]);
-    assert!(!alpha_has_voice_state(&mut server));
+    assert!(
+        alpha_has_voice_state(&mut server),
+        "the reset frees nothing under the server lock"
+    );
+    assert_eq!(
+        alpha_cant_speak_frame(&mut server),
+        fresh,
+        "the reset cleared the filter memory"
+    );
     assert!(set_game_client_mute_status(&mut server, &mut tracker, &query(true, false)).is_empty());
 }
 

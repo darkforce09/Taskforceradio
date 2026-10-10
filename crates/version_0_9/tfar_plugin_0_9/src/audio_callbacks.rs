@@ -12,14 +12,16 @@
 //! **Position:** methods of `PluginCore`, called from the `Ts3Plugin` audio methods of
 //! `TfarPlugin` on TeamSpeak's audio threads.
 //!
-//! **Signals and state:** reads the server map with `try_read` and a connection's state with
-//! `try_lock`. When either is busy (a command thread is deciding, a connection is being added or
-//! removed) the block passes through untouched for that frame, as the original does when it has
-//! no data, instead of waiting; the mixer takes its own `try_lock`s.
+//! **Signals and state:** reads the server map with `try_read`, passing the block through while
+//! a connection is being added or removed; waits for a connection's state, as the original waits
+//! on its critical section (`plugin.cpp:2659`), because a block passed through unprocessed
+//! between processed ones is an audible jump (full level, no effect, no HRTF delay). Every wait
+//! and every skipped block is counted in the core's `AudioDiagnostics`. The mixer takes its own
+//! `try_lock`s.
 //!
-//! **Invariants:** no callback blocks, calls TeamSpeak or allocates for a block within the
-//! scratch's size; a dormant plugin passes every block through untouched and leaves TeamSpeak's
-//! rolloff as it is.
+//! **Invariants:** no callback calls TeamSpeak or allocates for a block within the scratch's
+//! size; the only wait is for a state, whose holders never call TeamSpeak or wait on anything; a
+//! dormant plugin passes every block through untouched and leaves TeamSpeak's rolloff as it is.
 
 use std::time::Instant;
 
@@ -49,9 +51,7 @@ impl PluginCore {
         let Some(connection) = servers.get(&data.server) else {
             return;
         };
-        let Some(mut guard) = connection.state.try_lock() else {
-            return;
-        };
+        let mut guard = self.lock_state_for_audio(connection);
         let ServerState {
             radio,
             voice,
@@ -94,9 +94,7 @@ impl PluginCore {
         let Some(connection) = servers.get(&data.server) else {
             return;
         };
-        let Some(mut guard) = connection.state.try_lock() else {
-            return;
-        };
+        let mut guard = self.lock_state_for_audio(connection);
         let ServerState {
             radio,
             voice,

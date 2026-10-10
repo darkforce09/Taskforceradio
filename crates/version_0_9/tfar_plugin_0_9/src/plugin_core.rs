@@ -13,7 +13,9 @@
 //! **Signals and state:** lock order, outermost first: the push-to-talk lock, then the server
 //! map (`RwLock`), then one connection's state (`Mutex`); the game session mutex is taken alone
 //! and released before any other. No TeamSpeak call is made while the server map or a state
-//! lock is held. The audio callbacks only `try_read` the map and `try_lock` a state.
+//! lock is held. The audio callbacks `try_read` the map and wait for a state, as the original
+//! waits on its critical section; the command threads hold a state only for short decisions, so
+//! the wait is short, and a block never goes out unprocessed because a decision was running.
 //!
 //! **Invariants:** a dormant plugin (no game activity since the session began or since its last
 //! game end) sends no mute, nickname, metadata, channel move or plugin command; the flags are
@@ -31,7 +33,7 @@ use tfar_client_state_0_9::GameSession;
 use tfar_hrtf::HrirLibrary;
 use tfar_playback_mixer::WaveLibrary;
 use tfar_radio_routing_0_9::{MuteDecision, is_serious_mode};
-use tfar_ts3_host::{ClientId, ServerConnectionHandlerId};
+use tfar_ts3_host::{AudioDiagnostics, ClientId, ServerConnectionHandlerId};
 
 use crate::background_web_requests::BackgroundWebRequests;
 use crate::channel_snapshot::{ChannelSnapshot, host_client_id, read_channel_snapshot};
@@ -39,6 +41,10 @@ use crate::push_to_talk::PushToTalk;
 use crate::radio_sounds::RadioSounds;
 use crate::server_connection::{ServerConnection, ServerState};
 use crate::team_speak::TeamSpeak;
+
+#[cfg(test)]
+#[path = "tests/plugin_core.rs"]
+mod tests;
 
 /// What `init` found on disk and in TeamSpeak's settings for the core.
 #[derive(Clone)]
@@ -75,6 +81,7 @@ pub struct PluginCore {
     hrir: Option<Arc<HrirLibrary>>,
     push_to_talk: PushToTalk,
     web_requests: BackgroundWebRequests,
+    audio_diagnostics: AudioDiagnostics,
 }
 
 impl core::fmt::Debug for PluginCore {
@@ -109,7 +116,13 @@ impl PluginCore {
             hrir: resources.hrir,
             push_to_talk: PushToTalk::new(resources.push_to_talk_delay),
             web_requests: BackgroundWebRequests::new(),
+            audio_diagnostics: AudioDiagnostics::new(),
         }
+    }
+
+    /// The audio callbacks' lock-wait and skipped-block counters.
+    pub fn audio_diagnostics(&self) -> &AudioDiagnostics {
+        &self.audio_diagnostics
     }
 
     /// The update check and the tracking requests still to join at shutdown.
@@ -203,7 +216,8 @@ impl PluginCore {
     }
 
     /// The server map for the audio callbacks: `None` while a connection is being added or
-    /// removed, so the callback passes its block through instead of waiting.
+    /// removed, so the callback passes its block through instead of waiting; such a block is
+    /// counted in the audio diagnostics.
     pub fn try_servers(
         &self,
     ) -> Option<
@@ -212,7 +226,24 @@ impl PluginCore {
             BTreeMap<ServerConnectionHandlerId, Arc<ServerConnection>>,
         >,
     > {
-        self.servers.try_read()
+        let servers = self.servers.try_read();
+        if servers.is_none() {
+            self.audio_diagnostics.record_skipped_block();
+        }
+        servers
+    }
+
+    /// `connection`'s state for an audio callback: taken at once when free, else waited for and
+    /// counted in the audio diagnostics. Safe to wait: no holder calls TeamSpeak or waits on
+    /// anything while it holds a state.
+    pub fn lock_state_for_audio<'connection>(
+        &self,
+        connection: &'connection ServerConnection,
+    ) -> parking_lot::MutexGuard<'connection, ServerState> {
+        connection.state.try_lock().unwrap_or_else(|| {
+            self.audio_diagnostics.record_contended_state_lock();
+            connection.state.lock()
+        })
     }
 
     /// The connection `server`, for a command thread.

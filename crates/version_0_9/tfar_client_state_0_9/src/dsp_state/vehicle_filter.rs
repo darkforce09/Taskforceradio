@@ -38,6 +38,11 @@ impl VehicleFilter {
     pub fn filter_mut(&mut self) -> &mut StereoFilter {
         &mut self.filter
     }
+
+    /// Clears the filter's memory and keeps its design.
+    pub(crate) fn reset(&mut self) {
+        self.filter.reset();
+    }
 }
 
 /// Makes `slot` hold a vehicle filter for `isolation`: kept when it already has that isolation,

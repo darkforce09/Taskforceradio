@@ -164,8 +164,13 @@ A late frame is an audible glitch, and a blocked one stalls TeamSpeak's audio.
   snapshot in an `arc-swap` `ArcSwap`; the audio thread loads it without locking.
 - **No blocking lock held across a TeamSpeak call.** No thread calls a TeamSpeak function while holding a
   lock the audio thread or a TeamSpeak callback can take; TeamSpeak may call back on the calling thread.
-- **The audio thread never waits.** Where it must touch shared mutable state, it uses `try_lock` and, on
-  contention, passes the frame through as the original does when data is missing.
+- **The audio thread waits only for short holders.** A voice callback may wait for a lock whose holders
+  never call TeamSpeak, never wait on anything else and keep their work short (no sound object made or
+  freed when it can be reused), as the original waits on its critical section; a frame passed through
+  unprocessed between processed ones is an audible jump
+  ([D27](/documentation/decisions/audio.md#2026-10-10--voice-callbacks-wait-for-the-state-and-sound-state-is-kept-across-resets-d27)).
+  Every other lock the audio thread touches is taken with `try_lock`, skipping only that source for the
+  frame.
 - **Hand-offs by queue.** Samples and commands between the audio thread and others travel through `rtrb`
   ring buffers or `crossbeam-channel` channels sized up front.
 - **Allocation.** Avoid allocation-heavy work on the audio thread: filters, effects and scratch buffers

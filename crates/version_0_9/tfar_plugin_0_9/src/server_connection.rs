@@ -11,8 +11,9 @@
 //!
 //! **Signals and state:** command threads (TeamSpeak's main thread, the game link thread, the
 //! service thread) `lock` the state for a short decision and call TeamSpeak only after
-//! releasing it; the audio threads only `try_lock` it and pass the frame through on contention.
-//! The mixer sits outside the lock: the mixed-playback callback never touches the state.
+//! releasing it; the audio threads wait for it, which stays short because no holder calls
+//! TeamSpeak or waits on anything under it. The mixer sits outside the lock: the mixed-playback
+//! callback never touches the state.
 //!
 //! **Invariants:** sound objects are made here, on command threads, never on the audio thread;
 //! the stereo scratch is sized once for `DEFAULT_MAX_FRAMES`, so a TeamSpeak block within it
@@ -130,36 +131,6 @@ impl ServerState {
         for nickname in nicknames {
             self.ensure_sender_dsp(&nickname, hrir);
         }
-    }
-
-    /// Clears the HRTF direction sources of every entry of `client` (direct speech and each
-    /// radio), so the tail of their last utterance never replays when they start talking again;
-    /// the sources stay made. Returns how many sources were reset.
-    pub fn reset_direction_sources_of(&mut self, client: StateClientId) -> usize {
-        let mut reset = 0;
-        for sender in self
-            .radio
-            .clients
-            .values_mut()
-            .filter(|sender| sender.client_id == client)
-        {
-            if let Some(source) = sender.dsp.direct_voice_mut().hrtf_source_mut() {
-                source.reset();
-                reset += 1;
-            }
-            let radio_ids: Vec<String> = sender.dsp.radio_ids().map(str::to_owned).collect();
-            for radio_id in &radio_ids {
-                if let Some(source) = sender
-                    .dsp
-                    .radio_mut(radio_id)
-                    .and_then(|radio| radio.hrtf_source_mut())
-                {
-                    source.reset();
-                    reset += 1;
-                }
-            }
-        }
-        reset
     }
 
     /// Our own client id on the connection, as the state names it.

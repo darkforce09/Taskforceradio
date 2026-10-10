@@ -29,8 +29,10 @@ lookups by `&str` allocate nothing. The [HRTF](/documentation/glossary.md#hrtf) 
 clunks: one for the direct voice and one per loudspeaker radio, made only when the plugin passes the
 HRIR sphere. An existing object is never replaced, except a vehicle low-pass whose isolation
 changed. `reset_radio_effects` drops the effects and the phone and loudspeaker band-passes;
-`reset_voices` drops the direction sources and the can't-speak, under-water and vehicle low-passes;
-the compressor stays.
+`reset_voices` clears the memory of the can't-speak, under-water and vehicle low-passes and frees
+nothing: in serious mode it runs on every `POS` of a silent player, under the server lock the
+audio thread waits for, so it must not free or rebuild a two-megabyte direction source. The
+direction sources restart themselves after 200 ms without input (`tfar_hrtf`); the compressor stays.
 
 ## Boundaries
 
@@ -40,7 +42,7 @@ the compressor stays.
 - Used by: `crates/version_0_9/tfar_client_state_0_9/src/client_data.rs` (`ClientData::ensure_dsp`
   and the resets); `tfar_radio_routing_0_9`,
   which builds the requirements; `tfar_voice_pipeline_0_9`, which borrows the objects.
-- Rules: objects are made only by `ensure` and dropped only by the resets and expiry, never on the
-  audio thread; `ensure` keeps the memory of what exists
-  (`ensure_keeps_existing_objects_and_their_memory`); each reset drops exactly the original's set
-  (`tests/client_dsp.rs`).
+- Rules: objects are made only by `ensure` and dropped only by `reset_radio_effects` and expiry,
+  never on the audio thread; `ensure` keeps the memory of what exists
+  (`ensure_keeps_existing_objects_and_their_memory`); `reset_radio_effects` drops exactly the
+  original's set and `reset_voices` keeps every object (`tests/client_dsp.rs`).

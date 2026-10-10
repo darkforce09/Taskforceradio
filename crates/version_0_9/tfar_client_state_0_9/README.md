@@ -36,11 +36,12 @@ nickname, in nickname order as the original's `std::map`, with every `CLIENT_DAT
   reference into it outlives the guard.
 - Sound state is made only by `ClientData::ensure_dsp`, which the plugin calls while handling a
   command, with the `DspRequirements` that `tfar_radio_routing_0_9::dsp_requirements` computes for
-  the sender. The audio thread takes the lock with `try_lock`, passes the frame through on
-  contention, and only borrows what exists through the `_mut` accessors; it never makes or drops a
-  filter, effect or HRTF source.
-- The resets (`reset_radio_effects`, `reset_voices`) and `remove_expired` drop sound state on the
-  command and service threads.
+  the sender. The audio thread waits for the lock, held only for short decisions, and only
+  borrows what exists through the `_mut` accessors; it never makes or drops a filter, effect or
+  HRTF source.
+- `reset_radio_effects` drops sound state and `reset_voices` clears filter memory, both on the
+  command threads; `remove_expired` hands the expired entries back, so the service thread frees
+  their sound state after releasing the server lock.
 - `GameSession` is one per plugin, beside the server states, as the original's global `inGame`.
 
 ### Fixed behaviour

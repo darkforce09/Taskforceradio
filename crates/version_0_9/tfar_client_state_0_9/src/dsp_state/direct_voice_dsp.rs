@@ -59,10 +59,16 @@ impl DirectVoiceDsp {
         Ok(())
     }
 
-    /// Drops the direction source and both low-passes (`resetVoices`).
+    /// Clears the memory of both low-passes (`resetVoices`) and keeps every object, so a reset
+    /// neither frees nor rebuilds anything and the next frame still finds its filters. The
+    /// direction source is left to its own idle restart: reset from a command thread it could
+    /// cut into a frame the audio thread is still playing.
     pub(crate) fn reset(&mut self) {
-        self.hrtf_source = None;
-        self.cant_speak_filter = None;
-        self.vehicle_filter = None;
+        if let Some(filter) = &mut self.cant_speak_filter {
+            filter.reset();
+        }
+        if let Some(filter) = &mut self.vehicle_filter {
+            filter.reset();
+        }
     }
 }

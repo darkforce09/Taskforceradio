@@ -29,7 +29,7 @@ check.
 Arma ──game link──▶ GameLinkBridge ──▶ parse (tfar_game_commands_0_9) ──▶ lock, apply, decide
                                                                         └▶ unlock, TeamSpeak calls
 TeamSpeak events ──▶ PluginCore (nickname list, plugin commands, VOLUME broadcast, info panel)
-TeamSpeak audio  ──▶ try_lock ──▶ VoiceProcessor / PlaybackMixer ──▶ samples (pass through if busy)
+TeamSpeak audio  ──▶ lock (waits) ──▶ VoiceProcessor / PlaybackMixer ──▶ samples
 service thread   ──▶ game timeout, 4 s sweep and metadata, finished sounds freed
 ```
 
@@ -52,8 +52,11 @@ service thread   ──▶ game timeout, 4 s sweep and metadata, finished sounds
   tail of its last utterance never replays.
 - **Locks.** Outermost first: the push-to-talk lock, the server map, one connection's state; the
   game session mutex alone. No TeamSpeak call runs under the map or a state lock: each command reads
-  TeamSpeak, locks to decide, unlocks, then calls TeamSpeak. The voice callbacks only `try_read` and
-  `try_lock`, and read the TeamSpeak facts they need (our id, each client's channel name and plugin
+  TeamSpeak, locks to decide, unlocks, then calls TeamSpeak. The voice callbacks `try_read` the map
+  and wait for a state, as the original waits on its critical section: a block passed through
+  unprocessed between processed ones is an audible jump. The waits and skipped blocks are counted
+  and logged at debug level once a second when any occurred. The callbacks read the TeamSpeak
+  facts they need (our id, each client's channel name and plugin
   metadata) from the state instead of calling TeamSpeak.
 - **Sound state** is made on the command threads with `ensure_dsp(dsp_requirements(..))` after
   every `POS`, `FREQ`, `SPEAKERS`, push-to-talk, `VOLUME` and game start; the audio thread only

@@ -46,6 +46,17 @@ Rules for every step:
 A dormant plugin (see the [game link protocol](/documentation/architecture/game_link_protocol.md#dormant-plugin))
 passes every callback through untouched.
 
+The post-process and captured voice callbacks wait for the connection's state lock, as the
+originals wait on their critical section. A block passed through unprocessed between processed ones
+would be an audible jump: full level, no effect, no HRTF delay. The lock's holders never call
+TeamSpeak or take another lock, and they keep their work short. The voice reset of a mute clears
+filter memory and frees nothing, and expired 0.9 entries are freed after the lock is released.
+Only the server map is taken with `try_read`; a block passes through while a connection is added or
+removed. Each voice block runs with flush-to-zero and denormals-are-zero set, as in the originals,
+so decaying filter and HRTF tails never fall into slow denormal arithmetic. Each plugin logs the
+lock waits and skipped blocks at debug level once a second when any occurred
+([D27](/documentation/decisions/audio.md#2026-10-10--voice-callbacks-wait-for-the-state-and-sound-state-is-kept-across-resets-d27)).
+
 ## 0.9 voice chain (`tfar_voice_pipeline_0_9`)
 
 ```text
@@ -177,12 +188,13 @@ stereo).
   accepted, with no pool, shared processor or cap
   ([D26](/documentation/decisions/audio.md#2026-10-03--hrtf-memory-of-about-2-mb-per-source-is-accepted-with-no-pooling-d26));
   the 1.0 voice source is ensured only while the sender is within direct-speech range.
-- **Reset when a sender starts talking:** a source keeps up to 480 frames of the previous
-  utterance in its block adapter, so each plugin resets a sender's sources (direct speech and every
-  speaker radio) when that sender starts talking, and the old tail never replays. The trigger is
-  TeamSpeak's `onTalkStatusChangeEvent` with talking set, through `tfar_ts3_host`'s
-  `on_talk_status_change`, in both plugins; the 1.0 plugin also resets them on the sender's remote
-  tangent press.
+- **Restart after an idle gap:** a source keeps up to 480 frames of the previous utterance in
+  its block adapter. It resets itself on the first frame after more than `IDLE_RESET_AFTER`
+  (200 ms) without input, so the old tail never replays. TeamSpeak delivers a talking sender every
+  10 to 20 ms. The rule runs on the audio thread at the frame that ends the gap, so it can never
+  cut into a running utterance. A reset from a command thread on a talk start or tangent press
+  could do that, so neither plugin resets a direction source from another thread
+  ([D27](/documentation/decisions/audio.md#2026-10-10--voice-callbacks-wait-for-the-state-and-sound-state-is-kept-across-resets-d27)).
 - **The sphere file:** both plugins load it from `tfar_hrir/IRC_1002_C.bin` relative to
   TeamSpeak's plugins folder, beside `radio-sounds/`; `cargo xtask dist` copies the sphere and its
   `CREDITS.md` from `assets/hrir/` into `tfar_hrir/` of each version folder. When the file cannot

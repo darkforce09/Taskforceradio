@@ -77,16 +77,22 @@ fn of_two_current_entries_with_one_id_the_last_positioned_wins() {
     assert_eq!(server.fresh_nickname_of(ClientId(2)), Some("Alpha"));
 }
 
+/// The nicknames of the entries `remove_expired` returned.
+fn nicknames(removed: Vec<(String, ClientData)>) -> Vec<String> {
+    removed.into_iter().map(|(nickname, _)| nickname).collect()
+}
+
 #[test]
 fn an_entry_expires_after_twenty_seconds_without_a_position() {
     let start = Instant::now();
     let mut server = server_at_frame(5);
     insert(&mut server, "Alpha", 2, 5, Some(start));
     assert_eq!(
-        server.remove_expired(start + POSITION_EXPIRY),
+        nicknames(server.remove_expired(start + POSITION_EXPIRY)),
         Vec::<String>::new()
     );
-    let removed = server.remove_expired(start + POSITION_EXPIRY + Duration::from_millis(1));
+    let removed =
+        nicknames(server.remove_expired(start + POSITION_EXPIRY + Duration::from_millis(1)));
     assert_eq!(removed, vec!["Alpha".to_owned()]);
     assert!(server.clients.is_empty());
 }
@@ -99,7 +105,7 @@ fn an_entry_expires_when_its_frame_is_more_than_one_away() {
     insert(&mut server, "Bravo", 3, 3, Some(now));
     insert(&mut server, "Charlie", 4, 7, Some(now));
     assert_eq!(
-        server.remove_expired(now),
+        nicknames(server.remove_expired(now)),
         vec!["Bravo".to_owned(), "Charlie".to_owned()]
     );
     assert!(server.client("Alpha").is_some());
@@ -110,7 +116,7 @@ fn an_entry_never_positioned_expires_at_the_next_sweep() {
     let mut server = server_at_frame(0);
     insert(&mut server, "Alpha", 2, 0, None);
     assert_eq!(
-        server.remove_expired(Instant::now()),
+        nicknames(server.remove_expired(Instant::now())),
         vec!["Alpha".to_owned()]
     );
 }

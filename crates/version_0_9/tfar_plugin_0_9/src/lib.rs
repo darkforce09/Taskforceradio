@@ -21,10 +21,10 @@
 //! latter two.
 //!
 //! **Invariants:** a plugin with no game activity since the session began or since its last game
-//! end is dormant: it writes nothing to TeamSpeak and passes audio through untouched; no audio
-//! callback waits for a lock; `ts3plugin_shutdown` returns within 2 s, and the only thread that
-//! may outlive it is a cancelled web request still waiting for the network, which ends within its
-//! own timeout.
+//! end is dormant: it writes nothing to TeamSpeak and passes audio through untouched; an audio
+//! callback waits only for a connection state, whose holders never call TeamSpeak;
+//! `ts3plugin_shutdown` returns within 2 s, and the only thread that may outlive it is a
+//! cancelled web request still waiting for the network, which ends within its own timeout.
 
 // The `ts3plugin_*` exports TeamSpeak calls are written in this crate by `ts3_plugin!`.
 #![allow(unsafe_code)]

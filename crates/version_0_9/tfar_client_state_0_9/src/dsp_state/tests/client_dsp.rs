@@ -175,16 +175,35 @@ fn the_radio_effect_reset_drops_effects_and_speaker_filters_and_keeps_voices() {
 }
 
 #[test]
-fn the_voice_reset_drops_directions_and_low_passes_and_keeps_effects() {
+fn the_voice_reset_keeps_every_object_and_clears_the_low_pass_memory() {
     let library = sphere();
     let mut dsp = ClientDsp::default();
     dsp.ensure(&everything(), Some(&library)).unwrap();
+    let fresh = dsp
+        .direct_voice_mut()
+        .cant_speak_filter_mut()
+        .unwrap()
+        .process_frame([0.5, 0.5]);
+    let _ = dsp
+        .direct_voice_mut()
+        .cant_speak_filter_mut()
+        .unwrap()
+        .process_frame([0.5, 0.5]);
     dsp.reset_voices();
-    assert!(dsp.direct_voice_mut().is_empty());
+    assert!(dsp.direct_voice_mut().hrtf_source_mut().is_some());
+    assert_eq!(
+        dsp.direct_voice_mut()
+            .cant_speak_filter_mut()
+            .unwrap()
+            .process_frame([0.5, 0.5]),
+        fresh,
+        "the filter starts from silence again"
+    );
+    assert!(dsp.direct_voice_mut().vehicle_filter_mut().is_some());
     let speaker = dsp.radio_mut("speaker_1").unwrap();
-    assert!(speaker.hrtf_source_mut().is_none());
-    assert!(speaker.under_water_filter_mut().is_none());
-    assert!(speaker.vehicle_filter_mut().is_none());
+    assert!(speaker.hrtf_source_mut().is_some());
+    assert!(speaker.under_water_filter_mut().is_some());
+    assert!(speaker.vehicle_filter_mut().is_some());
     assert!(speaker.long_range_effect_mut().is_some());
     assert!(speaker.speaker_filter_mut().is_some());
     assert!(

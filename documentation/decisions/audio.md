@@ -90,3 +90,39 @@ off the audio thread by the client-state crates and dropped with the sender or i
 1.0 voice source is ensured only while the sender is within direct-speech range.
 
 **Supersedes:** none.
+
+### 2026-10-10 — Voice callbacks wait for the state and sound state is kept across resets (D27)
+
+**Context:** The owner heard clicks and stutters in other players' voices with the 0.9 plugin, only
+while the game ran. The voice callbacks took the connection state with `try_lock` and passed a block
+through unprocessed when a command thread held it. That block came out at full level, with no
+distance gain, no effect and not delayed by the HRTF's 480 frames like the blocks around it. With the
+game sending a `POS` for each nearby player at least every 25 ms, the lock was busy often. Expensive
+work under the lock made it worse: in serious mode every `POS` of a silent player dropped and rebuilt
+a two-megabyte HRTF source. Both originals wait on their critical section instead. A reset of the
+direction sources on a talk start or a tangent press ran on another thread and could cut into blocks
+already playing. Neither plugin set flush-to-zero, which the originals do.
+
+**Decision:** The post-process and captured voice callbacks of both plugins wait for the connection
+state lock. Its holders never call TeamSpeak, never take another lock and keep their work short. The
+server map is still taken with `try_read`. The voice reset (`resetVoices`) clears the memory of the
+filters it covers and frees nothing. An `HrtfSource` restarts itself on the first frame after more
+than `IDLE_RESET_AFTER` (200 ms) without input. No other thread resets a direction source. Expired
+0.9 entries are freed after the lock is released. Every voice block runs with FTZ and DAZ set and
+the caller's MXCSR restored afterwards.
+
+**Consequences:** The audio thread can wait for one short decision on a command thread. The coding
+standard's audio-thread rule says when it may wait. `AudioDiagnostics` in `tfar_ts3_host` counts the
+waits and the blocks passed through while the server map changes. Each plugin's service thread logs
+them at debug level once a second when any occurred. The 0.9 log also shows voice frames without
+sound state. Under D26, direction sources now go only with their sender, or with their 0.9 radio
+entry once `reset_radio_effects` empties it. Tests:
+- `an_audio_callback_waits_for_a_held_state_and_counts_the_wait` (0.9 plugin);
+- `a_frame_after_a_long_gap_starts_from_silence` and
+  `a_frame_after_a_short_gap_continues_the_utterance` (`tfar_hrtf`);
+- the voice-reset tests in both client-state crates and in `tfar_radio_routing_0_9`;
+- the denormal guard tests (`tfar_ts3_host`);
+- the mock-host scenarios `a_sender_silent_past_the_idle_gap_never_replays_the_old_tail` (0.9) and
+  `a_sender_silent_past_the_idle_gap_gets_a_fresh_hrtf_source` (1.0).
+
+**Supersedes:** none.

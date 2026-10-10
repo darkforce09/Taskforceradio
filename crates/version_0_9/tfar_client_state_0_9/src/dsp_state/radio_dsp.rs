@@ -2,7 +2,7 @@
 //!
 //! **Role:** hold, for one radio id of one sender, the radio effect of each family and the
 //! phone, loudspeaker, under-water and vehicle filters and the direction source, made on
-//! request and dropped by the two resets.
+//! request; the radio effect reset drops some, the voice reset clears filter memory.
 //!
 //! **Position:** owned by `ClientDsp`, keyed by radio id; filled by `ClientDsp::ensure` from a
 //! `RadioRequirement`, read by the voice pipeline.
@@ -13,8 +13,9 @@
 //!
 //! **Invariants:** `reset_radio_effects` drops exactly the effects and the loudspeaker and phone
 //! filters (`resetRadioEffect`, `reference/tfar_0_9_12/ts/src/plugin.cpp:319`); `reset_voices`
-//! drops exactly the direction source and the under-water and vehicle filters (`resetVoices`,
-//! plugin.cpp:333).
+//! clears the memory of the under-water and vehicle filters (`resetVoices`, plugin.cpp:333, frees
+//! them and the direction source) and frees nothing; the direction source restarts
+//! itself after an idle gap.
 
 use tfar_dsp_filters::StereoFilter;
 use tfar_hrtf::{HrirLibrary, HrtfSource};
@@ -144,10 +145,14 @@ impl RadioDsp {
         self.speaker_filter = None;
     }
 
-    /// Drops the direction source and the under-water and vehicle low-passes.
+    /// Clears the memory of the under-water and vehicle low-passes and keeps every object; the
+    /// direction source is left to its own idle restart, as for the direct voice.
     pub(crate) fn reset_voices(&mut self) {
-        self.hrtf_source = None;
-        self.under_water_filter = None;
-        self.vehicle_filter = None;
+        if let Some(filter) = &mut self.under_water_filter {
+            filter.reset();
+        }
+        if let Some(filter) = &mut self.vehicle_filter {
+            filter.reset();
+        }
     }
 }

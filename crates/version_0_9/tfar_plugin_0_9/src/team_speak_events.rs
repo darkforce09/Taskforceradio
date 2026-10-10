@@ -5,9 +5,8 @@
 //! neutralised, and dropped on disconnect), the channel and client events that refresh the
 //! nickname list (`reference/tfar_0_9_12/ts/src/plugin.cpp:2398-2460`), a client leaving (its
 //! mute forgotten), our talking flag (the `VOLUME` broadcast, plugin.cpp:2897), a client starting
-//! to talk or stopping (`onTalkStatusChangeEvent`: their mute decided again at once, and on a
-//! start their HRTF direction sources reset), `infoData` (the
-//! `<TFAR>` block of a client's metadata) and `onServerErrorEvent`.
+//! to talk or stopping (`onTalkStatusChangeEvent`: their mute decided again at once),
+//! `infoData` (the `<TFAR>` block of a client's metadata) and `onServerErrorEvent`.
 //!
 //! **Position:** methods of `PluginCore`, called from the `Ts3Plugin` event methods of
 //! `TfarPlugin` on TeamSpeak's main thread.
@@ -52,8 +51,9 @@ impl PluginCore {
     }
 
     /// `client` on `server` started or stopped talking (`onTalkStatusChangeEvent`): their mute is
-    /// decided again at once, and when they start their HRTF direction sources are reset, so the
-    /// tail of their last utterance never replays.
+    /// decided again at once. Their HRTF direction sources are left alone: a reset from this thread
+    /// could land in the middle of a block the audio thread is playing, so each source restarts
+    /// itself after an idle gap instead.
     pub fn handle_talk_status_change(
         &self,
         server: ServerConnectionHandlerId,
@@ -72,9 +72,6 @@ impl PluginCore {
         let sender = state_client_id(client);
         let decision = self
             .with_state(server, |state| {
-                if is_talking {
-                    state.reset_direction_sources_of(sender);
-                }
                 // As for `VOLUME` (plugin.cpp:3099), only a player with current game data is
                 // decided again: without it (a spectator, a player the game no longer reports)
                 // the rule would mute them on every word.

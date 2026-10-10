@@ -19,7 +19,7 @@ The plugin owns one `VoiceProcessor` per server connection beside its `ServerRad
 behind the connection's lock. In the post-process callback it copies the frame to stereo
 (`tfar_sample_buffer::copy_to_stereo`), reads what only TeamSpeak knows into a
 `VoiceFrameContext` (the sender's and the listener's client ids, whether the sender's metadata
-shows the plugin, the sender's channel name, the in-game flag), `try_lock`s the state, calls
+shows the plugin, the sender's channel name, the in-game flag), waits for the state lock, calls
 `process_sender`, and writes the frame back (`write_back_from_stereo`). The context carries client
 ids, not a nickname, because the original gates on TeamSpeak's client id (`hasClientData`,
 `reference/tfar_0_9_12/ts/src/plugin.cpp:584`); the metadata and the channel name come in as values

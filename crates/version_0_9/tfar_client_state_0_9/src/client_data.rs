@@ -176,7 +176,8 @@ impl ClientData {
         self.dsp.reset_radio_effects();
     }
 
-    /// Drops the direction sources and the can't-speak and vehicle filters (`resetVoices`).
+    /// Clears the memory of the can't-speak, under-water and vehicle filters (`resetVoices`) and
+    /// frees nothing; the direction sources restart themselves after an idle gap.
     pub fn reset_voices(&mut self) {
         self.dsp.reset_voices();
     }
