@@ -4,7 +4,7 @@
 
 You are agent R1, the records-and-tooling keeper for the TFAR Rust port. Read
 `/documentation/program/agent_briefs/shared_brief.md` first (including the **Build directory rule**,
-`CARGO_TARGET_DIR=.../target-r1`). Read `git log --oneline` from `c38c7c0` onward to see what landed.
+`CARGO_TARGET_DIR=.../target-r1`). Read `git log --oneline` from `2396c91` onward to see what landed.
 
 ## Tooling fixes (tools/xtask)
 1. **`dist` and the target dir.** `dist` hard-codes `target/` and passes it as `--target-dir`. Make it honour `CARGO_TARGET_DIR`, falling back to `target/`, and write `dist/` under the effective target dir. Update its README and tests. Then run `cargo xtask dist` with your target dir and confirm the artifacts.
@@ -27,12 +27,12 @@ You are agent R1, the records-and-tooling keeper for the TFAR Rust port. Read
 7. **`/documentation/architecture/audio_pipeline.md`:** `hrtf` processes in f32, everything else in f64. The HRTF block is 120 frames × 4 steps, adding 10 ms. The sphere's diffuse-field EQ makes sources quieter (~−4 dB front, −9 dB rear); record an open question for a makeup gain. `HrtfSource` memory is about 2 MB each. The ILD coefficients are 0.375 (0.9) and 21.5° in radians = 0.37525 (1.0). The 1.0 X3DAudio listener/emitter swap and the front x/y flip must be honoured by `tfar_voice_pipeline_1_0` when it calls the cone. `volumeAttenuation` (1.0) and `volumeFromDistance` (0.9) are owned by the voice-pipeline crates.
 8. **`/documentation/program/progress.md` and `/documentation/roadmap.md`:**
    - Mark these done with their commits:
-     - H2/H3 `f2df927`;
-     - L3 `30678a8` (the plugin stubs' metadata exports count as M2 H4);
-     - P1 `c00c6f8`, P3 `f8e3b7e`, P4 `5ef0015`;
-     - S1 `243b5f1`;
-     - V1 `9317b76` + `cbdf2d8`, W1 `70b5e56`;
-     - the deny/typos config `e0854ac`.
+     - H2/H3 `fb6621d`;
+     - L3 `52bda9e` (the plugin stubs' metadata exports count as M2 H4);
+     - P1 `7901de3`, P3 `2a74b9b`, P4 `2049b4a`;
+     - S1 `420d37e`;
+     - V1 `f534c75` + `61f66f6`, W1 `654db3b`;
+     - the deny/typos config `8c87196`.
    - Record G1 and E1 as running, and V3/W3 as next.
    - Tick the roadmap items that are now code-complete. The owner said **no live tests for now**, so the live acceptance lines stay open with the note "live check deferred by the owner".
    - Add every finding from the reports, with the triage FIX, NOTE or CLOSE:

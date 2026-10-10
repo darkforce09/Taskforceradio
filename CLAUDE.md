@@ -141,9 +141,10 @@ That is 38 crates: 4 apps, 30 libraries and 4 tools. The crate list, tiers and e
 - **Windows linker:** `x86_64-w64-mingw32-gcc`, set in `.cargo/config.toml` with `+crt-static`, so the
   DLL needs no runtime files beside it.
 - **Tools:** `cargo deny` 0.20.2 and `typos` 1.50.3 are installed.
-- **Git LFS:** `reference/tfar_0_9_12` holds upstream Git LFS pointer stubs, so a fresh clone
-  recreates the line that switches LFS off for reference/ in .git/info/attributes before checkout, or
-  clones with `GIT_LFS_SKIP_SMUDGE=1` ([fresh clone](/reference/README.md#fresh-clone)).
+- **Reference trees:** both are gitignored; `reference/tfar_0_9_12` holds upstream Git LFS pointer
+  stubs that GitHub refuses, so a fresh clone restores both trees by hand
+  ([reference README](/reference/README.md#restore-tfar_0_9_12)).
+- **Remote:** `origin` is `https://github.com/darkforce09/Taskforceradio` (public).
 - **Paths:** the repository is `/run/media/system/Disk_2/Projects/Taskforceradio`. Nothing builds or
   copies into the game or TeamSpeak folders; `cargo xtask dist` writes only under target/ and the
   owner installs by hand.

@@ -291,3 +291,19 @@ beside `radio-sounds/` in the TeamSpeak plugins folder and both plugins load the
 D13 holds, and nothing is copied into TeamSpeak or a mod folder.
 
 **Supersedes:** the fixed target/dist path of 2026-10-02 — dist builds into target/dist and nothing installs (D13).
+
+### 2026-10-10 — The 0.9.12 tree is local only, like the 1.0 tree (D15)
+
+**Context:** The repository goes to GitHub as `darkforce09/Taskforceradio`. The 0.9.12 tree's nested
+`.gitattributes` files mark its images and models as Git LFS, and its committed pointer stubs reference
+objects that exist nowhere, so GitHub refuses the push (GH008).
+
+**Decision:** `.gitignore` lists `/reference/tfar_0_9_12/`, and the history is rewritten so no commit
+holds the tree; `reference/README.md` and `reference/MANIFEST.sha256` stay tracked. The commit ids cited
+in the documents are mapped to the rewritten ones.
+
+**Consequences:** A fresh clone restores both reference trees by hand
+([reference README](/reference/README.md#restore-tfar_0_9_12)); `cargo xtask verify
+reference-untouched` still guards both trees from the manifest.
+
+**Supersedes:** the 2026-10-02 rule that commits `reference/tfar_0_9_12` as plain files (D15).

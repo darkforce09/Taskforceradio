@@ -22,7 +22,7 @@ and the program records reflect M0, M1 and the done parts of M2 and M3.
 5. **decisions:** add `libc` (malloc/free for TeamSpeak-owned memory, `tfar_ts3_host` only) to the library map in `/documentation/decisions/workspace.md` and to the firewalls.
 6. **Program records:**
    - `/documentation/program/progress.md`:
-     - mark S0, A1–A4 and the M1 slices B1/B2 as done, with the commits `de41c9b`, `5b2b918`, `9a71a5a`, `530eb13`, `3046373`, `86b4891`, `45a584d`; L1/L2 (`37dc8e0`) and H1 (`2ff1886`) as done in M3/M2.
+     - mark S0, A1–A4 and the M1 slices B1/B2 as done, with the commits `7bc0e9c`, `65c6752`, `8dd2e53`, `fbef38e`, `a233f60`, `1a24f01`, `1b30920`; L1/L2 (`97df8ce`) and H1 (`8b84a9c`) as done in M3/M2.
      - Amendments: A3 started in parallel with A1; M1–M3 slices ran early in parallel; L1/L2 ran before M2 completed; G1 moves after P1–P5 (it compares live oracle output against the crates, so no fixtures are passed between crates); the C0 cleanup agent was added.
      - Close OF-002 with the decision "dist names `task_force_radio_linux_amd64.so` / `TFAR_linux_amd64.so`".
      - Add a finding about the host `ai guard` hook and the target-dir rule, and record that A4 once replaced the built xtask binary with a stub to get past it. Note that the owner said no `ai guard` subcommand is needed.

@@ -55,7 +55,7 @@ A safe Rust layer over the TeamSpeak 3 plugin SDK, and a mock host that can load
 - [x] The plugin stubs export their metadata.
 
 **Acceptance:** the mock loads both stubs, and the owner sees both plugins load in the Flatpak
-TeamSpeak. Status: the mock part holds (f2df927, 30678a8); live check deferred by the owner.
+TeamSpeak. Status: the mock part holds (fb6621d, 52bda9e); live check deferred by the owner.
 
 ## M3 — Game link
 
@@ -71,7 +71,7 @@ in the [game link protocol](/documentation/architecture/game_link_protocol.md).
 **Acceptance:** the probe under Proton's wine gets `PONG` from the stub plugins; in Arma under
 Proton (BattlEye off), `"task_force_radio_pipe" callExtension "TS_INFO\tPING"` returns `PONG` for
 both mods. Status: the probe and the extensions pass their tests against the stub plugins on
-Linux (30678a8); live check deferred by the owner.
+Linux (52bda9e); live check deferred by the owner.
 
 ## M4 — Audio primitives
 
@@ -84,7 +84,7 @@ The DSP building blocks, proven against the original C/C++ libraries as golden o
 - [x] `tfar_playback_mixer` (hound; F-005).
 - [x] `tfar_golden_vectors` (oracles: DSPFilters, SimpleComp, F3DAudio curve and cone).
 
-**Acceptance:** the golden tests hold within tolerance. Status: holds at e5eecb5 (the results are in
+**Acceptance:** the golden tests hold within tolerance. Status: holds at 2be5b03 (the results are in
 [progress](/documentation/program/progress.md#m4-audio-primitives)).
 
 ## M5 — Services and diagnostics
@@ -95,7 +95,7 @@ The features that talk to the outside world or show state: update check, Piwik a
 - [x] `tfar_debug_window`.
 
 **Acceptance:** each one is exercised against a local test server or window. Status: the update
-check and the Piwik requests pass against a local test server in their tests (243b5f1); the debug
+check and the Piwik requests pass against a local test server in their tests (420d37e); the debug
 window check is live, deferred by the owner.
 
 ## M6 — 0.9 track
@@ -107,8 +107,8 @@ The full 0.9.12 plugin and extension, built from the M1–M5 crates.
 - [x] Mock scenario suites.
 
 **Acceptance:** the mock scenarios pass, and the owner runs a live two-client session with the
-0.9.12 mod: SW, LR, DD, speakers, serious mode. Status: the mock scenarios pass (f41e744, moved
-onto the shared library APIs in 5c815ef); live check deferred by the owner.
+0.9.12 mod: SW, LR, DD, speakers, serious mode. Status: the mock scenarios pass (a742c88, moved
+onto the shared library APIs in 110de0e); live check deferred by the owner.
 
 ## M7 — 1.0 track
 
@@ -119,7 +119,7 @@ The full 1.0 plugin and extension, built from the M1–M5 crates and never from 
 - [x] Mock suites.
 
 **Acceptance:** the same as M6, plus antennas, intercom, SETCFG/NEEDCFG and the focus-aware channel
-move. Status: the mock suites pass (166bb66, moved onto the shared library APIs in b9ed797); live
+move. Status: the mock suites pass (fd9593a, moved onto the shared library APIs in 0ced2f5); live
 check deferred by the owner.
 
 ## M8 — Release readiness

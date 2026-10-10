@@ -120,7 +120,7 @@ files their installed names. Apps sit at tier 6 (plugins) or 2 (extensions).
 
 ## Workspace edges
 
-Every workspace dependency, read from `cargo metadata` on 2026-10-03 at b9ed797; crates with
+Every workspace dependency, read from `cargo metadata` on 2026-10-03 at 0ced2f5; crates with
 none are left out. Dev-dependencies serve tests only and are exempt from tier order.
 
 | Crate | Depends on | Dev-depends on |

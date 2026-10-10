@@ -4,7 +4,7 @@
 
 You are agent R3, the records keeper for the TFAR Rust port. Read `/documentation/program/agent_briefs/shared_brief.md`
 first (including the **Build directory rule**, `CARGO_TARGET_DIR=.../target-r3`). This is a **docs-only** slice.
-Read `git log --oneline c5e77ed..HEAD` and the crate READMEs of what landed since.
+Read `git log --oneline 1998d0f..HEAD` and the crate READMEs of what landed since.
 
 ## Work
 1. **`/documentation/program/bug_fixes.md`.** Add the entries below, each with reference (file:line in `reference/`), original behaviour, fixed behaviour, owning crate, milestone and test (find each test with grep):
@@ -34,7 +34,7 @@ Read `git log --oneline c5e77ed..HEAD` and the crate READMEs of what landed sinc
 6. **`/documentation/program/progress.md`:**
    - close OF-011 (D25), OF-022 (D23), OF-023 (D26), OF-026 (done in CLAUDE.md);
    - OF-021 stays a NOTE: check the IRCAM terms before any redistribution;
-   - record the commits V3 `82941a2`, W3 `fd2a173`, V4 `48d3d64`, W4 `9aca9ef`, V5 `f41e744`, W6 `166bb66`, handoff `8ff4f2f`;
+   - record the commits V3 `4ffce7d`, W3 `5dfd3f5`, V4 `4018568`, W4 `f8e9d5f`, V5 `a742c88`, W6 `fd9593a`, handoff `6bad8f2`;
    - add the completion plan (waves 1–3: R3, L4, P5, then V6 ∥ W7, then C1) as the current milestone section;
    - update the Handoff.
 7. **`/CLAUDE.md`:** update the "Current state" paragraph only: all code is written, and the completion waves are under way.

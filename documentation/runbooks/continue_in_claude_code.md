@@ -80,9 +80,9 @@ commits as the work.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| A fresh clone fails during checkout with a Git LFS smudge error, or `git status` shows files under `reference/tfar_0_9_12` as modified right after cloning | The 0.9.12 tree carries its own `.gitattributes` files that mark models and images as LFS, but the outer repository commits those files as plain LFS pointer stubs. The local override that neutralises LFS lives in `.git/info/attributes`, which a clone does not copy | Clone with `GIT_LFS_SKIP_SMUDGE=1 git clone <source> Taskforceradio`, then add the override shown below to `.git/info/attributes`, and check that `git status` is clean |
+| `reference/tfar_0_9_12` is missing after a clone | It is gitignored: its LFS pointer stubs reference objects that exist nowhere, which GitHub refuses (D15) | Copy the 0.9.12 tree in from the owner's local copy, add the override shown below to `.git/info/attributes`, and check that `cargo xtask verify reference-untouched` holds |
 | `reference/tfar_1_0` is missing after a clone | It is an upstream clone with its own `.git` and is gitignored in this repository (D15) | `git clone https://github.com/michail-nikolaev/task-force-arma-3-radio reference/tfar_1_0`, then `git -C reference/tfar_1_0 checkout fce977fa`; `cargo xtask verify reference-untouched` must hold |
-| `cargo xtask verify reference-untouched` fails | A file under `reference/` changed, or the 1.0 clone is at another commit | Restore the file from git (0.9.12) or check out `fce977fa` again (1.0); never regenerate the manifest to make the gate pass |
+| `cargo xtask verify reference-untouched` fails | A file under `reference/` changed, or the 1.0 clone is at another commit | Restore the file from the owner's local copy (0.9.12) or check out `fce977fa` again (1.0); never regenerate the manifest to make the gate pass |
 | The Windows clippy or build step fails to link | `x86_64-w64-mingw32-gcc` is not installed | Install the mingw-w64 GCC cross compiler from the distribution's packages |
 
 The LFS override for `.git/info/attributes`, one line:
