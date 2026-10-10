@@ -1,6 +1,6 @@
 //! The `crate-tiers` gate: membership, layout metadata, tiers and the category edge matrix.
 //!
-//! **Role:** checks that every manifest under apps, crates and tools is a member; that each
+//! **Role:** checks that every manifest under crates and tools is a member; that each
 //! member declares `category`, `tier` and `targets`; that its path is category plus name and its
 //! name its folder name; that its tier is 1 plus its highest workspace dependency's (0 with none);
 //! and that every workspace edge keeps the edge matrix, the version ban and the app rules.

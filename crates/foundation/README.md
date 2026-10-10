@@ -31,7 +31,7 @@ cargo test \
 ## Boundaries
 
 - Depends on: external crates only (`glam`) and the foundation category itself.
-- Used by: every other category, both version tracks and all four apps.
+- Used by: every other category, both version tracks and their four deliverables.
 - Rules: a foundation crate depends on no crate outside `crates/foundation`
   (`cargo xtask verify crate-tiers` holds the edges, `cargo xtask verify dependency-firewalls` the
   external crates); each crate declares `category = "crates/foundation"` and its tier: 0 without a

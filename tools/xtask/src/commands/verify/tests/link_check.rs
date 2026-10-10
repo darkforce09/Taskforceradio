@@ -26,7 +26,7 @@ fn good_links_and_paths_hold() {
         "See [crates](/crates/README.md#contents), [here](#notes), [web](https://example.com),\n\
          `crates/foundation/tfar_geometry/src/lib.rs:3`, `/documentation/README.md`, `crates/foundation/`,\n\
          `reference/tfar_sample/ts/src/plugin.cpp:1`, `roadmap.md`, `src/lib.rs`, `cargo xtask verify all`,\n\
-         `crates/<category>/`, `apps/*`, `target/dist/tfar_1_0/TFAR_linux_amd64.so`.",
+         `crates/<category>/`, `crates/*/*`, `target/dist/tfar_1_0/TFAR_linux_amd64.so`.",
     );
     assert_eq!(found, Vec::<String>::new());
 }

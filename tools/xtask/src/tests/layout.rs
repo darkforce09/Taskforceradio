@@ -23,7 +23,7 @@ fn the_version_categories_never_meet() {
     assert!(
         edge_violation(
             "tfar_plugin_1_0",
-            APPS,
+            VERSION_1_0,
             "tfar_b_0_9",
             VERSION_0_9,
             EdgeTable::NormalOrBuild
@@ -71,6 +71,76 @@ fn extension_apps_use_only_foundation_and_game_link() {
     assert!(app_allows("tfar_extension_0_9", GAME_LINK));
     assert!(app_allows("tfar_extension_1_0", FOUNDATION));
     assert!(!app_allows("tfar_extension_1_0", "crates/audio"));
+    assert!(!app_allows("tfar_extension_1_0", VERSION_1_0));
+    assert!(!app_allows("tfar_a_1_0", FOUNDATION));
+    assert!(
+        edge_violation(
+            "tfar_extension_0_9",
+            VERSION_0_9,
+            "tfar_game_link_client",
+            GAME_LINK,
+            EdgeTable::NormalOrBuild
+        )
+        .is_none()
+    );
+    assert!(
+        edge_violation(
+            "tfar_extension_0_9",
+            VERSION_0_9,
+            "tfar_client_state_0_9",
+            VERSION_0_9,
+            EdgeTable::NormalOrBuild
+        )
+        .is_some()
+    );
+}
+
+#[test]
+fn plugin_apps_use_any_game_link_crate_and_their_own_version() {
+    assert!(
+        edge_violation(
+            "tfar_plugin_0_9",
+            VERSION_0_9,
+            "tfar_game_link_server",
+            GAME_LINK,
+            EdgeTable::NormalOrBuild
+        )
+        .is_none()
+    );
+    assert!(
+        edge_violation(
+            "tfar_plugin_0_9",
+            VERSION_0_9,
+            "tfar_voice_pipeline_0_9",
+            VERSION_0_9,
+            EdgeTable::NormalOrBuild
+        )
+        .is_none()
+    );
+}
+
+#[test]
+fn a_version_library_never_depends_on_its_own_deliverables() {
+    assert!(
+        edge_violation(
+            "tfar_voice_pipeline_1_0",
+            VERSION_1_0,
+            "tfar_plugin_1_0",
+            VERSION_1_0,
+            EdgeTable::NormalOrBuild
+        )
+        .is_some()
+    );
+    assert!(
+        edge_violation(
+            "tfar_client_state_0_9",
+            VERSION_0_9,
+            "tfar_extension_0_9",
+            VERSION_0_9,
+            EdgeTable::Development
+        )
+        .is_some()
+    );
 }
 
 #[test]
@@ -80,7 +150,7 @@ fn nothing_depends_on_an_app_and_tools_use_crates() {
             "tfar_ts3_mock",
             TOOLS,
             "tfar_plugin_1_0",
-            APPS,
+            VERSION_1_0,
             EdgeTable::Development
         )
         .is_some()
@@ -88,9 +158,9 @@ fn nothing_depends_on_an_app_and_tools_use_crates() {
     assert!(
         edge_violation(
             "tfar_plugin_1_0",
-            APPS,
+            VERSION_1_0,
             "tfar_extension_1_0",
-            APPS,
+            VERSION_1_0,
             EdgeTable::NormalOrBuild
         )
         .is_some()

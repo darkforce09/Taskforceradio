@@ -11,7 +11,7 @@ names the `cargo xtask verify` gate that holds it; the rest are held in review.
   code trees, plus `reference/README.md`) and the root `README.md`, `CLAUDE.md` and `AGENTS.md` exist
   (`cargo xtask verify markdown-placement`). Markdown inside `reference/` belongs to the original mods and
   is ignored.
-- A document about one part of the code sits at the code's path with apps/, crates/ and src/ left out:
+- A document about one part of the code sits at the code's path with crates/ and src/ left out:
   a document about the 1.0 voice pipeline goes in a folder named version_1_0/tfar_voice_pipeline_1_0/
   under `documentation/`, created with its first document.
 - Topics that span the code have their own folders:

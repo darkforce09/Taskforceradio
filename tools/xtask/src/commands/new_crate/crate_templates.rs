@@ -8,9 +8,9 @@
 //!
 //! **Signals and state:** none; pure functions returning text.
 //!
-//! **Invariants:** every rendered line is within 100 characters where the text allows; an app is
-//! a `cdylib` + `rlib` with `#![allow(unsafe_code)]` under a reason comment; a library or tool is
-//! a plain library; dependencies are `workspace = true` with a why comment.
+//! **Invariants:** every rendered line is within 100 characters where the text allows; a deliverable
+//! (app) is a `cdylib` + `rlib` with `#![allow(unsafe_code)]` under a reason comment; a library
+//! or tool is a plain library; dependencies are `workspace = true` with a why comment.
 
 #[cfg(test)]
 #[path = "tests/crate_templates.rs"]
@@ -18,12 +18,12 @@ mod tests;
 
 use std::fmt::Write as _;
 
-use crate::layout::APPS;
+use crate::layout::is_deliverable;
 
 /// What a new crate is.
 #[derive(Debug, Clone)]
 pub(crate) struct CrateSpec {
-    /// The category: `crates/<category>`, `apps` or `tools`.
+    /// The category: `crates/<category>` or `tools`.
     pub(crate) category: String,
     /// The package and folder name.
     pub(crate) name: String,
@@ -42,7 +42,7 @@ impl CrateSpec {
     }
 
     fn is_app(&self) -> bool {
-        self.category == APPS
+        is_deliverable(&self.name)
     }
 
     fn depends_on_text(&self) -> String {

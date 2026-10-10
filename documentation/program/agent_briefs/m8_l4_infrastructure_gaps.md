@@ -4,7 +4,7 @@
 
 You are agent L4 for the TFAR Rust port. Read `/documentation/program/agent_briefs/shared_brief.md` first
 (**Build directory rule**: `CARGO_TARGET_DIR=.../target-l4`), then `/documentation/standards/coding_standards.md`. The plugin
-apps (`apps/tfar_plugin_0_9`, `apps/tfar_plugin_1_0`) worked around these gaps privately. Read their code to see the
+apps (`crates/version_0_9/tfar_plugin_0_9`, `crates/version_1_0/tfar_plugin_1_0`) worked around these gaps privately. Read their code to see the
 need, but don't edit the apps; wave 2 switches them over.
 
 **Keep every existing public API working.** Add new APIs beside the old ones, or extend them compatibly, so the apps

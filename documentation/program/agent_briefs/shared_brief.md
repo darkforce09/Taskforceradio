@@ -89,10 +89,10 @@ Tier = 0 with no workspace dependency, else 1 + highest dependency tier.
 | crates/version_1_0/tfar_client_state_1_0 | lib | tfar_arma_values, tfar_dsp_filters, tfar_dynamics, tfar_game_commands_1_0, tfar_geometry, tfar_hrtf, tfar_plugin_commands_1_0, tfar_plugin_settings_1_0, tfar_radio_effects_1_0, tfar_sample_buffer | 3 |
 | crates/version_1_0/tfar_radio_routing_1_0 | lib | tfar_antennas_1_0, tfar_arma_values, tfar_client_state_1_0, tfar_geometry, tfar_plugin_settings_1_0 | 4 |
 | crates/version_1_0/tfar_voice_pipeline_1_0 | lib | tfar_antennas_1_0, tfar_client_state_1_0, tfar_dsp_filters, tfar_dynamics, tfar_geometry, tfar_hrtf, tfar_playback_mixer, tfar_plugin_settings_1_0, tfar_radio_effects_1_0, tfar_radio_routing_1_0, tfar_sample_buffer, tfar_spatial_audio | 5 |
-| apps/tfar_plugin_0_9 | cdylib + rlib | tfar_arma_values, tfar_client_state_0_9, tfar_dsp_filters, tfar_game_commands_0_9, tfar_game_link_server, tfar_geometry, tfar_hrtf, tfar_playback_mixer, tfar_plugin_commands_0_9, tfar_radio_routing_0_9, tfar_sample_buffer, tfar_spatial_audio, tfar_ts3_host, tfar_ts3_settings_db, tfar_voice_pipeline_0_9, tfar_web_requests | 6 |
-| apps/tfar_plugin_1_0 | cdylib + rlib | tfar_antennas_1_0, tfar_arma_values, tfar_client_state_1_0, tfar_debug_window, tfar_game_commands_1_0, tfar_game_link_server, tfar_hrtf, tfar_playback_mixer, tfar_plugin_commands_1_0, tfar_plugin_settings_1_0, tfar_radio_routing_1_0, tfar_sample_buffer, tfar_ts3_host, tfar_ts3_settings_db, tfar_voice_pipeline_1_0, tfar_web_requests | 6 |
-| apps/tfar_extension_0_9 | cdylib + rlib | tfar_arma_extension_abi, tfar_game_link_client | 2 |
-| apps/tfar_extension_1_0 | cdylib + rlib | tfar_arma_extension_abi, tfar_game_link_client | 2 |
+| crates/version_0_9/tfar_plugin_0_9 | cdylib + rlib | tfar_arma_values, tfar_client_state_0_9, tfar_dsp_filters, tfar_game_commands_0_9, tfar_game_link_server, tfar_geometry, tfar_hrtf, tfar_playback_mixer, tfar_plugin_commands_0_9, tfar_radio_routing_0_9, tfar_sample_buffer, tfar_spatial_audio, tfar_ts3_host, tfar_ts3_settings_db, tfar_voice_pipeline_0_9, tfar_web_requests | 6 |
+| crates/version_1_0/tfar_plugin_1_0 | cdylib + rlib | tfar_antennas_1_0, tfar_arma_values, tfar_client_state_1_0, tfar_debug_window, tfar_game_commands_1_0, tfar_game_link_server, tfar_hrtf, tfar_playback_mixer, tfar_plugin_commands_1_0, tfar_plugin_settings_1_0, tfar_radio_routing_1_0, tfar_sample_buffer, tfar_ts3_host, tfar_ts3_settings_db, tfar_voice_pipeline_1_0, tfar_web_requests | 6 |
+| crates/version_0_9/tfar_extension_0_9 | cdylib + rlib | tfar_arma_extension_abi, tfar_game_link_client | 2 |
+| crates/version_1_0/tfar_extension_1_0 | cdylib + rlib | tfar_arma_extension_abi, tfar_game_link_client | 2 |
 | tools/xtask | bin | — | 0 |
 | tools/tfar_ts3_mock | lib + bin | tfar_ts3_host, tfar_game_link_protocol, tfar_game_link_client | 2 |
 | tools/tfar_extension_probe | bin | — | 0 |
@@ -104,7 +104,8 @@ workspace dev-dependencies, for tests only: `tfar_plugin_0_9` and `tfar_plugin_1
 `tfar_game_link_protocol`; `tfar_extension_1_0` → `tfar_game_link_server`; `tfar_golden_vectors` →
 `tfar_dsp_filters`, `tfar_dynamics`, `tfar_spatial_audio`, `tfar_sample_buffer`, `tfar_geometry`.
 
-The `[package.metadata.layout] category` is the parent path (`crates/audio`, `apps`, `tools`). `targets` is
+The `[package.metadata.layout] category` is the parent path (`crates/audio`, `crates/version_1_0`,
+`tools`); the four apps sit in their version category and the gates know them by name. `targets` is
 `"any"`, except `"windows"` for `tfar_extension_probe` (built for windows-gnu only).
 
 ## Category edge matrix and firewalls
@@ -116,7 +117,7 @@ See the approved plan §4 ("Category edge matrix", "External-crate firewalls", "
   interface, and **never each other**.
 - Plugin apps may use anything except the other version's crates; extension apps only foundation and
   game_link.
-- Tools may use crates/*, never apps.
+- Tools may use crates/*, never apps; no crate depends on an app.
 - Dev-dependencies are exempt from tier order but never point at apps.
 
 ## Report format (≤ 250 words, these numbered sections)

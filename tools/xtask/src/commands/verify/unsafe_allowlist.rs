@@ -2,7 +2,7 @@
 //! above every unsafe block.
 //!
 //! **Role:** finds every `allow(unsafe_code)` attribute and every `unsafe {` block in the Rust
-//! sources under apps, crates and tools, and checks each against the allow-list and the comment
+//! sources under crates and tools, and checks each against the allow-list and the comment
 //! rules.
 //!
 //! **Position:** a repository gate; reads sources through `rust_source` and the allow-list from

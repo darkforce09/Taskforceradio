@@ -2,7 +2,7 @@
 
 # M8 · V6 (0.9) / W7 (1.0) · Move the apps onto the new library APIs
 
-This brief serves two agents. **V6** owns `apps/tfar_plugin_0_9/**`. **W7** owns `apps/tfar_plugin_1_0/**`.
+This brief serves two agents. **V6** owns `crates/version_0_9/tfar_plugin_0_9/**`. **W7** owns `crates/version_1_0/tfar_plugin_1_0/**`.
 
 Read first:
 - `/documentation/program/agent_briefs/shared_brief.md` (**Build directory rule**: `target-v6` / `target-w7`)

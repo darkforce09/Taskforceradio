@@ -8,7 +8,7 @@ You are agent L3, the apps author for M2/M3 of the TFAR Rust port. Read
 and the public APIs of `tfar_arma_extension_abi`, `tfar_game_link_client`, `tfar_game_link_server`,
 `tfar_game_link_protocol` and `tfar_ts3_host`.
 
-## `apps/tfar_extension_0_9` and `apps/tfar_extension_1_0` (final versions)
+## `crates/version_0_9/tfar_extension_0_9` and `crates/version_1_0/tfar_extension_1_0` (final versions)
 - **Wiring:** `arma_extension!` with a handler over a process-wide `GameLinkClient` (`OnceLock`).
   - Flavour per app. Port from `tfar_game_link_protocol::port(flavour, debug)`, with `debug =
     arma_command_line_contains("-tfdebug")`.
@@ -21,7 +21,7 @@ and the public APIs of `tfar_arma_extension_abi`, `tfar_game_link_client`, `tfar
 - **Logic layout:** put it in a testable module, e.g. `src/call_handling.rs`, as a pure function over a small trait wrapping the client, so the string mapping is unit-tested with a fake. Add an integration test that runs the real client against an in-test `GameLinkServer` on an ephemeral port (`ServerConfig.port = 0`).
 - **The unsafe reason must be a `//` comment on the line directly above `#![allow(unsafe_code)]`**: the gate rejects `reason =` inside the attribute.
 
-## `apps/tfar_plugin_0_9` and `apps/tfar_plugin_1_0` (stubs that M6/M7 complete)
+## `crates/version_0_9/tfar_plugin_0_9` and `crates/version_1_0/tfar_plugin_1_0` (stubs that M6/M7 complete)
 - **Exports:** implement `tfar_ts3_host::Ts3Plugin` and export it with `ts3_plugin!`. Exact original metadata:
   - **0.9:** name `Task Force Arma 3 Radio`, version `0.9.12`, author `[TF]Nkey`, description `Radio Addon for Arma 3`, info title `Task Force Radio Status (0.9.12)`, command keyword `""`.
   - **1.0:** name `Task Force Arrowhead Radio`, version `1.0.0.1`, author `[TF]Nkey and Dedmen`, description `Radio Addon for Arma 3`, info title `Task Force Radio Status`, command keyword `tfar`.

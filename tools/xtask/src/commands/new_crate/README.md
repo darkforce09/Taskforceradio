@@ -24,9 +24,10 @@ the members through `cargo metadata`, checks every requested dependency edge aga
 matrix and computes the tier: 0 with no dependency, else 1 plus the highest. Only then does it
 render the files with `crate_templates.rs` and write them, with the root manifest edited by
 `workspace_entry.rs` (placed after the last entry of the same category, keeping every comment) and
-the category README by `parent_readme_entry.rs` (entries redrawn in name order). An app is a
-`cdylib` + `rlib` with `#![allow(unsafe_code)]` under a reason comment and an Exports section; a
-library or tool is a plain library. The test fixtures build their crates with the same templates.
+the category README by `parent_readme_entry.rs` (entries redrawn in name order). An app (one of
+the four deliverables, known by name) is a `cdylib` + `rlib` with `#![allow(unsafe_code)]` under a
+reason comment and an Exports section; a library or tool is a plain library. The test fixtures build
+their crates with the same templates.
 
 ## Commands
 

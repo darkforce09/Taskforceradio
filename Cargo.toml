@@ -4,9 +4,8 @@
 [workspace]
 resolver = "3"
 members = [
-    # The four deliverables: one plugin and one extension per mod version.
-    "apps/*",
-    # The library crates, one folder per category (`crates/<category>/<name>`).
+    # The crates, one folder per category (`crates/<category>/<name>`); each version category
+    # holds its plugin and extension beside its libraries.
     "crates/*/*",
     # The repository tooling: xtask, the mock TeamSpeak host, the extension probe, the golden vectors.
     "tools/*",
@@ -25,12 +24,6 @@ publish = false
 # Members name their own features beside `workspace = true`, so a feature stays the choice of the
 # crate that needs it.
 [workspace.dependencies]
-# apps
-tfar_extension_0_9 = { path = "apps/tfar_extension_0_9" }
-tfar_extension_1_0 = { path = "apps/tfar_extension_1_0" }
-tfar_plugin_0_9 = { path = "apps/tfar_plugin_0_9" }
-tfar_plugin_1_0 = { path = "apps/tfar_plugin_1_0" }
-
 # crates/foundation:
 tfar_arma_values = { path = "crates/foundation/tfar_arma_values" }
 tfar_geometry = { path = "crates/foundation/tfar_geometry" }
@@ -63,7 +56,9 @@ tfar_debug_window = { path = "crates/interface/tfar_debug_window" }
 
 # crates/version_0_9:
 tfar_client_state_0_9 = { path = "crates/version_0_9/tfar_client_state_0_9" }
+tfar_extension_0_9 = { path = "crates/version_0_9/tfar_extension_0_9" }
 tfar_game_commands_0_9 = { path = "crates/version_0_9/tfar_game_commands_0_9" }
+tfar_plugin_0_9 = { path = "crates/version_0_9/tfar_plugin_0_9" }
 tfar_plugin_commands_0_9 = { path = "crates/version_0_9/tfar_plugin_commands_0_9" }
 tfar_radio_effects_0_9 = { path = "crates/version_0_9/tfar_radio_effects_0_9" }
 tfar_radio_routing_0_9 = { path = "crates/version_0_9/tfar_radio_routing_0_9" }
@@ -72,7 +67,9 @@ tfar_voice_pipeline_0_9 = { path = "crates/version_0_9/tfar_voice_pipeline_0_9" 
 # crates/version_1_0:
 tfar_antennas_1_0 = { path = "crates/version_1_0/tfar_antennas_1_0" }
 tfar_client_state_1_0 = { path = "crates/version_1_0/tfar_client_state_1_0" }
+tfar_extension_1_0 = { path = "crates/version_1_0/tfar_extension_1_0" }
 tfar_game_commands_1_0 = { path = "crates/version_1_0/tfar_game_commands_1_0" }
+tfar_plugin_1_0 = { path = "crates/version_1_0/tfar_plugin_1_0" }
 tfar_plugin_commands_1_0 = { path = "crates/version_1_0/tfar_plugin_commands_1_0" }
 tfar_plugin_settings_1_0 = { path = "crates/version_1_0/tfar_plugin_settings_1_0" }
 tfar_radio_effects_1_0 = { path = "crates/version_1_0/tfar_radio_effects_1_0" }

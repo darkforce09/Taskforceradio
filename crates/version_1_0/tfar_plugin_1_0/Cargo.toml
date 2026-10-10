@@ -1,0 +1,85 @@
+# The TeamSpeak 3 plugin for the 1.0 mod, built as a native Linux shared library. TeamSpeak 3 loads
+# it from its plugins folder.
+[package]
+name = "tfar_plugin_1_0"
+description = "The TeamSpeak 3 plugin for the 1.0 mod, built as a native Linux shared library."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/version_1_0"
+tier = 6
+targets = "any"
+
+# The cdylib is the file TeamSpeak loads; the rlib lets host tests and the mock host link the
+# same code.
+[lib]
+name = "tfar_plugin_1_0"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Profiling zones sent to a Tracy viewer; off by default.
+tracy = ["dep:tracy-client", "tracy-client/enable", "profiling/profile-with-tracy"]
+# The API profiler: profiling zones as `tracing` spans in TeamSpeak's log; off by default.
+api_profiler = ["profiling/profile-with-tracing"]
+
+[dependencies]
+# Derives the crate's `Error`.
+thiserror.workspace = true
+# The safe TeamSpeak export layer and function table.
+tfar_ts3_host.workspace = true
+# TeamSpeak settings lookups.
+tfar_ts3_settings_db.workspace = true
+# The plugin-side link listener.
+tfar_game_link_server.workspace = true
+# The update check and Piwik calls.
+tfar_web_requests.workspace = true
+# The 1.0 voice frame processing.
+tfar_voice_pipeline_1_0.workspace = true
+# The 1.0 reception decisions.
+tfar_radio_routing_1_0.workspace = true
+# The 1.0 per-client state.
+tfar_client_state_1_0.workspace = true
+# The typed 1.0 game commands.
+tfar_game_commands_1_0.workspace = true
+# The 1.0 plugin command and metadata formats.
+tfar_plugin_commands_1_0.workspace = true
+# Radio sound playback and the own-voice stream.
+tfar_playback_mixer.workspace = true
+# The parsers for Arma's field, array and position strings.
+tfar_arma_values.workspace = true
+# The 1.0 settings.
+tfar_plugin_settings_1_0.workspace = true
+# The 1.0 antenna and tower model.
+tfar_antennas_1_0.workspace = true
+# The debug window.
+tfar_debug_window.workspace = true
+# The HRIR sphere the voice pipeline's direction sources render with.
+tfar_hrtf.workspace = true
+# The stereo scratch of the voice callbacks, the copy into and out of TeamSpeak's channels and
+# the gain of a local radio sound.
+tfar_sample_buffer.workspace = true
+# The per-connection state locks the audio callbacks `try_lock`, and the push-to-talk lock.
+parking_lot.workspace = true
+# The settings snapshot and the running plugin, read by the audio callbacks without a lock.
+arc-swap.workspace = true
+# The stop signal of the service thread and the tangent release thread.
+crossbeam-channel = { workspace = true, features = ["std"] }
+# Profiling zones, compiled to nothing unless `tracy` or `api_profiler` is on.
+profiling.workspace = true
+# The Tracy client behind the `tracy` feature.
+tracy-client = { workspace = true, optional = true }
+# Log lines of the plugin and its game link, forwarded to TeamSpeak's log by `tfar_ts3_host`.
+tracing = { workspace = true, features = ["std"] }
+
+[dev-dependencies]
+# The raw extension side of the mock-host tests' game link round trips.
+tfar_game_link_client.workspace = true
+# The fake TeamSpeak host that loads the built `.so` in the integration tests.
+tfar_ts3_mock.workspace = true
+
+[lints]
+workspace = true

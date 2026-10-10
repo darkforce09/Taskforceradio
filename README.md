@@ -17,8 +17,7 @@ kept read-only in `reference/` as the specification.
 
 | Folder | What it holds |
 |---|---|
-| apps/ | the four deliverables: two TeamSpeak plugins and two Arma extensions |
-| crates/ | library crates by category: foundation, audio, teamspeak, game_link, services, interface, version_0_9, version_1_0 |
+| crates/ | every product crate by category: foundation, audio, teamspeak, game_link, services, interface, and version_0_9 and version_1_0, each holding its mod's TeamSpeak plugin, Arma extension and libraries |
 | tools/ | `cargo xtask` (gates, CI lane, dist, scaffolding), the TeamSpeak mock host, the extension probe, the golden-vector oracle |
 | assets/ | the IRCAM HRIR sphere the HRTF crate loads, with its credits |
 | `documentation/` | every document: roadmap, decisions, architecture, standards, program records, runbooks |

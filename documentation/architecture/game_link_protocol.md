@@ -44,7 +44,7 @@ The plugin binds `127.0.0.1` only, never another interface.
 - **Test override:** `TFAR_GAME_LINK_PORT`, set to a port from 1 to 65535, makes the plugin listen
   on that one port instead of the two of the table; any other value is ignored with a warning. It
   exists for test suites that load the plugin, so parallel tests never fight over the fixed ports
-  (`apps/tfar_plugin_0_9/tests/plugin_in_mock_host.rs`). The extensions have no override: they
+  (`crates/version_0_9/tfar_plugin_0_9/tests/plugin_in_mock_host.rs`). The extensions have no override: they
   always use the port of the table.
 - A port already in use: the plugin logs it to the TeamSpeak log and the current tab and retries
   that bind every 5 s; the other port keeps working meanwhile. With neither port bound the plugin

@@ -97,7 +97,7 @@ Each finding was checked against the reference trees; the behaviour specs in
 | D4 | Keep every feature: update check, Piwik `TRACK`, debug window, Tracy, API profiler, `/tfar` commands, `collectDebugInfo`. |
 | D5 | The repository root is the Taskforceradio folder. The mods live in `reference/tfar_1_0/` and `reference/tfar_0_9_12/`, read-only. |
 | D6 | Prefix `tfar_`, snake_case; the folder name equals the package name. Version tags are `_1_0` and `_0_9`. |
-| D7 | apps/ for the 4 deliverables, crates/<category>/<crate>/ for libraries, tools/ for tooling. |
+| D7 | crates/<category>/<crate>/ for every product crate, the 4 deliverables in their version category (no apps/ folder since 2026-10-10), tools/ for tooling. |
 | D8 | Conventions follow TBD-Reforger and rerun: workspace package, dependencies and lints, tier metadata, crate anatomy, `cargo xtask verify` gates, cargo-deny, typos. Milestones live in the roadmap (TBD-subtitles style); program records follow the Reforger restructure style. |
 | D9 | C/C++ oracles only in `tfar_golden_vectors`, built with `cc`: DSPFilters, SimpleComp and clunk straight from `reference/`, plus a vendored FAudio `F3DAudio.c` (zlib) in its oracle folder. |
 | D10 | Port order: foundations, then the 0.9 track, then the 1.0 track. |

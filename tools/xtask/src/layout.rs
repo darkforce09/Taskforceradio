@@ -10,8 +10,9 @@
 //!
 //! **Signals and state:** none; constants and pure functions.
 //!
-//! **Invariants:** every category named here is a parent path (`crates/<category>`, `apps`,
-//! `tools`); a crate name appears in at most one allow-list row of each table.
+//! **Invariants:** every category named here is a parent path (`crates/<category>` or `tools`);
+//! the four deliverables are named in [`DELIVERABLES`], never found by folder; a crate name appears
+//! in at most one allow-list row of each table.
 
 #[cfg(test)]
 #[path = "tests/layout.rs"]
@@ -25,8 +26,6 @@ pub(crate) const VERSION_0_9: &str = "crates/version_0_9";
 pub(crate) const VERSION_1_0: &str = "crates/version_1_0";
 /// The game link category.
 pub(crate) const GAME_LINK: &str = "crates/game_link";
-/// The deliverables category.
-pub(crate) const APPS: &str = "apps";
 /// The tooling category.
 pub(crate) const TOOLS: &str = "tools";
 
@@ -40,16 +39,14 @@ pub(crate) const CATEGORIES: &[&str] = &[
     "crates/interface",
     VERSION_0_9,
     VERSION_1_0,
-    APPS,
     TOOLS,
 ];
 
 /// The folders whose manifests must all be workspace members.
-pub(crate) const MEMBER_ROOTS: &[&str] = &["apps", "crates", "tools"];
+pub(crate) const MEMBER_ROOTS: &[&str] = &["crates", "tools"];
 
 /// The folders whose every sub-folder carries a README.md.
-pub(crate) const README_SPAN_ROOTS: &[&str] =
-    &["apps", "crates", "tools", "documentation", "assets"];
+pub(crate) const README_SPAN_ROOTS: &[&str] = &["crates", "tools", "documentation", "assets"];
 
 /// Folder names exempt from the README span, with everything below them.
 pub(crate) const README_EXEMPT_FOLDERS: &[&str] = &["tests", "target"];
@@ -60,8 +57,21 @@ pub(crate) const GAME_LINK_PROTOCOL: &str = "tfar_game_link_protocol";
 /// The two TeamSpeak plugin apps.
 pub(crate) const PLUGIN_APPS: &[&str] = &["tfar_plugin_0_9", "tfar_plugin_1_0"];
 
-/// The categories a crate in `from` may depend on, by the category edge matrix. Apps have
-/// per-crate rules in [`app_allows`]; this returns the rule for an app not named there.
+/// The four deliverables (apps): the plugins and extensions, each in its version category.
+pub(crate) const DELIVERABLES: &[&str] = &[
+    "tfar_plugin_0_9",
+    "tfar_extension_0_9",
+    "tfar_plugin_1_0",
+    "tfar_extension_1_0",
+];
+
+/// Whether the crate `name` is one of the four deliverables.
+pub(crate) fn is_deliverable(name: &str) -> bool {
+    DELIVERABLES.contains(&name)
+}
+
+/// The categories a crate in `from` may depend on, by the category edge matrix. The deliverables
+/// have per-crate rules in [`app_allows`] instead.
 pub(crate) fn category_allows(from: &str, to: &str) -> bool {
     match from {
         FOUNDATION => to == FOUNDATION,
@@ -79,27 +89,19 @@ pub(crate) fn category_allows(from: &str, to: &str) -> bool {
                         | "crates/interface"
                 )
         }
-        APPS | TOOLS => to.starts_with("crates/"),
+        TOOLS => to.starts_with("crates/"),
         _ => false,
     }
 }
 
-/// Whether the app `app_name` may depend on a crate of category `to`.
+/// Whether the deliverable `app_name` may depend on a crate of category `to`; `false` for a crate
+/// that is not a deliverable.
 pub(crate) fn app_allows(app_name: &str, to: &str) -> bool {
     match app_name {
         "tfar_plugin_0_9" => to.starts_with("crates/") && to != VERSION_1_0,
         "tfar_plugin_1_0" => to.starts_with("crates/") && to != VERSION_0_9,
         "tfar_extension_0_9" | "tfar_extension_1_0" => to == FOUNDATION || to == GAME_LINK,
-        _ => category_allows(APPS, to),
-    }
-}
-
-/// The version category a plugin app belongs to, so the version ban covers it.
-pub(crate) fn version_category_of_app(app_name: &str) -> Option<&'static str> {
-    match app_name {
-        "tfar_plugin_0_9" => Some(VERSION_0_9),
-        "tfar_plugin_1_0" => Some(VERSION_1_0),
-        _ => None,
+        _ => false,
     }
 }
 
@@ -129,17 +131,12 @@ pub(crate) fn edge_violation(
     to_category: &str,
     table: EdgeTable,
 ) -> Option<String> {
-    let own_version = if from_category == APPS {
-        version_category_of_app(from_name)
-    } else {
-        Some(from_category)
-    };
-    if own_version.and_then(other_version) == Some(to_category) {
+    if other_version(from_category) == Some(to_category) {
         return Some(format!(
             "`{to_name}` is in {to_category}: version_0_9 and version_1_0 never depend on each other"
         ));
     }
-    if to_category == APPS {
+    if is_deliverable(to_name) {
         return Some(match (from_category, table) {
             (TOOLS, _) => format!("`{to_name}` is an app: tools never depend on apps"),
             (_, EdgeTable::Development) => {
@@ -151,13 +148,15 @@ pub(crate) fn edge_violation(
     if table == EdgeTable::Development {
         return None;
     }
-    let allowed = if from_category == APPS {
+    let deliverable = is_deliverable(from_name);
+    let allowed = if deliverable {
         app_allows(from_name, to_category)
     } else {
         category_allows(from_category, to_category)
     };
-    let is_version_crate = from_category == VERSION_0_9 || from_category == VERSION_1_0;
-    if is_version_crate && to_category == GAME_LINK && to_name != GAME_LINK_PROTOCOL {
+    let is_version_library =
+        !deliverable && (from_category == VERSION_0_9 || from_category == VERSION_1_0);
+    if is_version_library && to_category == GAME_LINK && to_name != GAME_LINK_PROTOCOL {
         return Some(format!(
             "`{to_name}` is in {GAME_LINK}: a version crate may use only {GAME_LINK_PROTOCOL} there"
         ));
@@ -328,14 +327,8 @@ pub(crate) const ASSET_CREDITS_FILE: &str = "CREDITS.md";
 
 /// The top-level folders a backticked path must start with for `link-check` to check it (a
 /// root file name also qualifies).
-pub(crate) const LINKABLE_TOP_FOLDERS: &[&str] = &[
-    "apps",
-    "crates",
-    "tools",
-    "documentation",
-    "assets",
-    "reference",
-];
+pub(crate) const LINKABLE_TOP_FOLDERS: &[&str] =
+    &["crates", "tools", "documentation", "assets", "reference"];
 
 /// The read-only tree of the original mods.
 pub(crate) const REFERENCE_FOLDER: &str = "reference";

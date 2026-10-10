@@ -5,7 +5,7 @@
 You are agent P5 for the TFAR Rust port. Read `/documentation/program/agent_briefs/shared_brief.md` first
 (**Build directory rule**: `CARGO_TARGET_DIR=.../target-p5`), then `/documentation/standards/coding_standards.md` (the
 audio-thread rules). The plugin apps worked around these gaps privately. Read
-apps/tfar_plugin_0_9/src/remote_sounds.rs (removed since) and the 1.0 app's equivalent, plus its local-tangent code, but don't edit the
+crates/version_0_9/tfar_plugin_0_9/src/remote_sounds.rs (removed since) and the 1.0 app's equivalent, plus its local-tangent code, but don't edit the
 apps; wave 2 switches them.
 
 **Keep every existing public API working.** Add beside the old APIs, so the apps still build.

@@ -62,11 +62,12 @@ violation, 2 could not run; a gate that could not run never reports success.
 ### crate-tiers
 
 - Synopsis: `cargo xtask verify crate-tiers`
-- Does: every manifest under apps, crates and tools is a member; each member's layout table has
+- Does: every manifest under crates and tools is a member; each member's layout table has
   `category`, `tier` and `targets`; path = category + name; name = folder name; declared tier =
   1 plus the highest normal or build workspace dependency's tier (0 with none); every edge keeps
   the category edge matrix, the version ban (dev-dependencies included), the extension-app and
-  plugin-app rules, tools never on apps, and dev-dependencies never on apps.
+  plugin-app rules (keyed by crate name: the four deliverables sit in their version folders),
+  tools never on a deliverable, and dev-dependencies never on a deliverable.
 - Exit codes: 0 held, 1 violation, 2 `cargo metadata` failed.
 - Example: `cargo xtask verify crate-tiers`
 
@@ -125,7 +126,7 @@ violation, 2 could not run; a gate that could not run never reports success.
 ### readme-coverage
 
 - Synopsis: `cargo xtask verify readme-coverage`
-- Does: every folder under apps, crates, tools, documentation and assets that holds a listed file
+- Does: every folder under crates, tools, documentation and assets that holds a listed file
   (except `tests`, `target` and dot-folders) has a README.md whose Contents block lists exactly its
   direct children.
 - Exit codes: 0 held, 1 violation, 2 `git ls-files` failed.
@@ -161,7 +162,7 @@ violation, 2 could not run; a gate that could not run never reports success.
 
 - Synopsis: `cargo xtask verify link-check`
 - Does: every link that is not a URL resolves, with its anchor; no link climbs with `../`; every
-  backticked string whose first segment is apps, crates, tools, documentation, assets or reference
+  backticked string whose first segment is crates, tools, documentation, assets or reference
   names something that exists (a `:line` suffix and a `#anchor` are dropped first). Bare file names
   and crate-relative paths are not paths here.
 - Exit codes: 0 held, 1 violation, 2 `git ls-files` failed.

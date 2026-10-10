@@ -14,11 +14,6 @@ Taskforceradio/
 ├── Cargo.toml  Cargo.lock  rust-toolchain.toml  rustfmt.toml  clippy.toml  deny.toml  typos.toml
 ├── .cargo/config.toml   xtask alias; windows-gnu linker x86_64-w64-mingw32-gcc, +crt-static
 ├── .editorconfig  .gitignore  .gitattributes  README.md  CLAUDE.md  AGENTS.md -> CLAUDE.md
-├── apps/
-│   ├── tfar_plugin_0_9/       cdylib: TS exports, threads, TS events, PTT/VAD, metadata, serious mode
-│   ├── tfar_plugin_1_0/       same for 1.0 (+ async queue, antennas, SETCFG, focus-aware channel move)
-│   ├── tfar_extension_0_9/    cdylib DLL: every call is a sync round trip
-│   └── tfar_extension_1_0/    cdylib DLL: ~ async, DFRAME -> NEEDCFG/OK, MISSIONEND, FOCUS frames
 ├── crates/
 │   ├── foundation/   tfar_geometry (glam domain helpers)  tfar_arma_values
 │   ├── audio/        tfar_sample_buffer  tfar_dsp_filters  tfar_dynamics  tfar_hrtf
@@ -28,11 +23,18 @@ Taskforceradio/
 │   │                 tfar_arma_extension_abi
 │   ├── services/     tfar_web_requests          (update check, Piwik; ureq + rustls)
 │   ├── interface/    tfar_debug_window          (egui window, X11)
-│   ├── version_0_9/  tfar_game_commands_0_9  tfar_plugin_commands_0_9  tfar_radio_effects_0_9
-│   │                 tfar_client_state_0_9  tfar_radio_routing_0_9  tfar_voice_pipeline_0_9
-│   └── version_1_0/  tfar_game_commands_1_0  tfar_plugin_commands_1_0  tfar_radio_effects_1_0
-│                     tfar_client_state_1_0  tfar_radio_routing_1_0  tfar_voice_pipeline_1_0
-│                     tfar_antennas_1_0  tfar_plugin_settings_1_0
+│   ├── version_0_9/
+│   │   ├── tfar_plugin_0_9/     cdylib: TS exports, threads, TS events, PTT/VAD, metadata, serious mode
+│   │   ├── tfar_extension_0_9/  cdylib DLL: every call is a sync round trip
+│   │   └── …                    tfar_game_commands_0_9  tfar_plugin_commands_0_9  tfar_radio_effects_0_9
+│   │                            tfar_client_state_0_9  tfar_radio_routing_0_9  tfar_voice_pipeline_0_9
+│   └── version_1_0/
+│       ├── tfar_plugin_1_0/     same for 1.0 (+ async queue, antennas, SETCFG, focus-aware channel move)
+│       ├── tfar_extension_1_0/  cdylib DLL: ~ async, DFRAME -> NEEDCFG/OK, MISSIONEND, FOCUS frames
+│       └── …                    tfar_game_commands_1_0  tfar_plugin_commands_1_0  tfar_radio_effects_1_0
+│                                tfar_client_state_1_0  tfar_radio_routing_1_0  tfar_voice_pipeline_1_0
+│                                tfar_antennas_1_0  tfar_plugin_settings_1_0
+
 ├── tools/
 │   ├── xtask/                    verify · ci · dist · new-crate · reference-manifest
 │   ├── tfar_ts3_mock/            dlopens a plugin .so, fake TS3Functions, scripted scenarios
@@ -43,8 +45,10 @@ Taskforceradio/
 └── reference/       README.md + MANIFEST.sha256 (written by xtask); the two mod trees, byte-identical
 ```
 
-38 crates: 4 apps, 30 libraries, 4 tools. Members are globbed as `"apps/*"`, `"crates/*/*"` and
-`"tools/*"`, so a crate is a member by being in the right folder.
+38 crates: 4 deliverables (the apps), 30 libraries, 4 tools. Members are globbed as `"crates/*/*"`
+and `"tools/*"`, so a crate is a member by being in the right folder. There is no apps folder: each
+deliverable sits in its version category beside the libraries it links, and the gates know the four
+by name.
 
 ## Categories
 
@@ -56,15 +60,15 @@ Taskforceradio/
 | crates/game_link | The extension ↔ plugin transport and the Arma extension ABI | `tfar_game_link_server` |
 | crates/services | Calls to the outside world (HTTP) | `tfar_web_requests` |
 | crates/interface | Windows a person looks at | `tfar_debug_window` |
-| crates/version_0_9 | Behaviour that exists only in the 0.9.12 mod | `tfar_radio_routing_0_9` |
-| crates/version_1_0 | Behaviour that exists only in the 1.0 mod | `tfar_antennas_1_0` |
-| apps | The four deliverables: thin export glue and wiring | `tfar_plugin_1_0` |
+| crates/version_0_9 | Behaviour that exists only in the 0.9.12 mod, and its two deliverables | `tfar_radio_routing_0_9`, `tfar_plugin_0_9` |
+| crates/version_1_0 | Behaviour that exists only in the 1.0 mod, and its two deliverables | `tfar_antennas_1_0`, `tfar_extension_1_0` |
 | tools | Repository tooling and test harnesses, never shipped | `tfar_ts3_mock` |
 
 ### Which folder does a new crate go in
 
 Ask in this order and stop at the first yes:
-1. Is it shipped to the owner as a `.so` or `.dll`? → apps.
+1. Is it shipped to the owner as a `.so` or `.dll`? → its version category, crates/version_0_9 or
+   crates/version_1_0, named in the deliverables list of the gates (thin export glue and wiring).
 2. Is it only for building, checking or testing the repository? → tools.
 3. Does it hold behaviour only one mod version has (its command set, its routing rules, its
    effects)? → crates/version_0_9 or crates/version_1_0. Never both: shared behaviour moves down.

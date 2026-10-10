@@ -43,7 +43,7 @@ pub(crate) struct MemberDependency {
 /// The `[package.metadata.layout]` table of a member; a missing key is `None`.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Layout {
-    /// The parent path: `crates/<category>`, `apps` or `tools`.
+    /// The parent path: `crates/<category>` or `tools`.
     pub(crate) category: Option<String>,
     /// The declared tier.
     pub(crate) tier: Option<u64>,

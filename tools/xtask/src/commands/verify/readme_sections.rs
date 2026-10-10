@@ -22,7 +22,7 @@ use std::collections::BTreeMap;
 
 use anyhow::{Context, Result, bail};
 
-use crate::layout::{APPS, README_EXEMPT_FOLDERS, README_STANDARD};
+use crate::layout::{README_EXEMPT_FOLDERS, README_STANDARD, is_deliverable};
 use crate::support::markdown;
 use crate::support::readme_span;
 use crate::support::repository::{self, Repository};
@@ -137,9 +137,9 @@ fn kind_of(repository: &Repository, folder: &str, text: &str) -> Result<&'static
     };
     let kind = if folder == "documentation" || folder.starts_with("documentation/") {
         "documentation folder"
-    } else if parent == APPS {
+    } else if parent.starts_with("crates/") && is_deliverable(repository::file_name(folder)) {
         "app"
-    } else if matches!(folder, "apps" | "crates" | "tools" | "assets") || parent == "crates" {
+    } else if matches!(folder, "crates" | "tools" | "assets") || parent == "crates" {
         "area root"
     } else if repository.has_file(&format!("{folder}/Cargo.toml"))? {
         "crate root"

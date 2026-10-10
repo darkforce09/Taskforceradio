@@ -48,19 +48,13 @@ fn a_scaffolded_crate_passes_every_gate_and_gets_its_computed_tier() {
 #[test]
 fn a_scaffolded_app_passes_every_gate() {
     let fixture = FixtureTree::sample_workspace();
-    fixture.write(
-        "apps/README.md",
-        "# Apps\n\nThe sample apps.\n\n## Contents\n\n```text\napps/\n```\n\n## How it works\n\nOne app per host.\n\n\
-         ## Getting started\n\nNothing to run.\n\n## Boundaries\n\n- Depends on: nothing.\n- Used by: nothing.\n- Rules: none.\n",
-    );
-    fixture.replace(
-        "Cargo.toml",
-        "members = [\"crates/*/*\"]",
-        "members = [\"apps/*\", \"crates/*/*\"]",
-    );
     let spec = run(
         &fixture.repository(),
-        &request("apps", "tfar_extension_0_9", &["tfar_geometry"]),
+        &request(
+            "crates/version_0_9",
+            "tfar_extension_0_9",
+            &["tfar_geometry"],
+        ),
     )
     .unwrap();
     assert_eq!(spec.tier, 1);

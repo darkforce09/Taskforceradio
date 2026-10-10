@@ -40,8 +40,8 @@ milestones themselves, with their checklists and acceptance tests, are in the
 
 ## Code
 
-- The four apps, the library crates and the tools (planned: apps/, crates/, tools/) are what these
-  records plan and track; `reference/` holds the original code they port.
+- The crates (crates/, the four apps among them in the version categories) and the tools (tools/)
+  are what these records plan and track; `reference/` holds the original code they port.
 
 ## Boundaries
 

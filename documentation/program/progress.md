@@ -145,6 +145,7 @@ Owner checkpoints, after C1:
 | 2026-10-03 | Commits | R3 — acccf42; P5 — b7f2efd; L4 — b67d9a9; V6 — 110de0e; W7 — 0ced2f5 | target-<agent id> folders |
 | 2026-10-03 | C1 ci-local | `CARGO_TARGET_DIR=target-c1 cargo xtask ci ci-local` on 0ced2f5 plus the C1 changes: all 21 steps held (fmt, clippy, clippy-windows, test with 1830 passed, 0 failed, 3 ignored doc examples in 114 suites, deny, typos, and the 15 verify gates) | target/agent-logs/c1-ci-local-1.log, target/agent-logs/c1-ci-run1/ |
 | 2026-10-03 | C1 dist | `CARGO_TARGET_DIR=target-c1 cargo xtask dist` wrote target-c1/dist/: tfar_0_9 with `task_force_radio_linux_amd64.so` (6 065 280 B) and `task_force_radio_pipe_x64.dll` (964 608 B), tfar_1_0 with `TFAR_linux_amd64.so` (12 954 080 B) and `task_force_radio_pipe_x64.dll` (967 168 B), each with radio-sounds/ (18 files, identical across the versions) and tfar_hrir/ (`IRC_1002_C.bin` 772 656 B, `CREDITS.md` 2 167 B). Each `.so` exports the 40 `ts3plugin_*` functions; each DLL exports `RVExtension` and `RVExtensionVersion` and imports only Windows system DLLs (kernel32, user32, ntdll, msvcrt, ws2_32, userenv, bcryptprimitives, api-ms-win-core-synch), no libgcc or libwinpthread | target/agent-logs/c1-dist.log |
+| 2026-10-10 | Layout | The four deliverables move from `apps/` into `crates/version_0_9/` and `crates/version_1_0/`; the gates key the deliverable rules by crate name ([decision](/documentation/decisions/workspace.md#2026-10-10--deliverables-live-in-their-version-category-no-apps-folder-d7)) | — |
 
 ## Amendments
 
@@ -332,7 +333,7 @@ slice that does it), NOTE (recorded, no change needed now) or CLOSE (resolved).
   speaker radios none, as the 1.0 pipeline does. Reported by R3. Closed by P5 (b7f2efd): the
   0.9 loudspeaker path renders through the HRTF at unity (`a_loudspeaker_through_the_hrtf_gets_no_makeup_gain`).
 - **OF-028 (CLOSE): the plugin app READMEs still document `TFAR_GAME_LINK_DEBUG`.**
-  `apps/tfar_plugin_0_9/README.md:63`, `apps/tfar_plugin_1_0/README.md:54` and the `listen_port.rs`
+  `crates/version_0_9/tfar_plugin_0_9/README.md:63`, `crates/version_1_0/tfar_plugin_1_0/README.md:54` and the `listen_port.rs`
   lines of both `src/README.md` describe the variable D24 removes; they change with the D24 code in
   wave 2. Reported by R3. Closed by V6 (110de0e) and W7 (0ced2f5): no README or source names the variable
   any more.
@@ -375,8 +376,9 @@ slice that does it), NOTE (recorded, no change needed now) or CLOSE (resolved).
 ## Handoff
 
 All code is written and every milestone is code-complete: every library crate, both extensions,
-both full plugin apps (0.9 at 110de0e and 1.0 at 0ced2f5 on the shared library APIs, D24 and D25 in
-place), the mock host, the probe and the golden-vector oracle. C1 closed M8 in code on 2026-10-03:
+both full plugin apps (in `crates/version_0_9/` and `crates/version_1_0/` since 2026-10-10;
+0.9 at 110de0e and 1.0 at 0ced2f5 on the shared library APIs, D24 and D25 in place), the mock
+host, the probe and the golden-vector oracle. C1 closed M8 in code on 2026-10-03:
 `cargo xtask ci ci-local` held all 21 steps, `cargo xtask dist` produced both version folders (the
 artefact table is in the execution log), the [roadmap](/documentation/roadmap.md) is ticked, the
 [install runbook](/documentation/runbooks/manual_install_and_test.md) follows the real dist layout,

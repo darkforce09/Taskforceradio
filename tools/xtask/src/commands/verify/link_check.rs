@@ -9,7 +9,7 @@
 //!
 //! **Signals and state:** none.
 //!
-//! **Invariants:** a backticked string is a repository path only when its first segment is apps,
+//! **Invariants:** a backticked string is a repository path only when its first segment is
 //! crates, tools, documentation, assets or reference; such a path exists when it is a listed
 //! file, a folder of listed files, or anything on disk (the ignored 1.0 reference tree included);
 //! text inside code fences is never checked.

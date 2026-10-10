@@ -4,9 +4,10 @@
 
 **When to use:** the folder that holds a library's or a tool's `Cargo.toml`: each crate under
 crates/<category>/, and each tool under tools/ (xtask, the TeamSpeak mock, the extension probe, the
-golden vectors). The four deliverables under apps/ use the [app template](/documentation/standards/templates/readme_app.md)
-instead. The [README standard](/documentation/standards/readme_standard.md) defines every rule this
-template follows; the crate root kind adds Getting started, Configuration and Public surface.
+golden vectors). The four deliverables, in the version categories, use the
+[app template](/documentation/standards/templates/readme_app.md) instead. The
+[README standard](/documentation/standards/readme_standard.md) defines every rule this template follows;
+the crate root kind adds Getting started, Configuration and Public surface.
 
 ## Skeleton
 

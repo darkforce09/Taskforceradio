@@ -43,7 +43,7 @@ pub(crate) enum Command {
     Dist,
     /// Scaffolds a crate with the standard anatomy and adds it to the workspace.
     NewCrate {
-        /// `crates/<category>` (or just the category), `apps` or `tools`.
+        /// `crates/<category>` (or just the category) or `tools`.
         category: String,
         /// The package and folder name: lowercase words joined by underscores, with the `tfar_` prefix.
         name: String,

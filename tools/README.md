@@ -32,10 +32,10 @@ cargo test -p tfar_ts3_mock -p tfar_golden_vectors -p tfar_extension_probe
 
 ## Boundaries
 
-- Depends on: the library crates in `crates/`; built apps at run time (the mock loads a plugin
-  `.so`, the probe loads an extension DLL).
+- Depends on: the library crates in `crates/`; the built deliverables at run time (the mock loads
+  a plugin `.so`, the probe loads an extension DLL).
 - Used by: developers and the gate runner.
-- Rules: tools may depend on library crates under `crates/`, never on apps
+- Rules: tools may depend on library crates under `crates/`, never on the four deliverables
   (`cargo xtask verify crate-tiers`); C/C++ appears only under `tfar_golden_vectors/`
   (`cargo xtask verify language-bans`); `cc` stays in `tfar_golden_vectors` and `libloading` in
   `tfar_ts3_mock`.

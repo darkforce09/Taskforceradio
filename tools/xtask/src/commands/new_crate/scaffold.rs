@@ -30,7 +30,7 @@ use super::workspace_entry::with_workspace_entry;
 /// What the command line asked for.
 #[derive(Debug, Clone)]
 pub(crate) struct NewCrateRequest {
-    /// `crates/<category>`, a bare `<category>`, `apps` or `tools`.
+    /// `crates/<category>`, a bare `<category>` or `tools`.
     pub(crate) category: String,
     /// The package and folder name.
     pub(crate) name: String,

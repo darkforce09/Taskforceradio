@@ -2,7 +2,7 @@
 
 # M6/M7 · V5 (0.9) / W6 (1.0) · The full TeamSpeak plugin apps
 
-This brief serves two agents. **V5** owns `apps/tfar_plugin_0_9`. **W6** owns `apps/tfar_plugin_1_0`. Each works
+This brief serves two agents. **V5** owns `crates/version_0_9/tfar_plugin_0_9`. **W6** owns `crates/version_1_0/tfar_plugin_1_0`. Each works
 only on its own app. Read `/documentation/program/agent_briefs/shared_brief.md` first (including the **Build directory
 rule**), then:
 - `/documentation/standards/coding_standards.md` (FFI and audio-thread rules)
@@ -85,7 +85,7 @@ finding and implement a minimal app-private version.
 - **1.0:** MISSIONEND disconnect and the off sound; needcfg; antennas; the debug window not opening without a display, with a TS message instead.
 
 ## Owned files
-V5: `apps/tfar_plugin_0_9/**`. W6: `apps/tfar_plugin_1_0/**`. One root-manifest Edit at most (re-read first), reported. Never touch
+V5: `crates/version_0_9/tfar_plugin_0_9/**`. W6: `crates/version_1_0/tfar_plugin_1_0/**`. One root-manifest Edit at most (re-read first), reported. Never touch
 the other app or the library crates. Report missing library functions as findings, with the exact API you needed.
 
 ## Checks (each alone, with your target dir; logs `target/agent-logs/<v5|w6>-*.log`)

@@ -1,6 +1,6 @@
 //! The `crate-anatomy` gate: the standard files of a crate and the shape of its manifest.
 //!
-//! **Role:** checks every manifest under apps, crates and tools for workspace inheritance, lints,
+//! **Role:** checks every manifest under crates and tools for workspace inheritance, lints,
 //! `workspace = true` dependencies and allowed features, and every library for a short `lib.rs`
 //! of only header, attributes, `mod`, `pub mod` and `pub use`, a `prelude.rs`, a `thiserror`
 //! `error.rs`, and no `anyhow`.

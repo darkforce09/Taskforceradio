@@ -1,6 +1,6 @@
 //! The `file-length` gate: production `.rs` files within 500 lines, test files within 1000.
 //!
-//! **Role:** counts the lines of every Rust source under apps, crates and tools.
+//! **Role:** counts the lines of every Rust source under crates and tools.
 //!
 //! **Position:** a repository gate; the ceilings come from `layout`.
 //!

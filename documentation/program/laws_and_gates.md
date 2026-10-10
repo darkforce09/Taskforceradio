@@ -15,7 +15,7 @@ Every member declares `[package.metadata.layout]` with three keys:
 
 ```toml
 [package.metadata.layout]
-category = "crates/audio"   # the parent path: crates/<category>, apps or tools
+category = "crates/audio"   # the parent path: crates/<category> or tools
 tier = 1                    # 0 with no workspace dependency, else 1 + the highest dependency tier
 targets = "any"             # "windows" only for tfar_extension_probe
 ```
@@ -25,9 +25,14 @@ Normal and build dependency edges point strictly down the tiers. The authoritati
 every edge and tier is in the [shared brief](/documentation/program/agent_briefs/shared_brief.md);
 the [crate catalogue](/documentation/program/crate_catalogue.md) repeats the tiers.
 
+The four deliverables (the apps: `tfar_plugin_0_9`, `tfar_extension_0_9`, `tfar_plugin_1_0`,
+`tfar_extension_1_0`) have no folder of their own. Each sits in its version category and declares
+that category; the gates know them by name, so their rows below are keyed by crate, not by folder.
+
 ## Category edge matrix
 
-A crate may depend on a workspace crate only if the target's category is allowed for its own.
+A crate may depend on a workspace crate only if the target's category is allowed for its own. A
+deliverable row replaces its category row for that crate.
 
 | From | May depend on | Never on |
 |---|---|---|
@@ -37,18 +42,19 @@ A crate may depend on a workspace crate only if the target's category is allowed
 | crates/game_link | crates/foundation, crates/game_link | everything else |
 | crates/services | crates/foundation | everything else |
 | crates/interface | crates/foundation | everything else |
-| crates/version_0_9 | crates/foundation, crates/audio, crates/teamspeak, `tfar_game_link_protocol` (the only game_link crate), crates/services, crates/interface, crates/version_0_9 | **crates/version_1_0**, apps, tools |
-| crates/version_1_0 | crates/foundation, crates/audio, crates/teamspeak, `tfar_game_link_protocol` (the only game_link crate), crates/services, crates/interface, crates/version_1_0 | **crates/version_0_9**, apps, tools |
-| apps: `tfar_plugin_0_9` | any crates/* category except crates/version_1_0 | crates/version_1_0, apps, tools |
-| apps: `tfar_plugin_1_0` | any crates/* category except crates/version_0_9 | crates/version_0_9, apps, tools |
-| apps: `tfar_extension_0_9`, `tfar_extension_1_0` | crates/foundation, crates/game_link | everything else |
-| tools | any crates/* category | apps |
+| crates/version_0_9 (libraries) | crates/foundation, crates/audio, crates/teamspeak, `tfar_game_link_protocol` (the only game_link crate), crates/services, crates/interface, crates/version_0_9 | **crates/version_1_0**, the deliverables, tools |
+| crates/version_1_0 (libraries) | crates/foundation, crates/audio, crates/teamspeak, `tfar_game_link_protocol` (the only game_link crate), crates/services, crates/interface, crates/version_1_0 | **crates/version_0_9**, the deliverables, tools |
+| deliverable `tfar_plugin_0_9` (in crates/version_0_9) | any crates/* category except crates/version_1_0 | crates/version_1_0, the other deliverables, tools |
+| deliverable `tfar_plugin_1_0` (in crates/version_1_0) | any crates/* category except crates/version_0_9 | crates/version_0_9, the other deliverables, tools |
+| deliverables `tfar_extension_0_9`, `tfar_extension_1_0` (each in its version category) | crates/foundation, crates/game_link | everything else |
+| tools | any crates/* category | the deliverables |
 
 Rules beside the matrix:
 - Foundation crates depend only on other foundation crates (`tfar_arma_values` → `tfar_geometry`).
 - **version_0_9 and version_1_0 never depend on each other**, in any kind of dependency.
-- Dev-dependencies are exempt from the tier order but never point at apps.
-- An app never depends on another app.
+- Dev-dependencies are exempt from the tier order but never point at a deliverable.
+- No crate depends on a deliverable: not a tool, not a library of its own version folder, not another
+  deliverable.
 
 ## External-crate firewalls
 
@@ -72,7 +78,7 @@ here (`thiserror`, `tracing`, `parking_lot`, `crossbeam-channel`, `arc-swap`, `r
 | `postcard` | the game_link crates |
 | `libloading` | `tfar_ts3_mock`, `tfar_extension_probe` |
 | `tracy-client` | the two plugin apps, behind the `tracy` feature |
-| `anyhow` | tools only; never a library or an app |
+| `anyhow` | tools only; never a library or a deliverable |
 | `clap`, `xshell`, `cargo_metadata`, `toml_edit`, `sha2`, `walkdir`, `ignore` | `xtask` |
 
 ## Unsafe allow-list
@@ -81,7 +87,7 @@ here (`thiserror`, `tracing`, `parking_lot`, `crossbeam-channel`, `arc-swap`, `r
   `#![allow(unsafe_code)]` at the crate root and a reason comment on the line above:
   - `tfar_ts3_host` (TeamSpeak C ABI);
   - `tfar_arma_extension_abi` (Arma C ABI and Win32 calls);
-  - the 4 apps (export glue only);
+  - the 4 deliverables (export glue only);
   - `tfar_ts3_mock` (loads plugins and fakes the function table);
   - `tfar_extension_probe` (loads the extension DLL and calls `RVExtension` through raw pointers);
   - `tfar_golden_vectors` (calls the compiled C++ and C oracles through safe wrappers).
@@ -124,14 +130,14 @@ and a missing tool to "not run" (exit 2).
 
 | Gate | What it checks | Could not run (2) when |
 |---|---|---|
-| `crate-tiers` | Every manifest under apps, crates and tools is a member; layout metadata present; path = category + name; package name = folder name; declared tier = computed tier; the category edge matrix; the version ban; extension apps limited to foundation and game_link; tools never on apps; dev-dependencies never on apps | `cargo metadata` fails |
+| `crate-tiers` | Every manifest under crates and tools is a member; layout metadata present; path = category + name; package name = folder name; declared tier = computed tier; the category edge matrix; the version ban; the deliverable rows by crate name (extension apps limited to foundation and game_link); no crate, tool or dev-dependency on a deliverable | `cargo metadata` fails |
 | `dependency-firewalls` | Each external crate appears only in its allowed crates (table above) | `cargo metadata` fails |
 | `crate-anatomy` | `lib.rs` ≤ 80 lines holding only the header, attributes, `mod`, `pub mod` and `pub use`; `prelude.rs`; `error.rs` with a `thiserror` error; no `anyhow` in a library; `[lints] workspace = true`; edition, rust-version, license and publish from the workspace; every dependency `workspace = true`; only allowed features | A manifest does not parse |
 | `unsafe-allowlist` | `#![allow(unsafe_code)]` only in the allow-listed crates, each with a reason; every `unsafe {` with a `// SAFETY:` comment above | A source file is unreadable |
 | `file-length` | Production `.rs` ≤ 500 lines; files under a tests folder ≤ 1000 | A source root is missing |
 | `test-placement` | No inline `mod tests {` in production files; test modules attach with `#[path = "tests/<file>.rs"]` | A source root is missing |
 | `module-headers` | Crate roots and production files of 80+ lines start with the four-point `//!` header (Role / Position / Signals and state / Invariants) | A source root is missing |
-| `readme-coverage` | Every folder under apps, crates, tools, documentation and assets has a README.md (except `tests`, `target` and dot-folders), and its `## Contents` `text` tree lists exactly the direct children | The tree walk fails |
+| `readme-coverage` | Every folder under crates, tools, documentation and assets has a README.md (except `tests`, `target` and dot-folders), and its `## Contents` `text` tree lists exactly the direct children | The tree walk fails |
 | `readme-sections` | Section order per README kind, from the README standard (planned: documentation/standards/readme_standard.md) | The standard's kind table is missing |
 | `status-lines` | Every Markdown file under documentation starts with `**Status:** live`, `**Status:** frozen record (YYYY-MM-DD)` or `**Status:** archived`; code READMEs have none | The tree walk fails |
 | `markdown-placement` | `.md` files only under documentation, as a README.md anywhere, or as the root CLAUDE.md, AGENTS.md and README.md; `reference/` ignored | The tree walk fails |

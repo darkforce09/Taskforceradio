@@ -24,7 +24,7 @@ id. A change to the design changes the document in the same commit as the code.
 ## Code
 
 - The crates these documents describe (planned: crates/game_link/, crates/audio/,
-  crates/version_0_9/, crates/version_1_0/ and the four apps under apps/).
+  crates/version_0_9/ and crates/version_1_0/, which also hold the four apps).
 
 ## Boundaries
 

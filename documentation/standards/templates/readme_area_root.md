@@ -3,7 +3,7 @@
 # README template: area root
 
 **When to use:** the top of a code tree or a category folder that groups crates without being one:
-apps/, crates/, each crates/<category>/ folder, tools/ and assets/. The
+crates/, each crates/<category>/ folder, tools/ and assets/. The
 [README standard](/documentation/standards/readme_standard.md) defines every rule this template follows;
 the area root kind adds Getting started.
 

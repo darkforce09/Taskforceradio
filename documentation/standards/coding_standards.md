@@ -21,8 +21,9 @@ holds it; the rest are held in review.
 
 ## Workspace and manifests
 
-- One workspace, `resolver = "3"`, with one member glob each for the apps, the crates by category and the
-  tools (`"apps/*"`, `"crates/*/*"`, `"tools/*"` in the root manifest).
+- One workspace, `resolver = "3"`, with one member glob each for the crates by category (the apps
+  among them, in their version category) and the tools (`"crates/*/*"`, `"tools/*"` in the root
+  manifest).
 - `[workspace.package]` sets edition 2024, `rust-version = "1.99"`, `license = "UNLICENSED"` and
   `publish = false`; every crate inherits them with `*.workspace = true`.
 - Every manifest opens with a one- to three-line comment saying what the crate is and who uses it, and
@@ -87,8 +88,9 @@ holds it; the rest are held in review.
   and their own category; services and interface on foundation; version_0_9 and version_1_0 on
   foundation, audio, teamspeak, `tfar_game_link_protocol`, services and interface. **version_0_9 and
   version_1_0 never depend on each other.** Plugin apps use anything except the other version's crates;
-  extension apps use only foundation and game_link; tools use crates, never apps. Dev-dependencies are
-  exempt from tier order but never point at apps (`cargo xtask verify crate-tiers`).
+  extension apps use only foundation and game_link; tools use crates, never apps; no crate depends on an
+  app. Dev-dependencies are exempt from tier order but never point at an app; the gate knows the four
+  apps by name (`cargo xtask verify crate-tiers`).
 - A folder name equals its package name, and the path equals category plus name.
 
 ## Crate anatomy

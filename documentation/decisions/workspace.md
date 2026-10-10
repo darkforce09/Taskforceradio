@@ -307,3 +307,23 @@ in the documents are mapped to the rewritten ones.
 reference-untouched` still guards both trees from the manifest.
 
 **Supersedes:** the 2026-10-02 rule that commits `reference/tfar_0_9_12` as plain files (D15).
+
+### 2026-10-10 — Deliverables live in their version category; no apps folder (D7)
+
+**Context:** A top-level `apps/` folder beside `crates/` splits each mod version in two: its plugin
+and extension in one place, the libraries they link in another. Every crate is a crate, so the owner
+wants all of them under `crates/`, grouped by version.
+
+**Decision:** The four deliverables move into their version category:
+`crates/version_0_9/tfar_plugin_0_9`, `crates/version_0_9/tfar_extension_0_9`,
+`crates/version_1_0/tfar_plugin_1_0` and `crates/version_1_0/tfar_extension_1_0`, each declaring that
+category. There is no `apps/` folder and no `apps` category. Package names, crate types, tiers and the
+edge laws stay as they were: the gates know the four by name (`DELIVERABLES` in
+`tools/xtask/src/layout.rs`), so the plugin and extension rows of the edge matrix, the ban on depending
+on a deliverable and the `app` README kind are keyed by crate, not by folder.
+
+**Consequences:** The member globs are `crates/*/*` and `tools/*`; `cargo xtask verify crate-tiers`,
+`readme-sections` and `new-crate` read the deliverables list. Paths in documents name the new folders,
+and tests that climb to the repository root climb three folders.
+
+**Supersedes:** the 2026-10-02 rule that puts the deliverables in apps/ (D7).

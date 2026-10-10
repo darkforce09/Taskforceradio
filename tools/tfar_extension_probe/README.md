@@ -59,8 +59,8 @@ None: the probe reads only its command line.
 - Used by: developers, by hand, under Proton's wine or on the Linux host.
 - Rules: the call text reaches the extension unchanged but for the `\t` escape, and the reply is
   printed as the extension wrote it (`src/tests/`); the probe never depends on the extension apps
-  (tools never use apps). Tier 0 in `tools`: every workspace dependency has a lower tier and
-  follows the edge matrix in `crates/README.md` (`cargo xtask verify crate-tiers`). `unsafe` is
+  (tools never use the deliverables). Tier 0 in `tools`: every workspace dependency has a lower
+  tier and follows the edge matrix in `crates/README.md` (`cargo xtask verify crate-tiers`). `unsafe` is
   allowed here for loading and calling the library (`cargo xtask verify unsafe-allowlist`).
 
 ## Related documentation

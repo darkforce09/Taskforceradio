@@ -9,8 +9,8 @@ documents that go deeper.
 
 ## Which folders carry a README
 
-The README span is every tracked folder at or under apps/, crates/, tools/, assets/ and `documentation/`,
-the roots included, minus the exempt folders and everything below them:
+The README span is every tracked folder at or under crates/, tools/, assets/ and `documentation/`, the
+roots included, minus the exempt folders and everything below them:
 
 - a folder named `tests` (sibling unit tests, integration tests and their fixtures);
 - a folder named `target` (build output);
@@ -97,8 +97,8 @@ A folder's kind decides which sections follow How it works. Each kind has a temp
 | Kind | Kind sections, in order | Template | Examples |
 |---|---|---|---|
 | crate root | Getting started, Configuration, Public surface | `readme_crate_root.md` | a library under crates/, tools/xtask/, tools/tfar_ts3_mock/ |
-| app | Getting started, Configuration, Exports | `readme_app.md` | apps/tfar_plugin_1_0/, apps/tfar_extension_0_9/ |
-| area root | Getting started | `readme_area_root.md` | apps/, crates/, crates/audio/, tools/, assets/ |
+| app | Getting started, Configuration, Exports | `readme_app.md` | crates/version_1_0/tfar_plugin_1_0/, crates/version_0_9/tfar_extension_0_9/ |
+| area root | Getting started | `readme_area_root.md` | crates/, crates/audio/, crates/version_1_0/, tools/, assets/ |
 | domain or subsystem | Public surface | `readme_domain.md` | a crate's src/, a module folder with child folders |
 | leaf | none | `readme_leaf.md` | a module folder of source files only |
 | command-line | Commands | `readme_command_line.md` | the xtask command folders, a mock's scenario runner |
@@ -129,11 +129,12 @@ documentation. `cargo xtask verify readme-sections` holds that order and each ki
 
 ### Picking a kind
 
-Take the first that fits: documentation folder (anything under `documentation/`); app (a folder directly
-under apps/); area root (apps/, crates/, a category folder under crates/, tools/, assets/); crate root (a
-folder holding a `Cargo.toml` outside apps/); data; command-line (a folder that defines a binary's
-subcommands); domain or subsystem (any other folder with child folders besides exempt ones, a crate's
-`src/` included); leaf (any other folder).
+Take the first that fits: documentation folder (anything under `documentation/`); app (the folder
+of one of the four deliverables, `tfar_plugin_0_9`, `tfar_extension_0_9`, `tfar_plugin_1_0` and
+`tfar_extension_1_0`, each in its version category under crates/); area root (crates/, a category
+folder under crates/, tools/, assets/); crate root (any other folder holding a `Cargo.toml`); data;
+command-line (a folder that defines a binary's subcommands); domain or subsystem (any other folder
+with child folders besides exempt ones, a crate's `src/` included); leaf (any other folder).
 
 ## Writing rules
 

@@ -2,11 +2,11 @@
 
 # README template: app
 
-**When to use:** a deliverable directly under apps/: the two TeamSpeak plugins (tfar_plugin_0_9,
-tfar_plugin_1_0) and the two Arma extensions (tfar_extension_0_9, tfar_extension_1_0). An app is a
-`cdylib` (plus an `rlib` for its tests) that a host program loads. The
-[README standard](/documentation/standards/readme_standard.md) defines every rule this template follows;
-the app kind adds Getting started, Configuration and Exports.
+**When to use:** a deliverable, in its version category under crates/: the two TeamSpeak plugins
+(tfar_plugin_0_9, tfar_plugin_1_0) and the two Arma extensions (tfar_extension_0_9,
+tfar_extension_1_0). An app is a `cdylib` (plus an `rlib` for its tests) that a host program loads.
+The [README standard](/documentation/standards/readme_standard.md) defines every rule this template
+follows; the app kind adds Getting started, Configuration and Exports.
 
 ## Skeleton
 
@@ -73,8 +73,8 @@ mod. It answers every `callExtension` call from the mod's SQF by relaying it ove
 ## Contents
 
 ```text
-apps/tfar_extension_1_0/
-├── Cargo.toml  cdylib + rlib, tier 2 in apps; uses tfar_arma_extension_abi and tfar_game_link_client
+crates/version_1_0/tfar_extension_1_0/
+├── Cargo.toml  cdylib + rlib, tier 2; uses tfar_arma_extension_abi and tfar_game_link_client
 └── src/        the RVExtension handler, the async and sync paths, the focus reporter
 ```
 

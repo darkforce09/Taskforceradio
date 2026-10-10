@@ -39,7 +39,8 @@ The detail is in the [standards](/documentation/standards/README.md).
    `cargo deny check` hold where each library may be used.
 5. **Strict category layering.** A crate depends only on crates of a lower tier and of the categories
    the edge matrix allows; `version_0_9` and `version_1_0` never depend on each other; extension apps use
-   only foundation and game_link; tools never use apps. Gate: `cargo xtask verify crate-tiers`.
+   only foundation and game_link; no crate, tool or library, uses one of the four apps. Gate:
+   `cargo xtask verify crate-tiers`.
 6. **Self-describing names.** Folder, file, module and symbol names need zero context: snake_case, no
    cryptic abbreviations, every crate prefixed `tfar_`, the folder name equal to the package name,
    version tags `_0_9` and `_1_0`. Gate: `cargo xtask verify crate-tiers` (folder = package name);
@@ -72,8 +73,8 @@ The detail is in the [standards](/documentation/standards/README.md).
 
 ## 2. Directory atlas
 
-The target layout of the approved plan. M0 creates all of it as compiling skeletons; a folder's own
-README.md says what it holds today.
+The layout of the workspace. There is no apps folder: each deliverable lives in its version
+category beside its libraries. A folder's own README.md says what it holds today.
 
 ```text
 Taskforceradio/
@@ -84,15 +85,7 @@ Taskforceradio/
 ├── .gitignore  .gitattributes
 ├── README.md                   what the project is, layout, build and check, status
 ├── CLAUDE.md                   this file;  AGENTS.md -> CLAUDE.md
-├── apps/                       the four deliverables (cdylib + rlib)
-│   ├── tfar_plugin_0_9/        TS plugin .so for 0.9.12: exports, threads, events, PTT/VAD, metadata,
-│   │                           serious mode
-│   ├── tfar_plugin_1_0/        TS plugin .so for 1.0: the same plus the async queue, antennas, SETCFG
-│   │                           and the focus-aware channel move
-│   ├── tfar_extension_0_9/     Arma extension DLL for 0.9.12: every call is a sync round trip
-│   └── tfar_extension_1_0/     Arma extension DLL for 1.0: `~` async, DFRAME → NEEDCFG/OK, MISSIONEND,
-│                               FOCUS frames
-├── crates/                     library crates, crates/<category>/<crate>/
+├── crates/                     every product crate, crates/<category>/<crate>/
 │   ├── foundation/             tfar_geometry (glam domain helpers), tfar_arma_values
 │   ├── audio/                  tfar_sample_buffer, tfar_dsp_filters, tfar_dynamics, tfar_hrtf,
 │   │                           tfar_spatial_audio (distance curve + cone), tfar_playback_mixer (hound)
@@ -101,10 +94,17 @@ Taskforceradio/
 │   │                           tfar_arma_extension_abi
 │   ├── services/               tfar_web_requests (update check, Piwik; ureq + rustls)
 │   ├── interface/              tfar_debug_window (egui window, X11)
-│   ├── version_0_9/            tfar_game_commands_0_9, tfar_plugin_commands_0_9,
+│   ├── version_0_9/            the 0.9.12 mod: two deliverables (cdylib + rlib) and six libraries
+│   │   ├── tfar_plugin_0_9/    TS plugin .so: exports, threads, events, PTT/VAD, metadata, serious mode
+│   │   ├── tfar_extension_0_9/ Arma extension DLL: every call is a sync round trip
+│   │   └── …                   tfar_game_commands_0_9, tfar_plugin_commands_0_9,
 │   │                           tfar_radio_effects_0_9, tfar_client_state_0_9,
 │   │                           tfar_radio_routing_0_9, tfar_voice_pipeline_0_9
-│   └── version_1_0/            the same six with _1_0, plus tfar_antennas_1_0 and
+│   └── version_1_0/            the 1.0 mod: two deliverables (cdylib + rlib) and eight libraries
+│       ├── tfar_plugin_1_0/    TS plugin .so: the 0.9 set plus the async queue, antennas, SETCFG
+│       │                       and the focus-aware channel move
+│       ├── tfar_extension_1_0/ Arma extension DLL: `~` async, DFRAME → NEEDCFG/OK, MISSIONEND, FOCUS
+│       └── …                   the same six libraries with _1_0, plus tfar_antennas_1_0 and
 │                               tfar_plugin_settings_1_0
 ├── tools/
 │   ├── xtask/                  `cargo xtask`: verify, ci, dist, new-crate, reference-manifest
@@ -123,7 +123,7 @@ Taskforceradio/
 └── reference/                  README.md + MANIFEST.sha256; tfar_1_0/ and tfar_0_9_12/, byte-identical
 ```
 
-That is 38 crates: 4 apps, 30 libraries and 4 tools. The crate list, tiers and edges are in the
+That is 38 crates: 4 deliverables (the apps), 30 libraries and 4 tools. The crate list, tiers and edges are in the
 [crate catalogue](/documentation/program/crate_catalogue.md); the edge matrix and firewalls are in
 [laws and gates](/documentation/program/laws_and_gates.md).
 

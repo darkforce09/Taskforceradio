@@ -1,6 +1,6 @@
 //! The Rust sources the source gates walk, and the crate each belongs to.
 //!
-//! **Role:** lists the `.rs` files under apps, crates and tools, tells test files from production
+//! **Role:** lists the `.rs` files under crates and tools, tells test files from production
 //! files, finds a file's crate folder and says whether a file is a crate root.
 //!
 //! **Position:** shared by `unsafe-allowlist`, `file-length`, `test-placement`, `module-headers`
@@ -16,7 +16,7 @@ use anyhow::{Result, bail};
 use crate::layout::MEMBER_ROOTS;
 use crate::support::repository::{self, Repository};
 
-/// Every listed `.rs` file under apps, crates and tools; an error when none of those folders holds
+/// Every listed `.rs` file under crates and tools; an error when none of those folders holds
 /// any file, because then the gate has nothing to check.
 pub(crate) fn rust_files(repository: &Repository) -> Result<Vec<String>> {
     let files = repository.files()?;
@@ -29,7 +29,7 @@ pub(crate) fn rust_files(repository: &Repository) -> Result<Vec<String>> {
         })
         .collect();
     if under_roots.is_empty() {
-        bail!("no source root: apps, crates and tools hold no file");
+        bail!("no source root: crates and tools hold no file");
     }
     Ok(under_roots
         .into_iter()

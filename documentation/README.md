@@ -22,11 +22,11 @@ documentation/
 
 ## How it works
 
-Documents live only in this folder. Each code folder (under apps/, crates/, tools/ and assets/) carries
+Documents live only in this folder. Each code folder (under crates/, tools/ and assets/) carries
 its own README.md saying what the folder holds and where it stops, written to the
 [README standard](/documentation/standards/readme_standard.md); the repository root holds `README.md`,
 `CLAUDE.md` and its symlink `AGENTS.md`, and `reference/` holds its one README. A document about one part
-of the code sits at the code's path with apps/, crates/ and src/ left out, so a document about the
+of the code sits at the code's path with crates/ and src/ left out, so a document about the
 1.0 radio routing crate goes in a folder named after the crate here; such folders are created with their
 first document.
 
@@ -65,7 +65,7 @@ a bug (the [bug policy](/documentation/decisions/bug_policy.md)), the decision w
 ## Code
 
 - [Reference trees](/reference/README.md) — the two original mods the behaviour specs describe.
-- The workspace (apps/, crates/, tools/): described by the
+- The workspace (crates/, tools/): described by the
   [workspace layout](/documentation/architecture/workspace_layout.md) and the
   [crate catalogue](/documentation/program/crate_catalogue.md).
 

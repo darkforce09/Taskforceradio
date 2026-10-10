@@ -8,7 +8,7 @@
 //!
 //! **Signals and state:** none; pure functions over the repository listing.
 //!
-//! **Invariants:** a folder is in the span when it lies at or under apps, crates, tools,
+//! **Invariants:** a folder is in the span when it lies at or under crates, tools,
 //! documentation or assets and no folder on its path is `tests`, `target` or starts with `.`;
 //! the Contents block is the first `text` fence between `## Contents` and the next `##` heading.
 

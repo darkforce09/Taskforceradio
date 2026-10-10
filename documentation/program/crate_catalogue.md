@@ -2,10 +2,10 @@
 
 # Crate catalogue
 
-Every crate of the workspace (38: 4 apps, 30 libraries, 4 tools), grouped by category: its tier,
-the original code it ports, the external crates it may use, the bug fixes it owns and the milestone
-that builds it. The workspace edges are the table at the end, read from `cargo metadata`, and the
-same edges in the [shared brief](/documentation/program/agent_briefs/shared_brief.md); the laws
+Every crate of the workspace (38: 4 deliverables, 30 libraries, 4 tools), grouped by category: its
+tier, the original code it ports, the external crates it may use, the bug fixes it owns and the
+milestone that builds it. The workspace edges are the table at the end, read from `cargo metadata`,
+and the same edges in the [shared brief](/documentation/program/agent_briefs/shared_brief.md); the laws
 that check tiers, edges and firewalls are in
 [laws and gates](/documentation/program/laws_and_gates.md). Fix ids point into
 [bug fixes](/documentation/program/bug_fixes.md). M0 creates every crate as a skeleton; the
@@ -75,6 +75,10 @@ Every "Ports from" path is a file in the reference trees; a `:line` points at th
 
 ## crates/version_0_9
 
+The two deliverables (apps) sit beside the libraries: each is a `cdylib` + `rlib` whose
+`[lib] name` is the crate name, and `cargo xtask dist` gives the files their installed names. The
+plugin is tier 6, the extension tier 2.
+
 | Crate | Tier | Ports from (reference file:line) | External crates | Fixes | Milestone |
 |---|---|---|---|---|---|
 | `tfar_game_commands_0_9` | 2 | `reference/tfar_0_9_12/ts/src/plugin.cpp:1769` (`processGameCommand`), `reference/tfar_0_9_12/ts/src/plugin.cpp:1534` (`ts_info`) | — | F-003, F-020, F-021, F-027, F-028 | M6 |
@@ -83,8 +87,14 @@ Every "Ports from" path is a file in the reference trees; a `:line` points at th
 | `tfar_client_state_0_9` | 3 | `reference/tfar_0_9_12/ts/src/plugin.cpp:192` (`CLIENT_DATA`), `reference/tfar_0_9_12/ts/src/plugin.cpp:370` (server data), `reference/tfar_0_9_12/ts/src/plugin.cpp:1938` (expiry), `reference/tfar_0_9_12/ts/src/plugin.cpp:1418` (serious mode) | `parking_lot`, `arc-swap` | F-002, F-022, F-024, F-032, F-033 | M6 |
 | `tfar_radio_routing_0_9` | 4 | `reference/tfar_0_9_12/ts/src/plugin.cpp:989` (`isOverLocalRadio`), `reference/tfar_0_9_12/ts/src/plugin.cpp:1091` (`isOverRadio`), `reference/tfar_0_9_12/ts/src/plugin.cpp:1188` (mute status), `reference/tfar_0_9_12/ts/src/plugin.cpp:1356` (dead players) | — | F-023, F-025 | M6 |
 | `tfar_voice_pipeline_0_9` | 5 | `reference/tfar_0_9_12/ts/src/plugin.cpp:2653` (stereo function), `reference/tfar_0_9_12/ts/src/plugin.cpp:2852` (captured voice), `reference/tfar_0_9_12/ts/src/plugin.cpp:2476` (`processRadioEffect`), `reference/tfar_0_9_12/ts/src/plugin.cpp:698` (`volumeFromDistance`) | — | F-051 | M6 |
+| `tfar_plugin_0_9` | 6 | `reference/tfar_0_9_12/ts/src/plugin.cpp:2217` (init), `reference/tfar_0_9_12/ts/src/plugin.cpp:1977` (ServiceThread), `reference/tfar_0_9_12/ts/src/plugin.cpp:2398` (TS events) | `tracing`, `profiling`, `tracy-client` (feature `tracy`), `parking_lot`, `crossbeam-channel` | F-071 | M0 skeleton, M2 exports, M6 full |
+| `tfar_extension_0_9` | 2 | `reference/tfar_0_9_12/arma3/@task_force_radio/task_force_radio_pipe/task_force_radio_pipe.cpp:53` | — | — | M0 skeleton, M3 transport, M6 full |
 
 ## crates/version_1_0
+
+The two deliverables (apps) sit beside the libraries: each is a `cdylib` + `rlib` whose
+`[lib] name` is the crate name, and `cargo xtask dist` gives the files their installed names. The
+plugin is tier 6, the extension tier 2.
 
 | Crate | Tier | Ports from (reference file:line) | External crates | Fixes | Milestone |
 |---|---|---|---|---|---|
@@ -96,17 +106,7 @@ Every "Ports from" path is a file in the reference trees; a `:line` points at th
 | `tfar_client_state_1_0` | 3 | `reference/tfar_1_0/ts/src/clientData.cpp`, `reference/tfar_1_0/ts/src/serverData.cpp`, `reference/tfar_1_0/ts/src/task_force_radio.cpp`, `reference/tfar_1_0/ts/src/plugin.cpp:879` (`processTangentPress`) | `parking_lot`, `arc-swap` | F-002, F-008, F-015, F-016, F-017, F-042–F-047 | M7 |
 | `tfar_radio_routing_1_0` | 4 | `reference/tfar_1_0/ts/src/clientData.cpp:148` (`isOverLocalRadio`), `reference/tfar_1_0/ts/src/clientData.cpp:267` (`isOverRadio`), `reference/tfar_1_0/ts/src/plugin.cpp:68` (mute status) | — | — | M7 |
 | `tfar_voice_pipeline_1_0` | 5 | `reference/tfar_1_0/ts/src/plugin.cpp:455` (`processVoiceData`), `reference/tfar_1_0/ts/src/plugin.cpp:789` (captured voice), `reference/tfar_1_0/ts/src/helpers.hpp:122` (`volumeAttenuation`) | — | F-013, F-061–F-063 | M7 |
-
-## apps
-
-Each app is a `cdylib` + `rlib` whose `[lib] name` is the crate name; `cargo xtask dist` gives the
-files their installed names. Apps sit at tier 6 (plugins) or 2 (extensions).
-
-| Crate | Tier | Ports from (reference file:line) | External crates | Fixes | Milestone |
-|---|---|---|---|---|---|
-| `tfar_plugin_0_9` | 6 | `reference/tfar_0_9_12/ts/src/plugin.cpp:2217` (init), `reference/tfar_0_9_12/ts/src/plugin.cpp:1977` (ServiceThread), `reference/tfar_0_9_12/ts/src/plugin.cpp:2398` (TS events) | `tracing`, `profiling`, `tracy-client` (feature `tracy`), `parking_lot`, `crossbeam-channel` | F-071 | M0 skeleton, M2 exports, M6 full |
 | `tfar_plugin_1_0` | 6 | `reference/tfar_1_0/ts/src/plugin.cpp:289` (init), `reference/tfar_1_0/ts/src/plugin.cpp:133` (ServiceThread), `reference/tfar_1_0/ts/src/Teamspeak.cpp:838` (`/tfar` commands) | `tracing`, `profiling`, `tracy-client` (feature `tracy`), `parking_lot`, `crossbeam-channel` | F-081, F-082 | M0 skeleton, M2 exports, M7 full |
-| `tfar_extension_0_9` | 2 | `reference/tfar_0_9_12/arma3/@task_force_radio/task_force_radio_pipe/task_force_radio_pipe.cpp:53` | — | — | M0 skeleton, M3 transport, M6 full |
 | `tfar_extension_1_0` | 2 | `reference/tfar_1_0/extensions/task_force_radio_pipe/task_force_radio_pipe.cpp:9`, `reference/tfar_1_0/extensions/task_force_radio_pipe/SharedMemoryTransfer.cpp:250` | — | — | M0 skeleton, M3 transport, M7 full |
 
 ## tools

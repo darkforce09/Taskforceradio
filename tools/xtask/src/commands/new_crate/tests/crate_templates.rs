@@ -3,9 +3,13 @@
 use super::*;
 
 fn spec(category: &str) -> CrateSpec {
+    named_spec(category, "tfar_sample_thing")
+}
+
+fn named_spec(category: &str, name: &str) -> CrateSpec {
     CrateSpec {
         category: category.to_owned(),
-        name: "tfar_sample_thing".to_owned(),
+        name: name.to_owned(),
         tier: 1,
         summary: "A sample crate with a \"quoted\" word in its summary.".to_owned(),
         dependencies: vec!["tfar_geometry".to_owned()],
@@ -51,7 +55,7 @@ fn a_library_skeleton_has_every_standard_file() {
 
 #[test]
 fn an_app_skeleton_is_a_cdylib_that_lifts_unsafe_code_with_a_reason() {
-    let files = crate_files(&spec("apps"));
+    let files = crate_files(&named_spec("crates/version_0_9", "tfar_extension_0_9"));
     let manifest = &files
         .iter()
         .find(|(name, _)| name == "Cargo.toml")
