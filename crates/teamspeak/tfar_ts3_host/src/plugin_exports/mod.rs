@@ -3,6 +3,7 @@
 
 mod audio_exports_macro;
 mod audio_glue;
+mod denormal_guard;
 mod event_arguments;
 mod event_exports_macro;
 mod event_glue;

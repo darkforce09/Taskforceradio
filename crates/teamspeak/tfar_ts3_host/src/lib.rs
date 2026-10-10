@@ -3,7 +3,8 @@
 //!
 //! **Role:** the boundary to TeamSpeak: the `ts3plugin_*` export layer ([`ts3_plugin!`] over the
 //! [`Ts3Plugin`] trait), the safe [`Ts3`] handle over the `TS3Functions` table of `ts3plugin-sys`,
-//! C-string and list ownership, and a `tracing` layer that forwards to TeamSpeak's log.
+//! C-string and list ownership, a `tracing` layer that forwards to TeamSpeak's log, and the lock-free counters a plugin's audio
+//! callbacks keep for its diagnostics.
 //!
 //! **Position:** `crates/teamspeak`, tier 0, depending on no workspace crate; used by
 //! `tfar_plugin_0_9`, `tfar_plugin_1_0`.
@@ -20,6 +21,7 @@
 // The crate is the FFI boundary to TeamSpeak: exports, the function table and C memory.
 #![allow(unsafe_code)]
 
+mod audio_diagnostics;
 mod crate_role;
 mod error;
 mod host_ids;
@@ -29,6 +31,7 @@ mod plugin_exports;
 pub mod prelude;
 mod ts3_functions;
 
+pub use audio_diagnostics::{AudioDiagnosticCounts, AudioDiagnostics};
 pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result, Ts3Error};
 pub use host_ids::{ChannelId, ClientId, ServerConnectionHandlerId};

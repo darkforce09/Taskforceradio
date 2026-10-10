@@ -7,16 +7,17 @@ export layer and the logging bridge, each in its own module.
 
 ```text
 crates/teamspeak/tfar_ts3_host/src/
-├── crate_role.rs    `CRATE_ROLE`: what the crate is for, in one sentence
-├── error.rs         `Ts3Error` for a TeamSpeak call, `Error` and `Result` for the rest
-├── host_ids.rs      the newtypes `ServerConnectionHandlerId`, `ClientId`, `ChannelId`
-├── host_values.rs   connect status, visibility, log level, property flags, targets, `Ts3Vector`
-├── lib.rs           the crate root: module header, `mod` lines and re-exports
-├── logging/         the `tracing` layer, its queue and the logger thread that calls `logMessage`
-├── plugin_exports/  `Ts3Plugin`, `ts3_plugin!` and the glue the exports call
-├── prelude.rs       the public names for glob import, without `Error` and `Result`
-├── tests/           the SDK layout test, the fake function table, the crate-role test
-└── ts3_functions/   `Ts3`: one safe method per TeamSpeak function TFAR calls
+├── audio_diagnostics.rs  `AudioDiagnostics`: the voice callbacks' lock-wait counters
+├── crate_role.rs         `CRATE_ROLE`: what the crate is for, in one sentence
+├── error.rs              `Ts3Error` for a TeamSpeak call, `Error` and `Result` for the rest
+├── host_ids.rs           the newtypes `ServerConnectionHandlerId`, `ClientId`, `ChannelId`
+├── host_values.rs        connect status, visibility, log level, property flags, targets, `Ts3Vector`
+├── lib.rs                the crate root: module header, `mod` lines and re-exports
+├── logging/              the `tracing` layer, its queue and the logger thread that calls `logMessage`
+├── plugin_exports/       `Ts3Plugin`, `ts3_plugin!` and the glue the exports call
+├── prelude.rs            the public names for glob import, without `Error` and `Result`
+├── tests/                the SDK layout test, the fake function table, the crate-role and counter tests
+└── ts3_functions/        `Ts3`: one safe method per TeamSpeak function TFAR calls
 ```
 
 ## How it works
@@ -26,7 +27,9 @@ calls `ts3plugin_setFunctionPointers`, which installs the `Ts3` handle (`ts3_fun
 callback reaches the app's `Ts3Plugin` implementation with safe arguments: IDs from `host_ids`,
 statuses from `host_values`, text as `&str`, voice blocks as bounded slices. The app calls back into
 TeamSpeak through `Ts3`, whose methods return `Ts3Error` with TeamSpeak's code and text on failure,
-and logs through `tracing`, which `logging` forwards to `logMessage` from its own thread.
+and logs through `tracing`, which `logging` forwards to `logMessage` from its own thread. A plugin's
+voice callbacks count their lock waits and skipped blocks in an `AudioDiagnostics`
+(`audio_diagnostics`), lock-free, for its service thread to log.
 
 Threads: TeamSpeak's main thread runs the lifecycle and event exports and may call `Ts3`; its audio
 threads run the voice exports, which only touch the samples they are given; the logger thread is

@@ -9,6 +9,7 @@ macro that turns it into the C symbols TeamSpeak looks up, and the glue between 
 crates/teamspeak/tfar_ts3_host/src/plugin_exports/
 ├── audio_exports_macro.rs  the voice-data and rolloff exports of the macro
 ├── audio_glue.rs           sample pointers and counts into bounded slices, then the trait call
+├── denormal_guard.rs       flush-to-zero and denormals-are-zero around each voice block
 ├── event_arguments.rs      the argument bundles: invoker, client move, errors, command, voice data
 ├── event_exports_macro.rs  the connection, channel, client, error, plugin-command and talk-status exports
 ├── event_glue.rs           raw event arguments into newtypes and `&str`, then the trait call
@@ -19,7 +20,7 @@ crates/teamspeak/tfar_ts3_host/src/plugin_exports/
 ├── plugin_answers.rs       init, command and error answers, and the info-panel item
 ├── plugin_memory.rs        `malloc` for the `infoData` text and `free` for `ts3plugin_freeMemory`
 ├── plugin_trait.rs         `Ts3Plugin`: metadata constants and one no-op default per callback
-└── tests/                  the macro on a dummy plugin, and the `infoData` memory
+└── tests/                  the macro on a dummy plugin, the `infoData` memory, the denormal guard
 ```
 
 ## How it works
@@ -46,8 +47,11 @@ The metadata strings are the trait's `&'static CStr` constants, so the pointers 
 ID in it, and `ts3plugin_init` fails with `1` when no table is installed. `ts3plugin_infoData`
 copies the plugin's text into a `malloc` block that TeamSpeak hands back to `ts3plugin_freeMemory`,
 which calls `free`. Voice callbacks run on TeamSpeak's audio threads: their glue allocates nothing,
-locks nothing and calls no TeamSpeak function; a null or inconsistent buffer becomes an empty slice
-with `frames == 0`, and a null mask, `edited` or `volume` pointer a local value.
+locks nothing and calls no TeamSpeak function, and runs each voice block under a `DenormalGuard`:
+flush-to-zero and denormals-are-zero set in MXCSR on entry and the caller's mode restored on exit,
+as the originals set the same mode, so decaying filter and HRTF tails never fall into slow
+denormal arithmetic. A null or inconsistent buffer becomes an empty slice with `frames == 0`, and a
+null mask, `edited` or `volume` pointer a local value.
 
 ## Boundaries
 

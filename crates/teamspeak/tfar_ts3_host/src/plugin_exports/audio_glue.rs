@@ -8,7 +8,8 @@
 //! hidden.
 //!
 //! **Signals and state:** runs on TeamSpeak's audio threads, frame by frame: it allocates nothing,
-//! takes no lock and calls no TeamSpeak function.
+//! takes no lock and calls no TeamSpeak function. Each voice block runs under a `DenormalGuard`
+//! (flush-to-zero and denormals-are-zero, the caller's mode restored afterwards).
 //!
 //! **Invariants:** a slice is built only from a non-null pointer and counts whose product fits in
 //! `usize`; anything else becomes an empty slice with `frames == 0`. A null mask, `edited` or
@@ -16,6 +17,7 @@
 
 use std::ffi::{c_int, c_uint};
 
+use super::denormal_guard::DenormalGuard;
 use super::event_arguments::{CapturedVoiceData, MixedPlaybackVoiceData, PostProcessVoiceData};
 use super::plugin_trait::Ts3Plugin;
 use crate::{ClientId, ServerConnectionHandlerId};
@@ -78,6 +80,7 @@ pub unsafe fn post_process_voice_data<P: Ts3Plugin>(
     speakers: *const c_uint,
     fill_mask: *mut c_uint,
 ) {
+    let _flush_denormals = DenormalGuard::new();
     // SAFETY: the caller's contract covers the sample block for this call.
     let (samples, channels, frames) = unsafe { sample_slice(block) };
     // SAFETY: the caller's contract covers the speaker array.
@@ -108,6 +111,7 @@ pub unsafe fn mixed_playback_voice_data<P: Ts3Plugin>(
     speakers: *const c_uint,
     fill_mask: *mut c_uint,
 ) {
+    let _flush_denormals = DenormalGuard::new();
     // SAFETY: the caller's contract covers the sample block for this call.
     let (samples, channels, frames) = unsafe { sample_slice(block) };
     // SAFETY: the caller's contract covers the speaker array.
@@ -137,6 +141,7 @@ pub unsafe fn captured_voice_data<P: Ts3Plugin>(
     block: RawVoiceBlock,
     edited: *mut c_int,
 ) {
+    let _flush_denormals = DenormalGuard::new();
     // SAFETY: the caller's contract covers the sample block for this call.
     let (samples, channels, frames) = unsafe { sample_slice(block) };
     let mut unused_edited = 0;
