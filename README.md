@@ -10,21 +10,18 @@ kept read-only in `reference/` as the specification.
 
 | Mod | Arma extension | TeamSpeak plugin |
 |---|---|---|
-| TFAR 1.0 | tfar_extension_1_0 | tfar_plugin_1_0 |
-| TFAR 0.9.12 | tfar_extension_0_9 | tfar_plugin_0_9 |
+| TFAR 1.0 | `tfar_extension_1_0` | `tfar_plugin_1_0` |
+| TFAR 0.9.12 | `tfar_extension_0_9` | `tfar_plugin_0_9` |
 
 ## Layout
 
 | Folder | What it holds |
 |---|---|
-| crates/ | every product crate by category: foundation, audio, teamspeak, game_link, services, interface, and version_0_9 and version_1_0, each holding its mod's TeamSpeak plugin, Arma extension and libraries |
-| tools/ | `cargo xtask` (gates, CI lane, dist, scaffolding), the TeamSpeak mock host, the extension probe, the golden-vector oracle |
-| assets/ | the IRCAM HRIR sphere the HRTF crate loads, with its credits |
-| `documentation/` | every document: roadmap, decisions, architecture, standards, program records, runbooks |
-| `reference/` | the two original mods, byte-identical and read-only ([reference README](/reference/README.md)) |
-
-The full annotated tree is in [CLAUDE.md](/CLAUDE.md#2-directory-atlas); the
-[documentation map](/documentation/README.md) lists every document.
+| `crates/` | Every product crate by category: foundation, audio, teamspeak, game_link, services, interface, and version_0_9 and version_1_0, each holding its mod's plugin, extension and voice logic |
+| `tools/` | `cargo xtask` (gates, CI lane, dist), the TeamSpeak mock host, the extension probe, the golden-vector oracle |
+| `assets/` | The IRCAM HRIR sphere the HRTF loads, with its credits |
+| `documentation/` | Architecture, decisions, behaviour specs of the originals, standards, glossary, runbook ([map](/documentation/README.md)) |
+| `reference/` | The two original mods, byte-identical and read-only ([reference README](/reference/README.md)) |
 
 ## Build and check
 
@@ -34,16 +31,28 @@ Rust 1.99.0 is pinned in `rust-toolchain.toml`; the extensions cross-compile wit
 ```bash
 cargo build --workspace                                   # plugins and tools for Linux
 cargo build -p tfar_extension_1_0 -p tfar_extension_0_9 --target x86_64-pc-windows-gnu
-cargo xtask ci ci-local                                   # fmt, clippy, tests, deny, typos, every gate
+cargo xtask ci ci-local                                   # the CI: fmt, clippy, tests, deny, typos, every gate
 cargo xtask dist                                          # release artifacts in target/dist/
 ```
 
-`cargo xtask dist` never copies anything into a mod folder or into TeamSpeak; installing is a manual step
+`cargo xtask ci ci-local` is the project's CI. It runs locally only, because the reference trees it
+checks are not in the repository. `cargo xtask dist` never copies anything into a mod folder or into
+TeamSpeak; installing is a manual step
 ([manual install and test](/documentation/runbooks/manual_install_and_test.md)).
 
 ## Status
 
-Milestone M0, the workspace skeleton with its gates and documentation, is in progress. The milestones
-M0 to M8 and their acceptance tests are in the [roadmap](/documentation/roadmap.md); the current state is
-in [progress](/documentation/program/progress.md). The licence is not decided yet; the upstream mods are
+All code is written and released as `v0.1.1`. The licence is not decided yet; the upstream mods are
 under APL-SA.
+
+## Open work
+
+- [ ] Live check: both plugins load in the Flatpak TeamSpeak (runbook, TeamSpeak section).
+- [ ] Live check: the probe answers `PONG` under Proton's wine, then `TS_INFO\tPING` answers in Arma
+      with BattlEye off.
+- [ ] Live check: install from `target/dist/` by hand and play both mods; listen for clicks on
+      fast-moving sources (does the HRTF need its own crossfade?) and in other players' voices.
+- [ ] Make `split_keeping_every_field` in `tfar_arma_values` public and use it in the 1.0 game command
+      parser instead of its private copy.
+- [ ] Document `append_own_voice_for_speakers` (1.0 voice pipeline) as off-audio-thread only, or give
+      it a `StreamProducer` parameter, as the 0.9 `append_own_voice`.

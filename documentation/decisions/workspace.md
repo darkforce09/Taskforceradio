@@ -81,7 +81,7 @@ conventions survey in `documentation/program/research/` maps what was adopted.
 trailer, no remote yet.
 
 **Consequences:** No branches. During a program only the orchestrator commits; agents report their files.
-The rules are in the [commit conventions](/documentation/standards/commit_conventions.md).
+The rules are in the [commit conventions](/documentation/standards/code_and_documentation.md#commits).
 
 **Supersedes:** none.
 
@@ -122,7 +122,7 @@ manual install runbook holds the copy steps.
 **Decision:** Opus sub-agents work one slice each from briefs and prompts under `documentation/program/`;
 the orchestrator reviews and gates every slice, and `progress.md` holds the handoff.
 
-**Consequences:** Every brief follows the [agent brief template](/documentation/standards/templates/agent_brief.md)
+**Consequences:** Every brief follows the [agent brief template](/documentation/standards/README.md)
 and the shared brief; the fast stage gate runs per slice and the full `cargo xtask ci ci-local` at each
 milestone close.
 

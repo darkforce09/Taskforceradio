@@ -70,5 +70,5 @@ null mask, `edited` or `volume` pointer a local value.
 
 ## Related documentation
 
-- [Coding standards](/documentation/standards/coding_standards.md) — the FFI and audio-thread rules
+- [Coding standards](/documentation/standards/code_and_documentation.md) — the FFI and audio-thread rules
   the glue follows.

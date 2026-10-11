@@ -25,7 +25,7 @@ reference/
   them. The owner keeps the tree locally; the manifest guards it.
 
 Both trees are **read-only**: never write, format, move, rename or delete a file under `reference/`. This
-README is the one file the port writes here (law 3 in [CLAUDE.md](/CLAUDE.md#1-project-laws)).
+README is the one file the port writes here (law 4 in [CLAUDE.md](/CLAUDE.md#1-core-project-laws)).
 
 The manifest, `MANIFEST.sha256`, holds one sorted `sha256  relative/path` line for every file under
 `reference/` except this README, the manifest itself and everything under `tfar_1_0/.git/`.

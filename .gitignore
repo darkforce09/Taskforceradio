@@ -12,7 +12,11 @@ target-*/
 .directory
 
 # Machine-local agent settings.
-.claude/settings.local.json
+/.claude/
+/.codex/
 
 # The 0.9.12 reference tree is local only; MANIFEST.sha256 guards it.
 /reference/tfar_0_9_12/
+
+# Machine-local state: logs, probes, session notes.
+/.workstation/

@@ -82,5 +82,5 @@ the fakes answer with; the default pre-processor value is `vad=false`.
   original 0.9.12 plugin and the TeamSpeak API it uses.
 - [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin and the TeamSpeak API it uses.
-- [Coding standards](/documentation/standards/coding_standards.md) — the FFI and test rules the
+- [Coding standards](/documentation/standards/code_and_documentation.md) — the FFI and test rules the
   mock holds.

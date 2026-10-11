@@ -46,5 +46,5 @@ forwarding, queues the stop message, lets the thread finish what was queued and 
 
 ## Related documentation
 
-- [Coding standards](/documentation/standards/coding_standards.md) — the audio-thread logging rule
+- [Coding standards](/documentation/standards/code_and_documentation.md) — the audio-thread logging rule
   and the thread ownership the logger thread follows.

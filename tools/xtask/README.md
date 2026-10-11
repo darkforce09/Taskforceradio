@@ -79,7 +79,7 @@ cargo test -p xtask                    # the gate fixtures and the command tests
 
 - [Laws and gates](/documentation/program/laws_and_gates.md) — every gate, its exit codes and its
   perturbation proofs.
-- [README standard](/documentation/standards/readme_standard.md) — the README rules the
+- [README standard](/documentation/standards/code_and_documentation.md#documents) — the README rules the
   documentation gates hold.
-- [Coding standards](/documentation/standards/coding_standards.md) — the crate anatomy and source
+- [Coding standards](/documentation/standards/code_and_documentation.md) — the crate anatomy and source
   rules the source gates hold.

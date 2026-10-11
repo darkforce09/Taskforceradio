@@ -69,5 +69,5 @@ library; what the apps use) and `Ts3::config_path`.
   original 1.0 plugin and the TeamSpeak API it uses.
 - [Library survey](/documentation/program/research/library_survey.md) — why `ts3plugin-sys` and
   not the high-level `ts3plugin` crate.
-- [Coding standards](/documentation/standards/coding_standards.md) — the FFI and audio-thread
+- [Coding standards](/documentation/standards/code_and_documentation.md) — the FFI and audio-thread
   rules this crate holds.

@@ -24,7 +24,7 @@ documentation/
 
 Documents live only in this folder. Each code folder (under crates/, tools/ and assets/) carries
 its own README.md saying what the folder holds and where it stops, written to the
-[README standard](/documentation/standards/readme_standard.md); the repository root holds `README.md`,
+[README standard](/documentation/standards/code_and_documentation.md#documents); the repository root holds `README.md`,
 `CLAUDE.md` and its symlink `AGENTS.md`, and `reference/` holds its one README. A document about one part
 of the code sits at the code's path with crates/ and src/ left out, so a document about the
 1.0 radio routing crate goes in a folder named after the crate here; such folders are created with their
@@ -34,7 +34,7 @@ Every document opens with a status line. A **live** document tracks the code and
 commit as the code it describes. A **frozen record** keeps its words: the behaviour specs and research
 under `documentation/program/` are frozen records of the original C++ as it was read, and new facts go
 into a new record. An **archived** document records history and is never current. The
-[documentation standards](/documentation/standards/documentation_standards.md) set the rules, and the
+[documentation standards](/documentation/standards/code_and_documentation.md#documents) set the rules, and the
 `cargo xtask verify` documentation gates check the ones a program can check.
 
 ### Reading order
@@ -44,7 +44,7 @@ into a new record. An **archived** document records history and is never current
 3. [Roadmap](/documentation/roadmap.md): what each milestone delivers and how it is accepted.
 4. The [program folder](/documentation/program/README.md) in its own resume order: progress, plan,
    catalogue, laws.
-5. The document for the task at hand, from the table in [CLAUDE.md](/CLAUDE.md#5-where-to-look).
+5. The document for the task at hand, from the table in [CLAUDE.md](/CLAUDE.md).
 
 ### Authority ladder
 
@@ -83,7 +83,7 @@ a bug (the [bug policy](/documentation/decisions/bug_policy.md)), the decision w
 
 ## Related documentation
 
-- [Documentation standards](/documentation/standards/documentation_standards.md) — where documents live,
+- [Documentation standards](/documentation/standards/code_and_documentation.md#documents) — where documents live,
   status lines, lifecycle, writing rules.
-- [README standard](/documentation/standards/readme_standard.md) — the README core and its kinds.
+- [README standard](/documentation/standards/code_and_documentation.md#documents) — the README core and its kinds.
 - [Glossary](/documentation/glossary.md) — the terms these documents use.

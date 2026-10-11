@@ -22,7 +22,7 @@ documentation/decisions/
 The log is one set of entries split over files by subject, each file within 500 lines. An entry is a
 `###` heading, `<date> — <the decision>`, with **Context**, **Decision**, **Consequences** and
 **Supersedes** in that order, written from the
-[decision entry template](/documentation/standards/templates/decisions_entry.md) and added at the end of
+[decision entry template](/documentation/standards/code_and_documentation.md#documents) and added at the end of
 the file of its subject. The approved program plan's ids stay in the heading in brackets:
 
 | Subject | Plan decisions |
@@ -53,7 +53,7 @@ its file and the heading's anchor.
 
 ## Related documentation
 
-- [Decision entry template](/documentation/standards/templates/decisions_entry.md) — the entry's parts
+- [Decision entry template](/documentation/standards/code_and_documentation.md#documents) — the entry's parts
   and how to link one.
 - [Program plan](/documentation/program/program_plan.md) — the binding decisions table and the program
   around it.
