@@ -17,7 +17,7 @@ mod mock_host_scenario {
     use std::net::TcpListener;
     use std::time::{Duration, Instant};
 
-    use tfar_game_link_client::prelude::{ClientConfig, Flavour, GameLinkClient, SyncOutcome};
+    use tfar_game_link::client::prelude::{ClientConfig, Flavour, GameLinkClient, SyncOutcome};
     use tfar_ts3_mock::{MockHost, locate_cdylib};
 
     /// Set in the child's environment; its presence means "run the scenario here".

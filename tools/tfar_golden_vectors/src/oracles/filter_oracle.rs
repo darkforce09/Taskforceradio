@@ -5,7 +5,7 @@
 //! original `processFilterStereo`, and the magnitude response.
 //!
 //! **Position:** inside `oracles`; called by the filter comparison tests, which run the same
-//! design through `tfar_dsp_filters`. The design classes are DSPFilters'
+//! design through `tfar_audio::dsp_filters`. The design classes are DSPFilters'
 //! `SimpleFilter<Butterworth::LowPass<N>>`, `SimpleFilter<Butterworth::BandPass<N>>`,
 //! `SimpleFilter<RBJ::LowPass>` and `SimpleFilter<RBJ::HighPass>` with the default
 //! `DirectFormII` state, from `reference/tfar_1_0/ts/include/dspfilters/`.

@@ -109,9 +109,7 @@ None: the crate reads no setting. The timeouts are constants (`UPDATE_CHECK_TIME
   `version-compare` for the comparison, `tracing` for log lines, `thiserror` for the error type.
 - Used by: `tfar_plugin_0_9`, `tfar_plugin_1_0`.
 - Rules: no request runs on the caller's thread for `spawn_*`, and none on a TeamSpeak audio
-  callback. Tests never reach the real network. Tier 0 in `crates/services`: every workspace
-  dependency has a lower tier and follows the category edge matrix
-  (`cargo xtask verify crate-tiers`).
+  callback. Tests never reach the real network.
 
 ## Related documentation
 

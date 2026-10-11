@@ -1,5 +1,5 @@
 //! The serious-mode auto-mute in TeamSpeak: decide under the server lock with
-//! `tfar_radio_routing_1_0`, record in the `MuteTracker`, send after the lock is released.
+//! `tfar_plugin_logic_1_0::radio_routing`, record in the `MuteTracker`, send after the lock is released.
 //!
 //! **Role:** `setGameClientMuteStatus` (`reference/tfar_1_0/ts/src/plugin.cpp:68-94`) for one
 //! client, for every client, and the killed-player mute matrix.
@@ -14,9 +14,11 @@
 
 use std::time::Instant;
 
-use tfar_client_state_1_0::prelude::TeamspeakClientId;
-use tfar_plugin_settings_1_0::PluginSettings;
-use tfar_radio_routing_1_0::{MuteChanges, RoutingContext, killed_mute_matrix, mute_decision};
+use tfar_plugin_logic_1_0::client_state::prelude::TeamspeakClientId;
+use tfar_plugin_logic_1_0::plugin_settings::PluginSettings;
+use tfar_plugin_logic_1_0::radio_routing::{
+    MuteChanges, RoutingContext, killed_mute_matrix, mute_decision,
+};
 use tfar_ts3_host::{ClientId, ServerConnectionHandlerId};
 
 use crate::runtime::plugin_runtime::PluginRuntime;
@@ -122,7 +124,7 @@ impl PluginRuntime {
                 .session
                 .clients
                 .iter()
-                .map(tfar_client_state_1_0::prelude::ClientData::client_id)
+                .map(tfar_plugin_logic_1_0::client_state::prelude::ClientData::client_id)
                 .collect();
             clients
                 .into_iter()

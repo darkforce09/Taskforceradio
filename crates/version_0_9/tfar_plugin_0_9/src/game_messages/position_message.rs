@@ -18,10 +18,10 @@
 
 use std::time::Instant;
 
-use tfar_client_state_0_9::{PositionOutcome, SpeakingState};
-use tfar_game_commands_0_9::PositionUpdate;
-use tfar_game_commands_0_9::replies::NOT_SPEAKING;
-use tfar_radio_routing_0_9::{MuteQuery, set_game_client_mute_status};
+use tfar_plugin_logic_0_9::client_state::{PositionOutcome, SpeakingState};
+use tfar_plugin_logic_0_9::game_commands::PositionUpdate;
+use tfar_plugin_logic_0_9::game_commands::replies::NOT_SPEAKING;
+use tfar_plugin_logic_0_9::radio_routing::{MuteQuery, set_game_client_mute_status};
 use tfar_ts3_host::ServerConnectionHandlerId;
 
 use super::message_dispatch::speaking_reply;

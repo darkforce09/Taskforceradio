@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use tfar_hrtf::HrirLibrary;
+use tfar_audio::hrtf::HrirLibrary;
 use tfar_ts3_host::Ts3;
 use tfar_ts3_settings_db::{read_push_to_talk_delay, settings_database_path};
 

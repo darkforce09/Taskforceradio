@@ -21,7 +21,9 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
-use tfar_radio_routing_0_9::{MuteDecision, is_serious_mode, set_mute_for_dead_players};
+use tfar_plugin_logic_0_9::radio_routing::{
+    MuteDecision, is_serious_mode, set_mute_for_dead_players,
+};
 use tfar_ts3_host::ServerConnectionHandlerId;
 
 use crate::channel_snapshot::read_channel_snapshot;

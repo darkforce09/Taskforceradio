@@ -4,7 +4,7 @@
 //!
 //! **Role:** `onGameConnected`, `onGameDisconnected`, `onGameStart` and `onGameEnd` of
 //! `reference/tfar_1_0/ts/src/task_force_radio.cpp:17-53`, driven by
-//! `tfar_client_state_1_0::GameLinkState`, plus the own metadata of `updateUserStatusInfo`.
+//! `tfar_plugin_logic_1_0::client_state::GameLinkState`, plus the own metadata of `updateUserStatusInfo`.
 //!
 //! **Position:** methods of `PluginRuntime`; called by the game link handler on every game
 //! message and by the service thread every 100 ms.
@@ -22,8 +22,10 @@
 use std::path::PathBuf;
 use std::time::Instant;
 
-use tfar_client_state_1_0::prelude::GameLinkTransition;
-use tfar_plugin_commands_1_0::prelude::{DISABLED_METADATA, format_metadata, merge_metadata};
+use tfar_plugin_logic_1_0::client_state::prelude::GameLinkTransition;
+use tfar_plugin_logic_1_0::plugin_commands::prelude::{
+    DISABLED_METADATA, format_metadata, merge_metadata,
+};
 use tfar_ts3_host::ServerConnectionHandlerId;
 
 use crate::plugin_lifecycle::PLUGIN_VERSION;
@@ -83,7 +85,7 @@ impl PluginRuntime {
                     self.play_lifecycle_sound(GAME_OFF_SOUND);
                     self.end_game();
                     self.update_settings(
-                        tfar_plugin_settings_1_0::PluginSettings::mark_needs_refresh,
+                        tfar_plugin_logic_1_0::plugin_settings::PluginSettings::mark_needs_refresh,
                     );
                     self.set_needcfg(true);
                 }

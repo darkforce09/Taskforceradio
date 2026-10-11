@@ -11,7 +11,7 @@ publish.workspace = true
 
 [package.metadata.layout]
 category = "tools"
-tier = 2
+tier = 1
 targets = "any"
 
 [lib]
@@ -26,10 +26,8 @@ path = "src/main.rs"
 [dependencies]
 # Derives the crate's `Error`.
 thiserror.workspace = true
-# The game link frames and ports, for scenarios that play the game side.
-tfar_game_link_protocol.workspace = true
-# The extension-side link client, for scenarios that play the game side.
-tfar_game_link_client.workspace = true
+# The localhost TCP game link: frames, the plugin's server, the extension's client.
+tfar_game_link.workspace = true
 # The SDK newtypes and values (`ClientId`, `ConnectStatus`, `LogLevel`, `Ts3Vector`) the call log
 # and the drivers speak in, shared with the plugins under test.
 tfar_ts3_host.workspace = true

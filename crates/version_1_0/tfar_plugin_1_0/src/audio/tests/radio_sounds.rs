@@ -1,6 +1,8 @@
 //! Unit tests for the radio sound list and the own-voice stream wiring.
 
-use tfar_client_state_1_0::prelude::{RadioSubtype, local_radio_sound, remote_radio_sound};
+use tfar_plugin_logic_1_0::client_state::prelude::{
+    RadioSubtype, local_radio_sound, remote_radio_sound,
+};
 
 use super::*;
 

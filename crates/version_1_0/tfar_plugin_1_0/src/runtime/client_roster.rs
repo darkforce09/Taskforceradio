@@ -3,7 +3,7 @@
 //!
 //! **Role:** `_onConnectStatusChangeEvent`, `_onChannelSwitchedEvent`, `_onClientMoved` and the
 //! client update handling of `reference/tfar_1_0/ts/src/Teamspeak.cpp:294-370`, writing the client
-//! directory of `tfar_client_state_1_0` and the metadata cache the voice gate reads; a client that
+//! directory of `tfar_plugin_logic_1_0::client_state` and the metadata cache the voice gate reads; a client that
 //! starts talking gets fresh direction sources.
 //!
 //! **Position:** methods of `PluginRuntime`; called from the TeamSpeak event callbacks on
@@ -155,7 +155,7 @@ impl PluginRuntime {
             .session
             .clients
             .iter()
-            .map(tfar_client_state_1_0::prelude::ClientData::client_id)
+            .map(tfar_plugin_logic_1_0::client_state::prelude::ClientData::client_id)
             .collect();
         let ts = self.ts();
         let read: Vec<_> = clients

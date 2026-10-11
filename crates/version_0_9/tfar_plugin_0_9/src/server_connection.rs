@@ -20,13 +20,15 @@
 //! allocates nothing.
 
 use parking_lot::Mutex;
-use tfar_client_state_0_9::{ClientId as StateClientId, ServerRadioData};
-use tfar_hrtf::HrirLibrary;
-use tfar_playback_mixer::{PlaybackMixer, StreamProducer};
-use tfar_radio_routing_0_9::{MuteTracker, dsp_requirements};
-use tfar_sample_buffer::StereoBuffer;
+use tfar_audio::hrtf::HrirLibrary;
+use tfar_audio::playback_mixer::{PlaybackMixer, StreamProducer};
+use tfar_audio::sample_buffer::StereoBuffer;
+use tfar_plugin_logic_0_9::client_state::{ClientId as StateClientId, ServerRadioData};
+use tfar_plugin_logic_0_9::radio_routing::{MuteTracker, dsp_requirements};
+use tfar_plugin_logic_0_9::voice_pipeline::{
+    DEFAULT_MAX_FRAMES, OWN_VOICE_STREAM_NAME, VoiceProcessor,
+};
 use tfar_ts3_host::{ChannelId, ServerConnectionHandlerId};
-use tfar_voice_pipeline_0_9::{DEFAULT_MAX_FRAMES, OWN_VOICE_STREAM_NAME, VoiceProcessor};
 
 use crate::channel_snapshot::{ChannelSnapshot, TeamSpeakFacts};
 
@@ -108,7 +110,7 @@ impl ServerState {
     }
 
     /// Makes the sound state the voice of `nickname` needs for the local player to hear it, as
-    /// `tfar_radio_routing_0_9::dsp_requirements` plans it. A sender without current data needs
+    /// `tfar_plugin_logic_0_9::radio_routing::dsp_requirements` plans it. A sender without current data needs
     /// none; a design the filter library refuses is logged.
     pub fn ensure_sender_dsp(&mut self, nickname: &str, hrir: Option<&HrirLibrary>) {
         let Some(listener) = self.facts.my_client else {

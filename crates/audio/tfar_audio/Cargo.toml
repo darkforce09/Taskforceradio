@@ -1,0 +1,42 @@
+# The voice DSP both plugins share: interleaved 16-bit sample frames with saturating gain, the
+# Butterworth and RBJ filters, the compressor, binaural HRTF rendering over the IRCAM sphere, the
+# distance and cone gains that replace X3DAudio, and the radio sound and own-voice mixer. Knows no
+# mod version.
+[package]
+name = "tfar_audio"
+description = "The voice DSP both TFAR plugins share: frames, filters, compressor, HRTF, spatial gains, mixer."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/audio"
+tier = 1
+targets = "any"
+
+[dependencies]
+# RBJ high-pass and low-pass coefficients and the Direct Form II Transposed section every filter
+# runs on.
+biquad.workspace = true
+# The listener-frame vector maths of the HRTF direction conversion.
+glam = { workspace = true, features = ["std", "f64"] }
+# Decodes the radio sound WAV files and reports their format.
+hound.workspace = true
+# Binaural HRIR convolution over the sphere, resampled to 48 kHz at load.
+hrtf.workspace = true
+# The short locks on the WAV cache, the playback hand-off and the named streams.
+parking_lot.workspace = true
+# The wait-free queues that hand new playbacks to the audio thread and finished ones back.
+rtrb.workspace = true
+# Butterworth low-pass and band-pass design (`butter_dyn`) as second-order sections; `alloc` turns
+# on the dynamic-order design functions.
+sci-rs = { workspace = true, features = ["alloc"] }
+# Derives each module's `Error`.
+thiserror.workspace = true
+# Positions and directions for the HRTF and the spatial gains.
+tfar_foundation.workspace = true
+
+[lints]
+workspace = true

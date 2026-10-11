@@ -15,7 +15,7 @@ mod reload {
     use std::process::Command;
     use std::time::{Duration, Instant};
 
-    use tfar_game_link_client::prelude::{ClientConfig, Flavour, GameLinkClient, SyncOutcome};
+    use tfar_game_link::client::prelude::{ClientConfig, Flavour, GameLinkClient, SyncOutcome};
     use tfar_ts3_host::{ChannelId, ClientId};
     use tfar_ts3_mock::{
         HostCall, HostOptions, MOCK_PLUGIN_ID, MockHost, ServerSetup, locate_cdylib,

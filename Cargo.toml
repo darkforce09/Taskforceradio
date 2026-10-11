@@ -25,16 +25,10 @@ publish = false
 # crate that needs it.
 [workspace.dependencies]
 # crates/foundation:
-tfar_arma_values = { path = "crates/foundation/tfar_arma_values" }
-tfar_geometry = { path = "crates/foundation/tfar_geometry" }
+tfar_foundation = { path = "crates/foundation/tfar_foundation" }
 
 # crates/audio:
-tfar_dsp_filters = { path = "crates/audio/tfar_dsp_filters" }
-tfar_dynamics = { path = "crates/audio/tfar_dynamics" }
-tfar_hrtf = { path = "crates/audio/tfar_hrtf" }
-tfar_playback_mixer = { path = "crates/audio/tfar_playback_mixer" }
-tfar_sample_buffer = { path = "crates/audio/tfar_sample_buffer" }
-tfar_spatial_audio = { path = "crates/audio/tfar_spatial_audio" }
+tfar_audio = { path = "crates/audio/tfar_audio" }
 
 # crates/teamspeak:
 tfar_ts3_host = { path = "crates/teamspeak/tfar_ts3_host" }
@@ -44,9 +38,7 @@ libc = { version = "0.2.190", default-features = false }
 
 # crates/game_link:
 tfar_arma_extension_abi = { path = "crates/game_link/tfar_arma_extension_abi" }
-tfar_game_link_client = { path = "crates/game_link/tfar_game_link_client" }
-tfar_game_link_protocol = { path = "crates/game_link/tfar_game_link_protocol" }
-tfar_game_link_server = { path = "crates/game_link/tfar_game_link_server" }
+tfar_game_link = { path = "crates/game_link/tfar_game_link" }
 
 # crates/services:
 tfar_web_requests = { path = "crates/services/tfar_web_requests" }
@@ -55,26 +47,14 @@ tfar_web_requests = { path = "crates/services/tfar_web_requests" }
 tfar_debug_window = { path = "crates/interface/tfar_debug_window" }
 
 # crates/version_0_9:
-tfar_client_state_0_9 = { path = "crates/version_0_9/tfar_client_state_0_9" }
 tfar_extension_0_9 = { path = "crates/version_0_9/tfar_extension_0_9" }
-tfar_game_commands_0_9 = { path = "crates/version_0_9/tfar_game_commands_0_9" }
 tfar_plugin_0_9 = { path = "crates/version_0_9/tfar_plugin_0_9" }
-tfar_plugin_commands_0_9 = { path = "crates/version_0_9/tfar_plugin_commands_0_9" }
-tfar_radio_effects_0_9 = { path = "crates/version_0_9/tfar_radio_effects_0_9" }
-tfar_radio_routing_0_9 = { path = "crates/version_0_9/tfar_radio_routing_0_9" }
-tfar_voice_pipeline_0_9 = { path = "crates/version_0_9/tfar_voice_pipeline_0_9" }
+tfar_plugin_logic_0_9 = { path = "crates/version_0_9/tfar_plugin_logic_0_9" }
 
 # crates/version_1_0:
-tfar_antennas_1_0 = { path = "crates/version_1_0/tfar_antennas_1_0" }
-tfar_client_state_1_0 = { path = "crates/version_1_0/tfar_client_state_1_0" }
 tfar_extension_1_0 = { path = "crates/version_1_0/tfar_extension_1_0" }
-tfar_game_commands_1_0 = { path = "crates/version_1_0/tfar_game_commands_1_0" }
 tfar_plugin_1_0 = { path = "crates/version_1_0/tfar_plugin_1_0" }
-tfar_plugin_commands_1_0 = { path = "crates/version_1_0/tfar_plugin_commands_1_0" }
-tfar_plugin_settings_1_0 = { path = "crates/version_1_0/tfar_plugin_settings_1_0" }
-tfar_radio_effects_1_0 = { path = "crates/version_1_0/tfar_radio_effects_1_0" }
-tfar_radio_routing_1_0 = { path = "crates/version_1_0/tfar_radio_routing_1_0" }
-tfar_voice_pipeline_1_0 = { path = "crates/version_1_0/tfar_voice_pipeline_1_0" }
+tfar_plugin_logic_1_0 = { path = "crates/version_1_0/tfar_plugin_logic_1_0" }
 
 # tools (the bin-only `tfar_extension_probe` and `xtask` have no library to depend on)
 tfar_golden_vectors = { path = "tools/tfar_golden_vectors" }
@@ -93,19 +73,16 @@ ts3plugin-sys = { version = "0.5.0", default-features = false }
 # `Win32_*` modules it calls.
 windows-sys = { version = "0.61.2", default-features = false }
 
-# Vector maths under `tfar_geometry` and everything above it; the member enables `std`.
+# Vector maths under `tfar_foundation::geometry` and everything above it; the member enables `std`.
 glam = { version = "0.33.12", default-features = false }
-# Butterworth low-pass and band-pass design as second-order sections (`tfar_dsp_filters` only).
+# Butterworth low-pass and band-pass design as second-order sections (`tfar_audio` only).
 sci-rs = { version = "0.4.1", default-features = false }
 # RBJ high-pass and low-pass coefficients and Direct Form II Transposed processing
-# (`tfar_dsp_filters` only).
+# (`tfar_audio` only).
 biquad = { version = "0.6.0", default-features = false }
-# Binaural HRTF over the IRCAM HRIR sphere (`tfar_hrtf` only).
+# Binaural HRTF over the IRCAM HRIR sphere (`tfar_audio` only).
 hrtf = { version = "0.9.0", default-features = false }
-# FFT beyond what `hrtf` does internally, if `tfar_hrtf` needs it.
-rustfft = { version = "6.4.1", default-features = false }
-realfft = { version = "3.5.0", default-features = false }
-# WAV loading for radio sounds (`tfar_playback_mixer` only).
+# WAV loading for radio sounds (`tfar_audio` only).
 hound = { version = "3.5.1", default-features = false }
 
 # TeamSpeak's settings database (`tfar_ts3_settings_db` only); defaults off, the member enables
@@ -190,7 +167,7 @@ todo = "deny"
 dbg_macro = "deny"
 unimplemented = "deny"
 undocumented_unsafe_blocks = "deny"
-# Crate-prefixed names such as `GameLinkFrame` in `tfar_game_link_protocol` are the naming law
+# Crate-prefixed names such as `GameLinkFrame` in `tfar_game_link` are the naming law
 # (self-describing names), not a stutter.
 module_name_repetitions = "allow"
 # Pure accessors and constructors would all need `#[must_use]`; the noise outweighs the catch.

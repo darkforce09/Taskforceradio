@@ -12,8 +12,8 @@ side must change: the Rust extensions talk localhost TCP instead (D2, game link 
 
 | Dependency | Where | Replacement |
 |---|---|---|
-| Named pipe client (`CreateFile`, `PeekNamedPipe`, `ReadFile`, `WriteFile`) | A/plugin.cpp:507-526, :2022-2112; B/pipe_handler.cpp (unused) | `tfar_game_link_server` |
-| Shared memory + events + mutex (`CreateFileMapping`, `MapViewOfFile`, `CreateEvent`, `CreateMutex`) | B/SharedMemoryHandler.cpp:85-304 | `tfar_game_link_server` |
+| Named pipe client (`CreateFile`, `PeekNamedPipe`, `ReadFile`, `WriteFile`) | A/plugin.cpp:507-526, :2022-2112; B/pipe_handler.cpp (unused) | `tfar_game_link::server` |
+| Shared memory + events + mutex (`CreateFileMapping`, `MapViewOfFile`, `CreateEvent`, `CreateMutex`) | B/SharedMemoryHandler.cpp:85-304 | `tfar_game_link::server` |
 | `std::chrono` time_point inside shared memory (MSVC 100 ns vs libstdc++ ns ABI hazard) | B/SharedMemoryHandler.hpp | gone (no shared memory) |
 | `CreateThread`, `Sleep`, `GetExitCodeThread` | A:151, :1868, :2244-2282; B/plugin.cpp:137, :162 | `std::thread`, `std::thread::sleep`, joined at shutdown |
 | `CRITICAL_SECTION` (recursive), `SRWLOCK` | A:460-462 (~100 uses); B/Locks.hpp:46-163 | `parking_lot` locks, state designed with no re-entry |
@@ -25,7 +25,7 @@ side must change: the Rust extensions talk localhost TCP instead (D2, game link 
 | MASM trampoline `apicompat.asm` for the plugin-command signature | B/apicompat.asm | API 26 signature only |
 | `GetModuleHandleA` duplicate-plugin check | B/plugin.cpp:301-306 | dormant-plugin rule (two Rust plugins coexist) |
 | `GetForegroundWindow` / `GetClassNameW` "arma" check before channel move | B/Teamspeak.cpp:208-219 | extension sends `FOCUS` frames |
-| `X3DAudioInitialize` / `X3DAudioCalculate`, `x3daudio.lib` | B/helpers.cpp:22-165 | `hrtf` crate + `tfar_spatial_audio` (D20) |
+| `X3DAudioInitialize` / `X3DAudioCalculate`, `x3daudio.lib` | B/helpers.cpp:22-165 | `hrtf` crate + `tfar_audio::spatial_audio` (D20) |
 | `IsProcessorFeaturePresent` SSE check | B/SampleBuffer.hpp:7 | not needed |
 | `QueryPerformanceCounter`, `__declspec(thread)`, `__forceinline` | B/profilers.* | `profiling` crate |
 | `OutputDebugStringA`, `__debugbreak`, `DebugBreak` | B/plugin.cpp:173, :181, Logger.cpp:93; many | `tracing` |

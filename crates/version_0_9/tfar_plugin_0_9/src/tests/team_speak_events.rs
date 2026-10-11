@@ -110,7 +110,7 @@ fn core_with_sphere(fake: &std::sync::Arc<FakeTeamSpeak>) -> PluginCore {
         std::sync::Arc::clone(fake) as std::sync::Arc<dyn crate::team_speak::TeamSpeak>,
         crate::plugin_core::PluginResources {
             plugin_folder: crate::fake_team_speak::missing_plugin_folder(),
-            hrir: Some(tfar_hrtf::HrirLibrary::load(&sphere).unwrap()),
+            hrir: Some(tfar_audio::hrtf::HrirLibrary::load(&sphere).unwrap()),
             push_to_talk_delay: std::time::Duration::ZERO,
         },
         std::time::Instant::now(),

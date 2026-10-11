@@ -3,7 +3,7 @@
 //!
 //! **Role:** `CommandProcessor::processAsynchronousCommand` (`reference/tfar_1_0/ts/src/
 //! CommandProcessor.cpp:224-457`): each parsed message goes into the current server's state
-//! through the apply functions of `tfar_client_state_1_0`, and what they return is carried out in
+//! through the apply functions of `tfar_plugin_logic_1_0::client_state`, and what they return is carried out in
 //! TeamSpeak after the lock is released.
 //!
 //! **Position:** called by `LinkHandler::async_message` on the link's async worker, which also
@@ -17,8 +17,10 @@
 
 use std::time::Instant;
 
-use tfar_antennas_1_0::prelude::{Antenna, NetId};
-use tfar_game_commands_1_0::prelude::{FrequencyReport, GameCommand, PositionUpdate, TowerRecord};
+use tfar_plugin_logic_1_0::antennas::prelude::{Antenna, NetId};
+use tfar_plugin_logic_1_0::game_commands::prelude::{
+    FrequencyReport, GameCommand, PositionUpdate, TowerRecord,
+};
 use tfar_web_requests::prelude::{build_track_request_1_0, spawn_cancellable_track};
 
 use crate::diagnostics::debug_dump::write_debug_dump;

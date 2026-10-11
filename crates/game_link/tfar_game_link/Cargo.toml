@@ -1,0 +1,33 @@
+# The localhost TCP link between the Arma extensions (Windows DLLs under Proton) and the native
+# TeamSpeak plugins: the frames both sides exchange, the plugin's listener and the extension's lazy,
+# time-bounded client. Builds for Linux and Windows.
+[package]
+name = "tfar_game_link"
+description = "The localhost TCP link between the TFAR Arma extensions and TeamSpeak plugins."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/game_link"
+tier = 0
+targets = "any"
+
+[dependencies]
+# The server's hand-off of async commands to the plugin's worker.
+crossbeam-channel = { workspace = true, features = ["std"] }
+# The server's short locks on its session table.
+parking_lot.workspace = true
+# The frame encoding on the wire.
+postcard = { workspace = true, features = ["use-std"] }
+# Derives the frames' encoding.
+serde = { workspace = true, features = ["derive"] }
+# Derives each module's `Error`.
+thiserror.workspace = true
+# Connection and session logging on both sides.
+tracing = { workspace = true, features = ["std"] }
+
+[lints]
+workspace = true

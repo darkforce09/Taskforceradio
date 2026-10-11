@@ -25,12 +25,12 @@
 
 use std::time::Instant;
 
-use tfar_sample_buffer::{copy_to_stereo, write_back_from_stereo};
+use tfar_audio::sample_buffer::{copy_to_stereo, write_back_from_stereo};
+use tfar_plugin_logic_0_9::voice_pipeline::{OwnVoiceContext, VoiceFrameContext, VoiceOutcome};
 use tfar_ts3_host::{
     CapturedVoiceData, ClientId, MixedPlaybackVoiceData, PostProcessVoiceData,
     ServerConnectionHandlerId,
 };
-use tfar_voice_pipeline_0_9::{OwnVoiceContext, VoiceFrameContext, VoiceOutcome};
 
 use crate::channel_snapshot::state_client_id;
 use crate::plugin_core::PluginCore;
@@ -162,7 +162,7 @@ impl PluginCore {
 /// so a player who stays processed or silenced costs nothing after the first frame.
 fn log_voice_outcome_change(
     logged: &mut [u8],
-    radio: &tfar_client_state_0_9::ServerRadioData,
+    radio: &tfar_plugin_logic_0_9::client_state::ServerRadioData,
     context: &VoiceFrameContext<'_>,
     outcome: VoiceOutcome,
 ) {

@@ -6,7 +6,7 @@
 //! `reference/tfar_1_0/ts/src/CommandProcessor.cpp:293-387`. The state half (the tangent flag, the
 //! own transmit state, the half-duplex radio, the sound and the broadcast to send) is
 //! `SessionState::apply_local_tangent` and `apply_local_release_all_tangents` of
-//! `tfar_client_state_1_0`.
+//! `tfar_plugin_logic_1_0::client_state`.
 //!
 //! **Position:** called by the async message path on the link's async worker.
 //!
@@ -16,8 +16,8 @@
 //! **Invariants:** only a change of the tangent state acts; `RELEASE_ALL_TANGENTS` also clears the
 //! own tangent and the half-duplex radio, so the next press is a change again.
 
-use tfar_game_commands_1_0::prelude::TangentPress;
-use tfar_plugin_commands_1_0::prelude::{PluginCommand, encode};
+use tfar_plugin_logic_1_0::game_commands::prelude::TangentPress;
+use tfar_plugin_logic_1_0::plugin_commands::prelude::{PluginCommand, encode};
 
 use crate::runtime::PluginRuntime;
 

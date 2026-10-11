@@ -3,8 +3,8 @@
 //!
 //! **Role:** `processPluginCommand`, `processTangentPress` and
 //! `onClientSelfVariableUpdateEvent` (`reference/tfar_1_0/ts/src/plugin.cpp:829-1086`) over the
-//! codec of `tfar_plugin_commands_1_0` and the apply functions of `tfar_client_state_1_0` and
-//! `tfar_radio_routing_1_0`.
+//! codec of `tfar_plugin_logic_1_0::plugin_commands` and the apply functions of `tfar_plugin_logic_1_0::client_state` and
+//! `tfar_plugin_logic_1_0::radio_routing`.
 //!
 //! **Position:** called by `TfarPlugin` on TeamSpeak's main thread.
 //!
@@ -16,11 +16,13 @@
 
 use std::time::Instant;
 
-use tfar_client_state_1_0::prelude::RemoteRadioSounds;
-use tfar_plugin_commands_1_0::prelude::{PluginCommand, accepts_sender, decode, encode};
-use tfar_radio_routing_1_0::apply_remote_tangent;
+use tfar_plugin_logic_1_0::client_state::prelude::RemoteRadioSounds;
+use tfar_plugin_logic_1_0::plugin_commands::prelude::{
+    PluginCommand, accepts_sender, decode, encode,
+};
+use tfar_plugin_logic_1_0::radio_routing::apply_remote_tangent;
+use tfar_plugin_logic_1_0::voice_pipeline::prelude::{RemoteSoundListener, RemoteSoundPlan};
 use tfar_ts3_host::{ClientProperty, PluginCommandTarget, ServerConnectionHandlerId};
-use tfar_voice_pipeline_1_0::prelude::{RemoteSoundListener, RemoteSoundPlan};
 
 use crate::runtime::PluginRuntime;
 use crate::runtime::mute_updates::decide_client_mute;

@@ -4,7 +4,7 @@
 //! **Role:** `PlaybackHandler` of `reference/tfar_1_0/ts/src/PlaybackHandler.cpp:133-262`: load
 //! `radio-sounds/` once at init, play `on` and `off` through TeamSpeak, queue a local tangent
 //! sound at its gain into its ear, and queue a remote tangent sound shaped by
-//! `tfar_voice_pipeline_1_0::render_remote_tangent_sound`.
+//! `tfar_plugin_logic_1_0::voice_pipeline::render_remote_tangent_sound`.
 //!
 //! **Position:** owned by `PluginRuntime`; [`RadioSounds::play_local`] and
 //! [`RadioSounds::play_remote`] run on the game link worker and TeamSpeak's main thread,
@@ -23,11 +23,11 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use parking_lot::Mutex;
-use tfar_arma_values::StereoMode;
-use tfar_hrtf::HrirLibrary;
-use tfar_playback_mixer::{Playback, PlaybackMixer, StreamProducer, WaveLibrary};
-use tfar_sample_buffer::apply_gain;
-use tfar_voice_pipeline_1_0::prelude::{
+use tfar_audio::hrtf::HrirLibrary;
+use tfar_audio::playback_mixer::{Playback, PlaybackMixer, StreamProducer, WaveLibrary};
+use tfar_audio::sample_buffer::apply_gain;
+use tfar_foundation::arma_values::StereoMode;
+use tfar_plugin_logic_1_0::voice_pipeline::prelude::{
     OWN_RADIO_VOICE_STREAM, RemoteSoundPlan, apply_stereo_mode, render_remote_tangent_sound,
 };
 

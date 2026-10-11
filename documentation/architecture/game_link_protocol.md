@@ -7,8 +7,8 @@ which live inside wineserver where a native plugin cannot reach them. The game-f
 return; only the transport is new. The original behaviour is specified in the
 [extensions spec](/documentation/behaviour_specs/extensions.md).
 
-Crates: `tfar_game_link_protocol` (frames and codec), `tfar_game_link_server` (the plugin side),
-`tfar_game_link_client` (the extension side), `tfar_arma_extension_abi` (the `RVExtension` export).
+Crates: `tfar_game_link::protocol` (frames and codec), `tfar_game_link::server` (the plugin side),
+`tfar_game_link::client` (the extension side), `tfar_arma_extension_abi` (the `RVExtension` export).
 
 ## Roles
 

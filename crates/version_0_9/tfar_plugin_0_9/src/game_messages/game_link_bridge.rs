@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use tfar_game_link_server::prelude::GameLinkHandler;
+use tfar_game_link::server::prelude::GameLinkHandler;
 
 use crate::plugin_core::PluginCore;
 

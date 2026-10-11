@@ -3,7 +3,7 @@
 //!
 //! **Role:** `moveToSeriousChannel`, `moveFromSeriousChannel`, the channel name cache and
 //! `checkIfSeriousModeEnabled` (`reference/tfar_1_0/ts/src/Teamspeak.cpp:77-87`, `:207-243`,
-//! `:518-524`); the channel is chosen by `tfar_radio_routing_1_0::serious_mode_channel`.
+//! `:518-524`); the channel is chosen by `tfar_plugin_logic_1_0::radio_routing::serious_mode_channel`.
 //!
 //! **Position:** methods of `PluginRuntime`; called on game start, every 4 s in game by the
 //! service thread, on reconnect, on a `serious_channelName` setting, and on channel events.
@@ -16,7 +16,7 @@
 
 use std::time::{Duration, Instant};
 
-use tfar_radio_routing_1_0::{ChannelId as RoutingChannelId, serious_mode_channel};
+use tfar_plugin_logic_1_0::radio_routing::{ChannelId as RoutingChannelId, serious_mode_channel};
 use tfar_ts3_host::{ChannelId, ServerConnectionHandlerId};
 
 use crate::runtime::plugin_runtime::PluginRuntime;

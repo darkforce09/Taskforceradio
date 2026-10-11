@@ -6,9 +6,9 @@
 //! window, wired to the 1.0 crates. Every domain decision lives in a library crate; this crate is
 //! wiring, threads and TeamSpeak side effects.
 //!
-//! **Position:** `crates/version_1_0`, tier 6, depending on `tfar_ts3_host`,
-//! `tfar_ts3_settings_db`, `tfar_game_link_server`, `tfar_web_requests`, the other `_1_0` crates,
-//! `tfar_playback_mixer`, `tfar_hrtf`, `tfar_sample_buffer`, `tfar_arma_values` and
+//! **Position:** `crates/version_1_0`, tier 3, depending on `tfar_ts3_host`,
+//! `tfar_ts3_settings_db`, `tfar_game_link::server`, `tfar_web_requests`, the other `_1_0` crates,
+//! `tfar_audio::playback_mixer`, `tfar_audio::hrtf`, `tfar_audio::sample_buffer`, `tfar_foundation::arma_values` and
 //! `tfar_debug_window`; TeamSpeak 3 loads it from its plugins folder.
 //!
 //! **Signals and state:** the plugin instance TeamSpeak loads ([`PLUGIN`], in [`plugin_exports`])

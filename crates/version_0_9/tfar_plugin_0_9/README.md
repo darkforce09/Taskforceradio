@@ -17,7 +17,7 @@ the `GameLinkBridge`, the 100 ms service thread, the push-to-talk release thread
 check.
 
 ```text
-Arma ──game link──▶ GameLinkBridge ──▶ parse (tfar_game_commands_0_9) ──▶ lock, apply, decide
+Arma ──game link──▶ GameLinkBridge ──▶ parse (tfar_plugin_logic_0_9::game_commands) ──▶ lock, apply, decide
                                                                         └▶ unlock, TeamSpeak calls
 TeamSpeak events ──▶ PluginCore (nickname list, plugin commands, VOLUME broadcast, info panel)
 TeamSpeak audio  ──▶ lock (waits) ──▶ VoiceProcessor / PlaybackMixer ──▶ samples
@@ -161,12 +161,12 @@ ILD, and the chat tab says so.
 ## Boundaries
 
 - Depends on: `tfar_ts3_host` (exports, function table, log forwarder); `tfar_ts3_settings_db`
-  (push-to-talk delay); `tfar_game_link_server` (the listener); `tfar_web_requests` (update check,
-  Piwik); `tfar_game_commands_0_9`, `tfar_plugin_commands_0_9`, `tfar_client_state_0_9`,
-  `tfar_radio_routing_0_9`, `tfar_voice_pipeline_0_9` (every 0.9 decision); `tfar_playback_mixer`,
-  `tfar_hrtf`, `tfar_sample_buffer`, `tfar_dsp_filters`, `tfar_spatial_audio` (sounds and voice
-  buffers); `tfar_geometry`, `tfar_arma_values`; `parking_lot`, `crossbeam-channel`, `tracing`,
-  `thiserror`. In tests, `tfar_ts3_mock` and `tfar_game_link_client`.
+  (push-to-talk delay); `tfar_game_link::server` (the listener); `tfar_web_requests` (update check,
+  Piwik); `tfar_plugin_logic_0_9::game_commands`, `tfar_plugin_logic_0_9::plugin_commands`, `tfar_plugin_logic_0_9::client_state`,
+  `tfar_plugin_logic_0_9::radio_routing`, `tfar_plugin_logic_0_9::voice_pipeline` (every 0.9 decision); `tfar_audio::playback_mixer`,
+  `tfar_audio::hrtf`, `tfar_audio::sample_buffer`, `tfar_audio::dsp_filters`, `tfar_audio::spatial_audio` (sounds and voice
+  buffers); `tfar_foundation::geometry`, `tfar_foundation::arma_values`; `parking_lot`, `crossbeam-channel`, `tracing`,
+  `thiserror`. In tests, `tfar_ts3_mock` and `tfar_game_link::client`.
 - Used by: TeamSpeak 3, which loads the shared library; `tools/tfar_ts3_mock` in the plugin test
   suites.
 - Rules: a dormant plugin writes nothing to TeamSpeak and passes audio through
@@ -177,7 +177,7 @@ ILD, and the chat tab says so.
   `src/tests/service_thread.rs`); `ts3plugin_shutdown` returns within 2 s with every plugin thread
   joined (`shutdown_joins_every_plugin_thread_within_two_seconds`), only a web request still in
   flight outlives it (`a_web_request_in_flight_never_holds_the_shutdown_past_two_seconds`), and no
-  TeamSpeak memory leaks (`leak_report` in the host tests). Tier 6 in `crates/version_0_9`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export
+  TeamSpeak memory leaks (`leak_report` in the host tests). `unsafe` is allowed here for the export
   glue only (`cargo xtask verify unsafe-allowlist`).
 
 ## Related documentation

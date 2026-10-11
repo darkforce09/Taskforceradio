@@ -20,18 +20,20 @@
 use std::path::PathBuf;
 use std::time::Instant;
 
-use tfar_arma_values::RadioSubtype;
-use tfar_client_state_0_9::{ClientId as StateClientId, VehicleMuffling};
-use tfar_client_state_0_9::{RemoteTangent, ServerRadioData, TangentSound};
-use tfar_plugin_commands_0_9::{PluginCommand as DecodedCommand, TangentKind, accepts_sender};
-use tfar_radio_routing_0_9::{
+use tfar_foundation::arma_values::RadioSubtype;
+use tfar_plugin_logic_0_9::client_state::{ClientId as StateClientId, VehicleMuffling};
+use tfar_plugin_logic_0_9::client_state::{RemoteTangent, ServerRadioData, TangentSound};
+use tfar_plugin_logic_0_9::plugin_commands::{
+    PluginCommand as DecodedCommand, TangentKind, accepts_sender,
+};
+use tfar_plugin_logic_0_9::radio_routing::{
     HeardOn, HeardVia, IgnoreTangents, MuteDecision, MuteQuery, receptions,
     set_game_client_mute_status,
 };
-use tfar_ts3_host::{ClientId, PluginCommand, ServerConnectionHandlerId};
-use tfar_voice_pipeline_0_9::{
+use tfar_plugin_logic_0_9::voice_pipeline::{
     ListenerView, RemoteSoundPlan, radio_volume_multiplier, render_remote_tangent_sound,
 };
+use tfar_ts3_host::{ClientId, PluginCommand, ServerConnectionHandlerId};
 
 use crate::game_messages::game_tangent_kind;
 use crate::plugin_core::{MuteFacts, PluginCore};

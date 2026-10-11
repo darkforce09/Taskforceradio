@@ -3,7 +3,7 @@
 //!
 //! **Role:** `CommandProcessor::processCommand` (`reference/tfar_1_0/ts/src/
 //! CommandProcessor.cpp:72-163`, `:600-629`), with the reply strings of
-//! `tfar_game_commands_1_0::replies`.
+//! `tfar_plugin_logic_1_0::game_commands::replies`.
 //!
 //! **Position:** called by `LinkHandler::sync_request` on the link's session thread.
 //!
@@ -15,8 +15,8 @@
 //! **Invariants:** a malformed message gets its command's error reply (`00` for `POS`), never a
 //! panic; TeamSpeak is asked only with the server lock released.
 
-use tfar_game_commands_1_0::prelude::{GameCommand, TsInfoQuery, parse};
-use tfar_game_commands_1_0::replies::{
+use tfar_plugin_logic_1_0::game_commands::prelude::{GameCommand, TsInfoQuery, parse};
+use tfar_plugin_logic_1_0::game_commands::replies::{
     ASYNC_COMMAND_SENT_IN_SYNC_CONTEXT, CHANNEL_NAME_UNAVAILABLE, ERROR_GETTING_SERVER_NAME,
     UNKNOWN_CLIENT_SPEAKING_CODE, bulk_speaking_reply,
 };

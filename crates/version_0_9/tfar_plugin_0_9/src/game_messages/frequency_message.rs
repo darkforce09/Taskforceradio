@@ -1,7 +1,7 @@
 //! `FREQ`: the local player's radios and levels, and the rename to the game's nickname.
 
-use tfar_game_commands_0_9::FrequencyUpdate;
-use tfar_game_commands_0_9::replies::OK;
+use tfar_plugin_logic_0_9::game_commands::FrequencyUpdate;
+use tfar_plugin_logic_0_9::game_commands::replies::OK;
 use tfar_ts3_host::ServerConnectionHandlerId;
 
 use crate::plugin_core::PluginCore;

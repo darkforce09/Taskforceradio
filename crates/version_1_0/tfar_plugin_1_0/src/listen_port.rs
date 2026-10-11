@@ -2,7 +2,7 @@
 //! the one a `-tfdebug` Arma instance connects to), or one test override from TeamSpeak's
 //! environment.
 
-use tfar_game_link_server::prelude::{Flavour, ServerConfig};
+use tfar_game_link::server::prelude::{Flavour, ServerConfig};
 
 #[cfg(test)]
 #[path = "tests/listen_port.rs"]

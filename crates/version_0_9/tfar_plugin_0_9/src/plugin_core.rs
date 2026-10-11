@@ -29,10 +29,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use parking_lot::{Mutex, RwLock};
-use tfar_client_state_0_9::GameSession;
-use tfar_hrtf::HrirLibrary;
-use tfar_playback_mixer::WaveLibrary;
-use tfar_radio_routing_0_9::{MuteDecision, is_serious_mode};
+use tfar_audio::hrtf::HrirLibrary;
+use tfar_audio::playback_mixer::WaveLibrary;
+use tfar_plugin_logic_0_9::client_state::GameSession;
+use tfar_plugin_logic_0_9::radio_routing::{MuteDecision, is_serious_mode};
 use tfar_ts3_host::{AudioDiagnostics, ClientId, ServerConnectionHandlerId};
 
 use crate::background_web_requests::BackgroundWebRequests;

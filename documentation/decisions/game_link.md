@@ -57,7 +57,7 @@ zeroes the plugin's last-game-message time as the original does, and the async q
 **Consequences:** Neither side needs a Win32 named object. The SQF sees the same strings as before, so
 the mods run unchanged. A plugin whose game link has never connected in this TeamSpeak session stays
 [dormant](/documentation/glossary.md#dormant-plugin), so the two plugins can be loaded at once. The frame
-codec has round-trip tests in `tfar_game_link_protocol`, and the extension probe proves the link under
+codec has round-trip tests in `tfar_game_link::protocol`, and the extension probe proves the link under
 wine.
 
 **Supersedes:** none.
@@ -76,7 +76,7 @@ with `-tfdebug`.
 | 1.0 | 47820 | 47821 |
 
 **Consequences:** Each extension reaches only its own mod's plugin; the `HELLO` flavour names the mod as
-well. The ports are constants in `tfar_game_link_protocol`, the one place both sides read them from.
+well. The ports are constants in `tfar_game_link::protocol`, the one place both sides read them from.
 
 **Supersedes:** none.
 
@@ -110,7 +110,7 @@ ports.
 
 **Consequences:** A normal and a debug Arma instance need no plugin change; the one that connects last
 holds the session. A port already in use fails alone and is retried while the other port keeps working.
-`tfar_game_link_server` takes a list of ports in its `ServerConfig` and exposes the bound addresses;
+`tfar_game_link::server` takes a list of ports in its `ServerConfig` and exposes the bound addresses;
 its tests cover a `HELLO` on each port, the session switching ports, and a busy debug port.
 
 **Supersedes:** none.

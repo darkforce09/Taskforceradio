@@ -2,7 +2,7 @@
 //!
 //! **Role:** `processGameCommand` and the pipe thread around it
 //! (`reference/tfar_0_9_12/ts/src/plugin.cpp:1769-1936`, 2056-2071): parse the message with
-//! `tfar_game_commands_0_9`, apply it to the current server's state, perform its TeamSpeak side
+//! `tfar_plugin_logic_0_9::game_commands`, apply it to the current server's state, perform its TeamSpeak side
 //! effects with no lock held, start the game on the first message that counts as game activity,
 //! and answer with the reply string the original sends.
 //!
@@ -19,13 +19,17 @@
 
 use std::time::Instant;
 
-use tfar_client_state_0_9::SeriousChannel;
-use tfar_game_commands_0_9::replies::{
+use tfar_plugin_logic_0_9::client_state::SeriousChannel;
+use tfar_plugin_logic_0_9::game_commands::replies::{
     DONE, ERROR_GETTING_SERVER_NAME, FAIL, NO_CHANNEL_NAME, NOT_SPEAKING, OK, PONG, SPEAKING,
 };
-use tfar_game_commands_0_9::{GameCommand, TsInfoQuery, message_counts_as_game_activity};
-use tfar_plugin_commands_0_9::PluginCommand;
-use tfar_radio_routing_0_9::{MuteDecision, is_serious_mode, set_mute_for_dead_players};
+use tfar_plugin_logic_0_9::game_commands::{
+    GameCommand, TsInfoQuery, message_counts_as_game_activity,
+};
+use tfar_plugin_logic_0_9::plugin_commands::PluginCommand;
+use tfar_plugin_logic_0_9::radio_routing::{
+    MuteDecision, is_serious_mode, set_mute_for_dead_players,
+};
 use tfar_ts3_host::ServerConnectionHandlerId;
 use tfar_web_requests::{build_track_request_0_9, spawn_cancellable_track};
 

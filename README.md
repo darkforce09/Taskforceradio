@@ -52,7 +52,7 @@ under APL-SA.
       with BattlEye off.
 - [ ] Live check: install from `target/dist/` by hand and play both mods; listen for clicks on
       fast-moving sources (does the HRTF need its own crossfade?) and in other players' voices.
-- [ ] Make `split_keeping_every_field` in `tfar_arma_values` public and use it in the 1.0 game command
+- [ ] Make `split_keeping_every_field` in `tfar_foundation::arma_values` public and use it in the 1.0 game command
       parser instead of its private copy.
 - [ ] Document `append_own_voice_for_speakers` (1.0 voice pipeline) as off-audio-thread only, or give
       it a `StreamProducer` parameter, as the 0.9 `append_own_voice`.

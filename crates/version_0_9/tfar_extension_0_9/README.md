@@ -60,12 +60,12 @@ selects the plugin's debug port 47811 instead of 47810. Nothing else.
 ## Boundaries
 
 - Depends on: `tfar_arma_extension_abi` (the Arma extension exports and the `-tfdebug` test);
-  `tfar_game_link_client` (the extension-side link client); `thiserror` for the error type; in
-  tests, `tfar_game_link_server` and `tfar_game_link_protocol`.
+  `tfar_game_link::client` (the extension-side link client); `thiserror` for the error type; in
+  tests, `tfar_game_link::server` and `tfar_game_link::protocol`.
 - Used by: Arma 3 under Proton, which loads the DLL as `task_force_radio_pipe`;
   `tools/tfar_extension_probe`, which calls it the same way.
 - Rules: every call returns within the sync timeout, connected or not, and each failure has the
-  original's string (`src/tests/call_handling.rs`, `tests/game_link_round_trip.rs`). Tier 2 in `crates/version_0_9`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export
+  original's string (`src/tests/call_handling.rs`, `tests/game_link_round_trip.rs`). `unsafe` is allowed here for the export
   glue only (`cargo xtask verify unsafe-allowlist`).
 
 ## Related documentation

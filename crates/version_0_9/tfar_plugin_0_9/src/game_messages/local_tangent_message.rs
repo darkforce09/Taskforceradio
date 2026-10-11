@@ -18,10 +18,10 @@
 
 use std::time::Instant;
 
-use tfar_arma_values::RadioSubtype;
-use tfar_game_commands_0_9::TangentKind as GameTangentKind;
-use tfar_game_commands_0_9::replies::OK;
-use tfar_plugin_commands_0_9::{PluginCommand, TangentKind as CommandTangentKind};
+use tfar_foundation::arma_values::RadioSubtype;
+use tfar_plugin_logic_0_9::game_commands::TangentKind as GameTangentKind;
+use tfar_plugin_logic_0_9::game_commands::replies::OK;
+use tfar_plugin_logic_0_9::plugin_commands::{PluginCommand, TangentKind as CommandTangentKind};
 use tfar_ts3_host::ServerConnectionHandlerId;
 
 use crate::plugin_core::PluginCore;

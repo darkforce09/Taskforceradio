@@ -24,7 +24,7 @@ use std::sync::Arc;
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
-use tfar_game_link_server::prelude::GameLinkServer;
+use tfar_game_link::server::prelude::GameLinkServer;
 use tfar_ts3_host::{Ts3, print_to_current_tab};
 use tfar_web_requests::{UPDATE_AVAILABLE_MESSAGE, spawn_cancellable_update_check};
 
@@ -57,7 +57,7 @@ pub const WEB_REQUEST_JOIN_DEADLINE: Duration = Duration::from_millis(1_500);
 pub enum StartError {
     /// The game link could not start listening.
     #[error("the game link did not start: {0}")]
-    GameLink(#[from] tfar_game_link_server::Error),
+    GameLink(#[from] tfar_game_link::server::Error),
     /// A thread of the plugin could not start.
     #[error("the {thread} thread did not start: {source}")]
     Thread {

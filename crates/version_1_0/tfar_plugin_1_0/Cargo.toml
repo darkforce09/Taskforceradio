@@ -11,7 +11,7 @@ publish.workspace = true
 
 [package.metadata.layout]
 category = "crates/version_1_0"
-tier = 6
+tier = 3
 targets = "any"
 
 # The cdylib is the file TeamSpeak loads; the rlib lets host tests and the mock host link the
@@ -33,35 +33,18 @@ thiserror.workspace = true
 tfar_ts3_host.workspace = true
 # TeamSpeak settings lookups.
 tfar_ts3_settings_db.workspace = true
-# The plugin-side link listener.
-tfar_game_link_server.workspace = true
+# The localhost TCP game link: frames, the plugin's server, the extension's client.
+tfar_game_link.workspace = true
 # The update check and Piwik calls.
 tfar_web_requests.workspace = true
-# The 1.0 voice frame processing.
-tfar_voice_pipeline_1_0.workspace = true
-# The 1.0 reception decisions.
-tfar_radio_routing_1_0.workspace = true
-# The 1.0 per-client state.
-tfar_client_state_1_0.workspace = true
-# The typed 1.0 game commands.
-tfar_game_commands_1_0.workspace = true
-# The 1.0 plugin command and metadata formats.
-tfar_plugin_commands_1_0.workspace = true
-# Radio sound playback and the own-voice stream.
-tfar_playback_mixer.workspace = true
-# The parsers for Arma's field, array and position strings.
-tfar_arma_values.workspace = true
-# The 1.0 settings.
-tfar_plugin_settings_1_0.workspace = true
-# The 1.0 antenna and tower model.
-tfar_antennas_1_0.workspace = true
+# The 1.0 plugin logic: settings, antennas, commands, client state, radio effects, routing, voice pipeline.
+tfar_plugin_logic_1_0.workspace = true
+# The shared voice DSP: sample frames, filters, compressor, HRTF, spatial gains, playback mixer.
+tfar_audio.workspace = true
+# Geometry and Arma value parsing.
+tfar_foundation.workspace = true
 # The debug window.
 tfar_debug_window.workspace = true
-# The HRIR sphere the voice pipeline's direction sources render with.
-tfar_hrtf.workspace = true
-# The stereo scratch of the voice callbacks, the copy into and out of TeamSpeak's channels and
-# the gain of a local radio sound.
-tfar_sample_buffer.workspace = true
 # The per-connection state locks the audio callbacks `try_lock`, and the push-to-talk lock.
 parking_lot.workspace = true
 # The settings snapshot and the running plugin, read by the audio callbacks without a lock.
@@ -76,8 +59,8 @@ tracy-client = { workspace = true, optional = true }
 tracing = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
-# The raw extension side of the mock-host tests' game link round trips.
-tfar_game_link_client.workspace = true
+# The localhost TCP game link: frames, the plugin's server, the extension's client.
+tfar_game_link.workspace = true
 # The fake TeamSpeak host that loads the built `.so` in the integration tests.
 tfar_ts3_mock.workspace = true
 

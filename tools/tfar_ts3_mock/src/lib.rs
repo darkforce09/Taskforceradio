@@ -5,8 +5,8 @@
 //! a recording stub in every other slot), plays server, client and audio events into it, logs
 //! every call it makes as a [`HostCall`] and reports leaked TeamSpeak memory.
 //!
-//! **Position:** `tools`, tier 2, depending on `tfar_ts3_host` (the SDK newtypes),
-//! `tfar_game_link_protocol` and `tfar_game_link_client`; the plugin apps' integration tests use
+//! **Position:** `tools`, tier 1, depending on `tfar_ts3_host` (the SDK newtypes),
+//! `tfar_game_link::protocol` and `tfar_game_link::client`; the plugin apps' integration tests use
 //! it with [`locate_cdylib`], and developers run the binary.
 //!
 //! **Signals and state:** one process-global [`FakeTeamSpeak`] behind a `parking_lot` mutex, which

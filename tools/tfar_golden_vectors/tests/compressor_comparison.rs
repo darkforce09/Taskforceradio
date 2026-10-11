@@ -1,4 +1,4 @@
-//! `tfar_dynamics` against SimpleComp: the 0.9 and 1.0 presets over speech-like signals (an
+//! `tfar_audio::dynamics` against SimpleComp: the 0.9 and 1.0 presets over speech-like signals (an
 //! amplitude-modulated noise burst and level steps), comparing the gain-reduction curve, the
 //! compressed frames and the stereo `i16` path.
 
@@ -11,11 +11,11 @@
     reason = "helpers outside the test functions stop the test on a failed call, as the tests do"
 )]
 
-use tfar_dynamics::{Compressor, CompressorSettings};
+use tfar_audio::dynamics::{Compressor, CompressorSettings};
+use tfar_audio::sample_buffer::StereoBuffer;
 use tfar_golden_vectors::{
     OracleCompressor, OracleCompressorSettings, SAMPLE_RATE_HZ, level_steps, modulated_noise_burst,
 };
-use tfar_sample_buffer::StereoBuffer;
 
 /// How far our gain may lie from SimpleComp's, frame by frame.
 const GAIN_TOLERANCE: f64 = 1.0e-6;

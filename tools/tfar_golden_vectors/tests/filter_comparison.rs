@@ -1,4 +1,4 @@
-//! `tfar_dsp_filters` against DSPFilters: every filter design the two mods use, over white noise,
+//! `tfar_audio::dsp_filters` against DSPFilters: every filter design the two mods use, over white noise,
 //! a sine sweep and an impulse at 48 kHz, in mono, stereo and the stereo `i16` path, plus the
 //! magnitude response.
 
@@ -11,12 +11,12 @@
     reason = "helpers outside the test functions stop the test on a failed call, as the tests do"
 )]
 
-use tfar_dsp_filters::{FilterDesign, MonoFilter, StereoFilter};
+use tfar_audio::dsp_filters::{FilterDesign, MonoFilter, StereoFilter};
+use tfar_audio::sample_buffer::StereoBuffer;
 use tfar_golden_vectors::{
     OracleFilter, OracleFilterDesign, SAMPLE_RATE_HZ, decibel_difference, impulse,
     log_spaced_frequencies, max_absolute_difference, relative_rms_error, sine_sweep, white_noise,
 };
-use tfar_sample_buffer::StereoBuffer;
 
 /// The RMS error a filtered signal may have, relative to the oracle's RMS.
 const RELATIVE_RMS_TOLERANCE: f64 = 1.0e-4;
@@ -25,7 +25,7 @@ const PASSBAND_TOLERANCE_DB: f64 = 0.1;
 /// The magnitude tolerance everywhere else.
 const STOPBAND_TOLERANCE_DB: f64 = 1.0;
 
-/// One design as `tfar_dsp_filters` names it and as DSPFilters sets it up.
+/// One design as `tfar_audio::dsp_filters` names it and as DSPFilters sets it up.
 struct DesignCase {
     name: &'static str,
     ours: FilterDesign,

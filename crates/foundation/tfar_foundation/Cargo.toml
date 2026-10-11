@@ -1,0 +1,24 @@
+# The foundation every other crate builds on: positions and directions in Arma's frame (on glam),
+# and the parsers for the strings Arma sends. Knows nothing of TeamSpeak, audio or a mod version.
+[package]
+name = "tfar_foundation"
+description = "Arma-frame geometry and the parsers for the strings Arma sends."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/foundation"
+tier = 0
+targets = "any"
+
+[dependencies]
+# Vectors and angles in f64, as Arma's positions need.
+glam = { workspace = true, features = ["std", "f64"] }
+# Derives each module's `Error`.
+thiserror.workspace = true
+
+[lints]
+workspace = true

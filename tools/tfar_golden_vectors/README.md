@@ -1,8 +1,8 @@
 # Golden vectors
 
 The `tfar_golden_vectors` crate: the original C++ audio code of the mods and FAudio's F3DAudio,
-built as a live test oracle, and the comparison tests that hold `tfar_dsp_filters`,
-`tfar_dynamics` and `tfar_spatial_audio` to it within stated tolerances.
+built as a live test oracle, and the comparison tests that hold `tfar_audio::dsp_filters`,
+`tfar_audio::dynamics` and `tfar_audio::spatial_audio` to it within stated tolerances.
 
 ## How it works
 
@@ -24,7 +24,7 @@ signals through the oracle and through the Rust crate and compare:
 
 ```text
 test signal ──▶ OracleFilter / OracleCompressor / f3daudio_calculate ──▶ shim ──▶ original C/C++
-           └──▶ tfar_dsp_filters / tfar_dynamics / tfar_spatial_audio
+           └──▶ tfar_audio::dsp_filters / tfar_audio::dynamics / tfar_audio::spatial_audio
                          both outputs ──▶ relative RMS error, max difference, dB distance
 ```
 
@@ -136,16 +136,15 @@ place in the repository.
 ## Boundaries
 
 - Depends on: no workspace crate; `thiserror`; `cc` at build time; the originals under
-  `reference/tfar_1_0/ts/include/` and a host C and C++ compiler. The tests use `tfar_dsp_filters`,
-  `tfar_dynamics`, `tfar_spatial_audio`, `tfar_sample_buffer` and `tfar_geometry` as
+  `reference/tfar_1_0/ts/include/` and a host C and C++ compiler. The tests use `tfar_audio::dsp_filters`,
+  `tfar_audio::dynamics`, `tfar_audio::spatial_audio`, `tfar_audio::sample_buffer` and `tfar_foundation::geometry` as
   dev-dependencies.
 - Used by: nothing; its own tests are the comparisons.
 - Rules: the oracle is built only here, never into a deliverable; `reference/` is read in place
   and never written (`cargo xtask verify reference-untouched`); C and C++ live only in `oracle/`
   and `shim/` (`cargo xtask verify language-bans`); every `unsafe` call sits in
   `src/oracles/oracle_bindings.rs` with a `// SAFETY:` comment; every comparison names its
-  tolerance, and each tolerance has a perturbation that breaks it. Tier 0 in `tools`
-  (`cargo xtask verify crate-tiers`).
+  tolerance, and each tolerance has a perturbation that breaks it.
 
 ## Related documentation
 

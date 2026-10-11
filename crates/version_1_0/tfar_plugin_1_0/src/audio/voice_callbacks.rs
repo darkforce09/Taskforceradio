@@ -22,9 +22,9 @@
 
 use std::time::Instant;
 
-use tfar_sample_buffer::{copy_to_stereo, write_back_from_stereo};
+use tfar_audio::sample_buffer::{copy_to_stereo, write_back_from_stereo};
+use tfar_plugin_logic_1_0::voice_pipeline::prelude::{VoiceFrameContext, VoiceOutcome};
 use tfar_ts3_host::{CapturedVoiceData, MixedPlaybackVoiceData, PostProcessVoiceData};
-use tfar_voice_pipeline_1_0::prelude::{VoiceFrameContext, VoiceOutcome};
 
 use crate::runtime::PluginRuntime;
 use crate::runtime::server_state::{ServerState, SharedServerState, state_client_id};

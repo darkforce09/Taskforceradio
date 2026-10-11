@@ -5,7 +5,7 @@ use std::sync::{Mutex, OnceLock, PoisonError};
 use std::time::Instant;
 
 use tfar_arma_extension_abi::{arma_command_line_contains, foreground_window_is_arma};
-use tfar_game_link_client::prelude::{ClientConfig, Flavour, GameLinkClient, port};
+use tfar_game_link::client::prelude::{ClientConfig, Flavour, GameLinkClient, port};
 
 use crate::call_handling::answer_call;
 use crate::focus_watch::FocusWatch;

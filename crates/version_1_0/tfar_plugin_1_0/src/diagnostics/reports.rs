@@ -14,7 +14,7 @@
 use std::fmt::Write as _;
 use std::time::Instant;
 
-use tfar_plugin_settings_1_0::prelude::{SettingKey, SettingValue};
+use tfar_plugin_logic_1_0::plugin_settings::prelude::{SettingKey, SettingValue};
 
 use crate::runtime::PluginRuntime;
 

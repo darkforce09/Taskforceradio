@@ -21,7 +21,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Instant;
 
 use parking_lot::RwLock;
-use tfar_game_link_server::prelude::Flavour;
+use tfar_game_link::server::prelude::Flavour;
 use tfar_ts3_host::{
     CapturedVoiceData, ChannelId, ClientId, ClientMove, CommandHandling, ConnectStatus,
     ErrorDisplay, InfoItem, InitStatus, Invoker, LoggingGuard, MixedPlaybackVoiceData,

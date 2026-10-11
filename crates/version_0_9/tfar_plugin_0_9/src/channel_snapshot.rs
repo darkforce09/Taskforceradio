@@ -18,8 +18,8 @@
 
 use std::collections::BTreeMap;
 
-use tfar_client_state_0_9::ClientId as StateClientId;
-use tfar_plugin_commands_0_9::metadata_says_playing;
+use tfar_plugin_logic_0_9::client_state::ClientId as StateClientId;
+use tfar_plugin_logic_0_9::plugin_commands::metadata_says_playing;
 use tfar_ts3_host::{ChannelId, ClientId, ServerConnectionHandlerId};
 
 use crate::team_speak::TeamSpeakQueries;
@@ -28,12 +28,12 @@ use crate::team_speak::TeamSpeakQueries;
 #[path = "tests/channel_snapshot.rs"]
 mod tests;
 
-/// The `tfar_client_state_0_9` id of the TeamSpeak client `client`.
+/// The `tfar_plugin_logic_0_9::client_state` id of the TeamSpeak client `client`.
 pub const fn state_client_id(client: ClientId) -> StateClientId {
     StateClientId::new(client.0)
 }
 
-/// The TeamSpeak id of the `tfar_client_state_0_9` client `client`.
+/// The TeamSpeak id of the `tfar_plugin_logic_0_9::client_state` client `client`.
 pub const fn host_client_id(client: StateClientId) -> ClientId {
     ClientId(client.get())
 }
@@ -113,7 +113,7 @@ impl ChannelSnapshot {
             .collect()
     }
 
-    /// The members' client ids, as `tfar_client_state_0_9` names them.
+    /// The members' client ids, as `tfar_plugin_logic_0_9::client_state` names them.
     pub fn member_ids(&self) -> Vec<StateClientId> {
         self.members
             .iter()

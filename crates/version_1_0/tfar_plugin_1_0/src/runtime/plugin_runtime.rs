@@ -25,12 +25,12 @@ use std::time::{Duration, Instant};
 
 use arc_swap::ArcSwap;
 use parking_lot::Mutex;
-use tfar_client_state_1_0::prelude::{DspContext, GameLinkState, TeamspeakClientId};
 use tfar_debug_window::prelude::DebugWindowHandle;
-use tfar_game_link_server::prelude::GameLinkServer;
-use tfar_plugin_settings_1_0::PluginSettings;
+use tfar_game_link::server::prelude::GameLinkServer;
+use tfar_plugin_logic_1_0::client_state::prelude::{DspContext, GameLinkState, TeamspeakClientId};
+use tfar_plugin_logic_1_0::plugin_settings::PluginSettings;
+use tfar_plugin_logic_1_0::voice_pipeline::prelude::{ensure_every_sender_dsp, ensure_sender_dsp};
 use tfar_ts3_host::{AudioDiagnostics, ServerConnectionHandlerId};
-use tfar_voice_pipeline_1_0::prelude::{ensure_every_sender_dsp, ensure_sender_dsp};
 
 use crate::audio::radio_sounds::RadioSounds;
 use crate::diagnostics::message_ring::MessageRing;

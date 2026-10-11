@@ -6,11 +6,11 @@
 //! 0.9 crates. Every domain decision lives in a library; this crate is wiring, threads and
 //! TeamSpeak side effects.
 //!
-//! **Position:** `crates/version_0_9`, tier 6, depending on `tfar_ts3_host`,
-//! `tfar_ts3_settings_db`, `tfar_game_link_server`, `tfar_web_requests`, `tfar_voice_pipeline_0_9`,
-//! `tfar_radio_routing_0_9`, `tfar_client_state_0_9`, `tfar_game_commands_0_9`,
-//! `tfar_plugin_commands_0_9`, `tfar_playback_mixer`, `tfar_geometry`, `tfar_arma_values`,
-//! `tfar_hrtf`, `tfar_sample_buffer`, `tfar_dsp_filters`, `tfar_spatial_audio`; TeamSpeak 3
+//! **Position:** `crates/version_0_9`, tier 3, depending on `tfar_ts3_host`,
+//! `tfar_ts3_settings_db`, `tfar_game_link::server`, `tfar_web_requests`, `tfar_plugin_logic_0_9::voice_pipeline`,
+//! `tfar_plugin_logic_0_9::radio_routing`, `tfar_plugin_logic_0_9::client_state`, `tfar_plugin_logic_0_9::game_commands`,
+//! `tfar_plugin_logic_0_9::plugin_commands`, `tfar_audio::playback_mixer`, `tfar_foundation::geometry`, `tfar_foundation::arma_values`,
+//! `tfar_audio::hrtf`, `tfar_audio::sample_buffer`, `tfar_audio::dsp_filters`, `tfar_audio::spatial_audio`; TeamSpeak 3
 //! loads it from its plugins folder.
 //!
 //! **Signals and state:** the plugin instance TeamSpeak loads ([`PLUGIN`], in

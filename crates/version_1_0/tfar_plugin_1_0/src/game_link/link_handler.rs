@@ -17,8 +17,8 @@
 use std::sync::Weak;
 use std::time::Instant;
 
-use tfar_game_commands_1_0::prelude::{GameCommand, parse};
-use tfar_game_link_server::prelude::GameLinkHandler;
+use tfar_game_link::server::prelude::GameLinkHandler;
+use tfar_plugin_logic_1_0::game_commands::prelude::{GameCommand, parse};
 
 use crate::game_link::async_commands::apply_async_message;
 use crate::game_link::sync_replies::sync_reply;

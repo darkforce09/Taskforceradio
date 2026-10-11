@@ -1,63 +1,24 @@
-# TFAR 0.9.12 crates
+# TFAR 0.9.12
 
-Everything of the 0.9.12 mod: its two deliverables, the TeamSpeak plugin and the Arma extension,
-and the libraries behind them: game commands, plugin commands, radio effects, client state,
-reception routing and voice pipeline.
+Everything of the 0.9.12 mod:
 
-## How it works
-
-Arma calls `tfar_extension_0_9` through `callExtension`; the extension forwards each call over
-localhost TCP (port 47810) to `tfar_plugin_0_9`, which TeamSpeak has loaded. In the plugin, a game
-message is parsed by `tfar_game_commands_0_9` and updates `tfar_client_state_0_9`. On each voice
-frame, `tfar_voice_pipeline_0_9` asks `tfar_radio_routing_0_9` how the listener hears the speaker,
-then applies `tfar_radio_effects_0_9` and the shared audio crates. `tfar_plugin_commands_0_9`
-encodes what clients tell each other through TeamSpeak.
+- [`tfar_plugin_0_9`](/crates/version_0_9/tfar_plugin_0_9/README.md) — the TeamSpeak plugin (a
+  Linux `.so`): exports, threads, the game link server, push-to-talk, metadata.
+- [`tfar_extension_0_9`](/crates/version_0_9/tfar_extension_0_9/README.md) — the Arma extension (a
+  Windows DLL): every call is a synchronous round trip to the plugin on port 47810.
+- [`tfar_plugin_logic_0_9`](/crates/version_0_9/tfar_plugin_logic_0_9/README.md) — the plugin's
+  safe logic: commands, client state, radio effects, routing, voice pipeline.
 
 ```text
 Arma 3 -> tfar_extension_0_9 -- TCP 127.0.0.1:47810 --> tfar_plugin_0_9 <- TeamSpeak 3
-
-inside the plugin:
-game_commands -> client_state -> radio_routing -> voice_pipeline
-radio_effects ---^                                ^-- audio crates
+inside the plugin: game_commands -> client_state -> radio_routing -> voice_pipeline (+ radio_effects, tfar_audio)
 ```
 
-The two deliverables are a cdylib plus an rlib each; `cargo xtask dist` gives the built files the
-names the mod and TeamSpeak expect.
-
-## Getting started
-
-Run from the repository root:
-
 ```bash
-# the unit and host tests of every crate in this category
-cargo test \
-  -p tfar_client_state_0_9 \
-  -p tfar_extension_0_9 \
-  -p tfar_game_commands_0_9 \
-  -p tfar_plugin_0_9 \
-  -p tfar_plugin_commands_0_9 \
-  -p tfar_radio_effects_0_9 \
-  -p tfar_radio_routing_0_9 \
-  -p tfar_voice_pipeline_0_9
-# the extension DLL
+cargo test -p tfar_plugin_logic_0_9 -p tfar_plugin_0_9 -p tfar_extension_0_9
 cargo build -p tfar_extension_0_9 --target x86_64-pc-windows-gnu
 ```
 
-## Boundaries
-
-- Depends on: the libraries on foundation, audio, teamspeak, `tfar_game_link_protocol`, services
-  and interface crates and on this category; `tfar_plugin_0_9` on any crate outside version_1_0;
-  `tfar_extension_0_9` on foundation and game_link crates only.
-- Used by: TeamSpeak 3 and Arma 3, which load the two deliverables; the libraries by
-  `tfar_plugin_0_9`.
-- Rules: a version_0_9 crate never depends on a version_1_0 crate, and the reverse; no crate
-  depends on a deliverable (`cargo xtask verify crate-tiers` holds the edges by crate name,
-  `cargo xtask verify dependency-firewalls` the external crates); each crate declares
-  `category = "crates/version_0_9"` and its tier: 0 without a workspace dependency, else one above
-  the highest.
-
-## Related documentation
-
-- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the original plugin this track ports.
-- [Arma extensions](/documentation/behaviour_specs/extensions.md) — the original
-  extensions and the Arma ABI facts.
+A 0.9 crate never depends on a 1.0 crate; the extension uses only foundation and game link; nothing
+depends on a deliverable (`cargo xtask verify crate-tiers`). `cargo xtask dist` gives the built
+files the names the mod and TeamSpeak expect.

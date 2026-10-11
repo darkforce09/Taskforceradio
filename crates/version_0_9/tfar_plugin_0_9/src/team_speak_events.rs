@@ -18,8 +18,8 @@
 //! when TeamSpeak gives it to someone else, is never unmuted by mistake; a dormant plugin
 //! broadcasts nothing.
 
-use tfar_plugin_commands_0_9::{PluginCommand, info_data_text};
-use tfar_radio_routing_0_9::{MuteQuery, set_game_client_mute_status};
+use tfar_plugin_logic_0_9::plugin_commands::{PluginCommand, info_data_text};
+use tfar_plugin_logic_0_9::radio_routing::{MuteQuery, set_game_client_mute_status};
 use tfar_ts3_host::{
     ChannelId, ClientId, ClientMove, ClientProperty, ConnectStatus, ErrorDisplay, InfoItem,
     ServerConnectionHandlerId, ServerError, TalkStatus,

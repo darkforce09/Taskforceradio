@@ -11,7 +11,7 @@ publish.workspace = true
 
 [package.metadata.layout]
 category = "crates/version_0_9"
-tier = 2
+tier = 1
 targets = "any"
 
 # The cdylib is the file Arma loads; the rlib lets host tests and the mock host link the
@@ -25,14 +25,12 @@ crate-type = ["cdylib", "rlib"]
 thiserror.workspace = true
 # The Arma extension exports.
 tfar_arma_extension_abi.workspace = true
-# The extension-side link client.
-tfar_game_link_client.workspace = true
+# The localhost TCP game link: frames, the plugin's server, the extension's client.
+tfar_game_link.workspace = true
 
 [dev-dependencies]
-# The frames the raw stand-in plugin of the round-trip test writes.
-tfar_game_link_protocol.workspace = true
-# The real plugin-side listener the round-trip test answers from.
-tfar_game_link_server.workspace = true
+# The localhost TCP game link: frames, the plugin's server, the extension's client.
+tfar_game_link.workspace = true
 
 [lints]
 workspace = true

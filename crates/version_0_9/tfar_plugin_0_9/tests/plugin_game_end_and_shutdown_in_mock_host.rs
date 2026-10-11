@@ -15,7 +15,7 @@ mod scenarios {
     use std::net::TcpListener;
     use std::time::{Duration, Instant};
 
-    use tfar_game_link_client::prelude::GameLinkClient;
+    use tfar_game_link::client::prelude::GameLinkClient;
     use tfar_ts3_host::{ClientId, ClientProperty, ServerConnectionHandlerId, Ts3Vector};
     use tfar_ts3_mock::{HostCall, MockHost};
 
@@ -194,7 +194,7 @@ mod scenarios {
             host.talk_status_change(alpha, true).unwrap();
         }
         if pauses {
-            std::thread::sleep(tfar_hrtf::IDLE_RESET_AFTER + Duration::from_millis(50));
+            std::thread::sleep(tfar_audio::hrtf::IDLE_RESET_AFTER + Duration::from_millis(50));
         }
         let silence = vec![0_i16; BLOCK_FRAMES * 2];
         let output = host.post_process_voice(alpha, &silence, 2).unwrap().samples;

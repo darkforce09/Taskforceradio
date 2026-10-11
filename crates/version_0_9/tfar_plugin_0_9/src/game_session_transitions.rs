@@ -3,7 +3,7 @@
 //!
 //! **Role:** `onGameStart` and `onGameEnd` with the pipe and service threads' transitions around
 //! them (`reference/tfar_0_9_12/ts/src/plugin.cpp:1391-1476`, 1992-2009, 2056-2071), over the
-//! decisions `tfar_client_state_0_9` makes (`ServerRadioData::start_game`, `end_game`).
+//! decisions `tfar_plugin_logic_0_9::client_state` makes (`ServerRadioData::start_game`, `end_game`).
 //!
 //! **Position:** methods of `PluginCore`; the game link thread starts a game after the first
 //! message that counts as game activity, the service thread ends it on the 4 s timeout and
@@ -17,8 +17,8 @@
 //! nickname given back is the player's own, saved at the first rename of the session; after a
 //! game timed out, every side effect of its end is done before the plugin is dormant again.
 
-use tfar_client_state_0_9::SeriousChannel;
-use tfar_radio_routing_0_9::is_other_radio_plugin_channel;
+use tfar_plugin_logic_0_9::client_state::SeriousChannel;
+use tfar_plugin_logic_0_9::radio_routing::is_other_radio_plugin_channel;
 use tfar_ts3_host::ServerConnectionHandlerId;
 
 use crate::plugin_core::PluginCore;

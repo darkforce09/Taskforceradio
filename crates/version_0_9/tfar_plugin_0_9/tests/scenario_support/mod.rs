@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{Duration, Instant};
 
-use tfar_game_link_client::prelude::{ClientConfig, Flavour, GameLinkClient, SyncOutcome};
+use tfar_game_link::client::prelude::{ClientConfig, Flavour, GameLinkClient, SyncOutcome};
 use tfar_ts3_host::{ClientProperty, ServerConnectionHandlerId};
 use tfar_ts3_mock::{HostCall, HostOptions, MockHost, ServerSetup, locate_cdylib};
 

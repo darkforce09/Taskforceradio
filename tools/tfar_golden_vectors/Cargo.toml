@@ -23,16 +23,10 @@ thiserror.workspace = true
 cc.workspace = true
 
 [dev-dependencies]
-# The Butterworth and RBJ filters compared against DSPFilters.
-tfar_dsp_filters.workspace = true
-# The compressor compared against SimpleComp.
-tfar_dynamics.workspace = true
-# The distance curve and emitter cone compared against F3DAudio.
-tfar_spatial_audio.workspace = true
-# The stereo i16 buffer the filter and compressor block paths run on.
-tfar_sample_buffer.workspace = true
-# The directions and angles of the cone comparison.
-tfar_geometry.workspace = true
+# The shared voice DSP: sample frames, filters, compressor, HRTF, spatial gains, playback mixer.
+tfar_audio.workspace = true
+# Geometry and Arma value parsing.
+tfar_foundation.workspace = true
 
 [lints]
 workspace = true

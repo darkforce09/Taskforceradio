@@ -1,4 +1,4 @@
-//! `SETCFG`: one plugin setting from the game, applied through `tfar_plugin_settings_1_0`, with
+//! `SETCFG`: one plugin setting from the game, applied through `tfar_plugin_logic_1_0::plugin_settings`, with
 //! the needcfg push, the serious-mode check and the one-time version warning.
 //!
 //! **Role:** the `SETCFG` case of `reference/tfar_1_0/ts/src/CommandProcessor.cpp:388-414` and
@@ -13,8 +13,8 @@
 
 use std::sync::atomic::Ordering;
 
-use tfar_game_commands_1_0::prelude::ConfigAssignment;
-use tfar_plugin_settings_1_0::prelude::SettingKey;
+use tfar_plugin_logic_1_0::game_commands::prelude::ConfigAssignment;
+use tfar_plugin_logic_1_0::plugin_settings::prelude::SettingKey;
 
 use crate::runtime::PluginRuntime;
 
@@ -32,7 +32,7 @@ pub fn apply_set_config(runtime: &PluginRuntime, assignment: &ConfigAssignment) 
     });
     let changed = match result {
         Ok(changed) => changed,
-        Err(error @ tfar_plugin_settings_1_0::Error::UnknownKey { .. }) => {
+        Err(error @ tfar_plugin_logic_1_0::plugin_settings::Error::UnknownKey { .. }) => {
             tracing::warn!(%error, "SETCFG named no setting");
             if let Some(ts) = runtime.act() {
                 ts.print_to_current_tab(&error.to_string());

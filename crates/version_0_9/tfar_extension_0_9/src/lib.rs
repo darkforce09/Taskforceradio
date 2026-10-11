@@ -6,8 +6,8 @@
 //! `RVExtensionVersion` exports and keeps the process-wide game link client; [`call_handling`]
 //! maps each outcome to the reply string of the original extension.
 //!
-//! **Position:** `crates/version_0_9`, tier 2, depending on `tfar_arma_extension_abi`,
-//! `tfar_game_link_client`; Arma 3 loads it through `callExtension` under Proton.
+//! **Position:** `crates/version_0_9`, tier 1, depending on `tfar_arma_extension_abi`,
+//! `tfar_game_link::client`; Arma 3 loads it through `callExtension` under Proton.
 //!
 //! **Signals and state:** the game link client the DLL keeps open, created on the first call in a
 //! `OnceLock`; its port is the 0.9 plugin's, or the debug port when Arma's command line holds

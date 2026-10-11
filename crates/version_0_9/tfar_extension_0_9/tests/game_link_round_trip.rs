@@ -6,8 +6,8 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use tfar_extension_0_9::prelude::*;
-use tfar_game_link_client::prelude::{ClientConfig, Flavour, GameLinkClient};
-use tfar_game_link_protocol::{Frame, read_frame, write_frame};
+use tfar_game_link::client::prelude::{ClientConfig, Flavour, GameLinkClient};
+use tfar_game_link::protocol::{Frame, read_frame, write_frame};
 
 use stand_in_plugin::{client_for, closed_port, start_server};
 
@@ -18,8 +18,8 @@ mod stand_in_plugin {
     use std::thread;
     use std::time::Duration;
 
-    use tfar_game_link_client::prelude::{ClientConfig, Flavour, GameLinkClient};
-    use tfar_game_link_server::{GameLinkHandler, GameLinkServer, ServerConfig};
+    use tfar_game_link::client::prelude::{ClientConfig, Flavour, GameLinkClient};
+    use tfar_game_link::server::{GameLinkHandler, GameLinkServer, ServerConfig};
 
     /// A plugin stand-in: answers `TS_INFO\tPING` with `PONG`, sleeps on `SLOW`, echoes the rest.
     struct PingHandler;

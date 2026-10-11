@@ -23,8 +23,8 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwapOption;
 use parking_lot::Mutex;
-use tfar_game_link_server::prelude::{Flavour, GameLinkServer};
-use tfar_plugin_commands_1_0::prelude::info_data_text;
+use tfar_game_link::server::prelude::{Flavour, GameLinkServer};
+use tfar_plugin_logic_1_0::plugin_commands::prelude::info_data_text;
 use tfar_ts3_host::{
     CapturedVoiceData, ChannelId, ClientId, ClientMove, CommandHandling, ConnectStatus,
     ErrorDisplay, InfoItem, InitStatus, Invoker, LoggingGuard, MixedPlaybackVoiceData,

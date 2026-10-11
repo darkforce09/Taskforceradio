@@ -45,13 +45,13 @@ The project is maintained by AI agents. Keep it small: every rule below states a
 
 | Folder | Holds |
 |---|---|
-| `crates/foundation/` | Pure shared types: geometry on `glam`, Arma value parsing |
-| `crates/audio/` | The voice DSP pipeline shared by both plugins: sample buffers, filters, dynamics, HRTF, spatial curves, playback mixer |
+| `crates/foundation/` | `tfar_foundation`: geometry on `glam`, Arma value parsing |
+| `crates/audio/` | `tfar_audio`: the voice DSP both plugins share (sample frames, filters, compressor, HRTF, spatial gains, playback mixer) |
 | `crates/teamspeak/` | `tfar_ts3_host` (the TeamSpeak C ABI, `unsafe`) and `tfar_ts3_settings_db` (rusqlite) |
-| `crates/game_link/` | The extension ↔ plugin TCP protocol, its server and client, and `tfar_arma_extension_abi` (Arma C ABI, `unsafe`, Windows) |
+| `crates/game_link/` | `tfar_game_link` (the extension ↔ plugin TCP frames, server and client) and `tfar_arma_extension_abi` (Arma C ABI, `unsafe`, Windows) |
 | `crates/services/` | `tfar_web_requests`: update check and Piwik over `ureq` + rustls |
 | `crates/interface/` | `tfar_debug_window`: the egui debug window |
-| `crates/version_0_9/`, `crates/version_1_0/` | Each mod's TeamSpeak plugin and Arma extension (the deliverables) and its voice-logic libraries |
+| `crates/version_0_9/`, `crates/version_1_0/` | Each mod's TeamSpeak plugin and Arma extension (the deliverables) and `tfar_plugin_logic_<version>`, the plugin's safe logic |
 | `tools/` | `xtask` (gates, CI lane, dist, reference manifest), `tfar_ts3_mock` (loads a built plugin with a fake TeamSpeak), `tfar_extension_probe` (Windows exe that calls the DLL under Proton), `tfar_golden_vectors` (C/C++ oracles the audio tests compare against) |
 | `assets/hrir/` | The IRCAM HRIR sphere the HRTF loads, with `CREDITS.md` |
 | `documentation/` | Architecture, decisions, behaviour specs of the originals, standards, glossary, the manual install runbook; entry [documentation/README.md](/documentation/README.md) |

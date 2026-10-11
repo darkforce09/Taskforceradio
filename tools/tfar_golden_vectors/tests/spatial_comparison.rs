@@ -1,4 +1,4 @@
-//! `tfar_spatial_audio` against F3DAudio: the 1.0 voice distance curve for distances from 0 to
+//! `tfar_audio::spatial_audio` against F3DAudio: the 1.0 voice distance curve for distances from 0 to
 //! twice the scaler, the voice cone at 72 angles, and the two together in the scene of the 1.0
 //! `applyILD` (`reference/tfar_1_0/ts/src/helpers.cpp`).
 
@@ -14,9 +14,9 @@
 
 use core::f64::consts::{FRAC_PI_2, TAU};
 
-use tfar_geometry::Direction;
+use tfar_audio::spatial_audio::{DistanceCurve, EmitterCone};
+use tfar_foundation::geometry::Direction;
 use tfar_golden_vectors::{OracleCone, OracleSpatialScene, f3daudio_calculate};
-use tfar_spatial_audio::{DistanceCurve, EmitterCone};
 
 /// How far our gain may lie from F3DAudio's volume.
 const GAIN_TOLERANCE: f64 = 1.0e-5;
@@ -35,7 +35,7 @@ fn volume_attenuation(distance: f32, max_audible: f32) -> f32 {
     if gain < 0.001 { 0.0 } else { gain.min(1.0) }
 }
 
-/// The voice curve of an emitter of `voice_volume`, as `tfar_spatial_audio` builds it, with the
+/// The voice curve of an emitter of `voice_volume`, as `tfar_audio::spatial_audio` builds it, with the
 /// gains rounded to the `f32` the original curve stores.
 fn our_voice_curve(voice_volume: f64) -> DistanceCurve {
     DistanceCurve::tfar_voice(voice_volume, |metres| {

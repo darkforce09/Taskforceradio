@@ -7,7 +7,7 @@
 //! and the X3DAudio parameter checks the scene fails.
 //!
 //! **Position:** inside `oracles`; called by the spatial comparison tests, which compare the volume
-//! with `tfar_spatial_audio`'s distance curve and emitter cone. The scene mirrors
+//! with `tfar_audio::spatial_audio`'s distance curve and emitter cone. The scene mirrors
 //! `applyILD` in `reference/tfar_1_0/ts/src/helpers.cpp`: a stereo output, a one-channel emitter
 //! with a channel radius of 1, the curve scaled by `CurveDistanceScaler`.
 //!

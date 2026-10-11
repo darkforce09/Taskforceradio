@@ -48,7 +48,7 @@ fn version_crates_use_only_the_protocol_from_game_link() {
         edge_violation(
             "tfar_a_1_0",
             VERSION_1_0,
-            GAME_LINK_PROTOCOL,
+            GAME_LINK_CRATE,
             GAME_LINK,
             EdgeTable::NormalOrBuild
         )
@@ -58,7 +58,7 @@ fn version_crates_use_only_the_protocol_from_game_link() {
         edge_violation(
             "tfar_a_1_0",
             VERSION_1_0,
-            "tfar_game_link_server",
+            "tfar_arma_extension_abi",
             GAME_LINK,
             EdgeTable::NormalOrBuild
         )
@@ -77,7 +77,7 @@ fn extension_apps_use_only_foundation_and_game_link() {
         edge_violation(
             "tfar_extension_0_9",
             VERSION_0_9,
-            "tfar_game_link_client",
+            "tfar_game_link",
             GAME_LINK,
             EdgeTable::NormalOrBuild
         )
@@ -87,7 +87,7 @@ fn extension_apps_use_only_foundation_and_game_link() {
         edge_violation(
             "tfar_extension_0_9",
             VERSION_0_9,
-            "tfar_client_state_0_9",
+            "tfar_plugin_logic_0_9",
             VERSION_0_9,
             EdgeTable::NormalOrBuild
         )
@@ -101,7 +101,7 @@ fn plugin_apps_use_any_game_link_crate_and_their_own_version() {
         edge_violation(
             "tfar_plugin_0_9",
             VERSION_0_9,
-            "tfar_game_link_server",
+            "tfar_game_link",
             GAME_LINK,
             EdgeTable::NormalOrBuild
         )
@@ -111,7 +111,7 @@ fn plugin_apps_use_any_game_link_crate_and_their_own_version() {
         edge_violation(
             "tfar_plugin_0_9",
             VERSION_0_9,
-            "tfar_voice_pipeline_0_9",
+            "tfar_plugin_logic_0_9",
             VERSION_0_9,
             EdgeTable::NormalOrBuild
         )
@@ -123,7 +123,7 @@ fn plugin_apps_use_any_game_link_crate_and_their_own_version() {
 fn a_version_library_never_depends_on_its_own_deliverables() {
     assert!(
         edge_violation(
-            "tfar_voice_pipeline_1_0",
+            "tfar_plugin_logic_1_0",
             VERSION_1_0,
             "tfar_plugin_1_0",
             VERSION_1_0,
@@ -133,7 +133,7 @@ fn a_version_library_never_depends_on_its_own_deliverables() {
     );
     assert!(
         edge_violation(
-            "tfar_client_state_0_9",
+            "tfar_plugin_logic_0_9",
             VERSION_0_9,
             "tfar_extension_0_9",
             VERSION_0_9,
@@ -169,7 +169,7 @@ fn nothing_depends_on_an_app_and_tools_use_crates() {
         edge_violation(
             "tfar_ts3_mock",
             TOOLS,
-            GAME_LINK_PROTOCOL,
+            GAME_LINK_CRATE,
             GAME_LINK,
             EdgeTable::NormalOrBuild
         )
@@ -216,5 +216,5 @@ fn the_ffi_crates_the_probe_and_the_oracle_may_lift_unsafe() {
     ] {
         assert!(UNSAFE_ALLOWED.contains(&name), "{name}");
     }
-    assert!(!UNSAFE_ALLOWED.contains(&"tfar_geometry"));
+    assert!(!UNSAFE_ALLOWED.contains(&"tfar_foundation"));
 }

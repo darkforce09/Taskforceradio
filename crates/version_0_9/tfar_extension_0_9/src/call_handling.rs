@@ -15,7 +15,7 @@
 //! one `SYNC_REQ` (a trailing `~` has no meaning in 0.9 and is sent as is); a reply is the
 //! plugin's text byte for byte where it is UTF-8.
 
-use tfar_game_link_client::{GameLinkClient, SyncOutcome};
+use tfar_game_link::client::{GameLinkClient, SyncOutcome};
 
 #[cfg(test)]
 #[path = "tests/call_handling.rs"]

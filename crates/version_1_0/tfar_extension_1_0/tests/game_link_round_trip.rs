@@ -15,8 +15,8 @@ mod recording_plugin {
     use std::thread;
     use std::time::{Duration, Instant};
 
-    use tfar_game_link_client::prelude::{ClientConfig, Flavour, GameLinkClient};
-    use tfar_game_link_server::{GameLinkHandler, GameLinkServer, ServerConfig};
+    use tfar_game_link::client::prelude::{ClientConfig, Flavour, GameLinkClient};
+    use tfar_game_link::server::{GameLinkHandler, GameLinkServer, ServerConfig};
 
     /// How long a test waits for something the server should see at once.
     const PROMPT: Duration = Duration::from_secs(2);

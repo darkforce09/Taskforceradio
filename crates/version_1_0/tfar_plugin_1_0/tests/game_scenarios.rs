@@ -18,7 +18,7 @@ mod scenarios {
     use std::process::Command;
     use std::time::{Duration, Instant};
 
-    use tfar_game_link_client::prelude::{ClientConfig, Flavour, GameLinkClient, SyncOutcome};
+    use tfar_game_link::client::prelude::{ClientConfig, Flavour, GameLinkClient, SyncOutcome};
     use tfar_ts3_host::{ChannelId, ClientId, ClientProperty};
     use tfar_ts3_mock::{
         HostCall, HostOptions, MockHost, SentCommandTarget, ServerSetup, locate_cdylib,
@@ -883,7 +883,7 @@ mod scenarios {
             rms(&bravo_block(&host, bravo, block + 1)) > 100.0,
             "a talk start never cuts into the running voice"
         );
-        std::thread::sleep(tfar_hrtf::IDLE_RESET_AFTER + Duration::from_millis(50));
+        std::thread::sleep(tfar_audio::hrtf::IDLE_RESET_AFTER + Duration::from_millis(50));
         let first = bravo_block(&host, bravo, block + 2);
         assert!(
             rms(&first) < 1.0,

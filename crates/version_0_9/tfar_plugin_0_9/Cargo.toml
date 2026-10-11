@@ -11,7 +11,7 @@ publish.workspace = true
 
 [package.metadata.layout]
 category = "crates/version_0_9"
-tier = 6
+tier = 3
 targets = "any"
 
 # The cdylib is the file TeamSpeak loads; the rlib lets host tests and the mock host link the
@@ -27,34 +27,16 @@ thiserror.workspace = true
 tfar_ts3_host.workspace = true
 # TeamSpeak settings lookups.
 tfar_ts3_settings_db.workspace = true
-# The plugin-side link listener.
-tfar_game_link_server.workspace = true
+# The localhost TCP game link: frames, the plugin's server, the extension's client.
+tfar_game_link.workspace = true
 # The update check and Piwik calls.
 tfar_web_requests.workspace = true
-# The 0.9 voice frame processing.
-tfar_voice_pipeline_0_9.workspace = true
-# The 0.9 reception decisions.
-tfar_radio_routing_0_9.workspace = true
-# The 0.9 per-client state.
-tfar_client_state_0_9.workspace = true
-# The typed 0.9 game commands.
-tfar_game_commands_0_9.workspace = true
-# The 0.9 plugin command and metadata formats.
-tfar_plugin_commands_0_9.workspace = true
-# Radio sound playback.
-tfar_playback_mixer.workspace = true
-# Positions, directions and distances.
-tfar_geometry.workspace = true
-# The parsers for Arma's field, array and position strings.
-tfar_arma_values.workspace = true
-# The HRIR sphere the sound state's direction sources and the remote radio sounds render with.
-tfar_hrtf.workspace = true
-# The stereo scratch of the voice callbacks and the copy into and out of TeamSpeak's channels.
-tfar_sample_buffer.workspace = true
-# The loudspeaker, vehicle and under-water filters of the positional remote radio sounds.
-tfar_dsp_filters.workspace = true
-# The 0.9 simple ILD that places a remote radio sound when no HRIR sphere is loaded.
-tfar_spatial_audio.workspace = true
+# The 0.9.12 plugin logic: commands, client state, radio effects, routing, voice pipeline.
+tfar_plugin_logic_0_9.workspace = true
+# The shared voice DSP: sample frames, filters, compressor, HRTF, spatial gains, playback mixer.
+tfar_audio.workspace = true
+# Geometry and Arma value parsing.
+tfar_foundation.workspace = true
 # The per-connection state lock the audio callbacks `try_lock`, and the push-to-talk condvar.
 parking_lot.workspace = true
 # The stop signal of the service thread.
@@ -63,8 +45,8 @@ crossbeam-channel = { workspace = true, features = ["std"] }
 tracing = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
-# The raw extension side of the mock-host test's game link round trip.
-tfar_game_link_client.workspace = true
+# The localhost TCP game link: frames, the plugin's server, the extension's client.
+tfar_game_link.workspace = true
 # The fake TeamSpeak host that loads the built `.so` in the integration test.
 tfar_ts3_mock.workspace = true
 

@@ -13,7 +13,7 @@ mod scenario_support;
 mod scenarios {
     use std::time::Duration;
 
-    use tfar_game_link_client::prelude::GameLinkClient;
+    use tfar_game_link::client::prelude::GameLinkClient;
     use tfar_ts3_host::{ChannelId, ClientId, ClientProperty, ServerConnectionHandlerId};
     use tfar_ts3_mock::{HostCall, MockHost};
 

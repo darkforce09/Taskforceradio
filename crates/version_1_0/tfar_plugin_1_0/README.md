@@ -14,7 +14,7 @@ The TeamSpeak plugin for the 1.0 mod, wiring the 1.0 library crates to TeamSpeak
   async worker, as the original queues it. Async messages (`POS`, `FREQ`, `KILLED`, `DFRAME`,
   `SPEAKERS`, the tangents, `SETCFG`, `MISSIONEND`, `RadioTwrAdd`/`RadioTwrDel`, `TRACK`,
   `collectDebugInfo`) run in arrival order on the async worker. `SETCFG` goes through
-  `tfar_plugin_settings_1_0` and pushes needcfg.
+  `tfar_plugin_logic_1_0::plugin_settings` and pushes needcfg.
 - **State.** One `ServerState` per connection behind a `parking_lot` mutex: the 1.0 session, the
   mute tracker, the radio towers, the voice processor and its scratch. Apply functions run under
   the lock; TeamSpeak is called after it is released.
@@ -22,13 +22,13 @@ The TeamSpeak plugin for the 1.0 mod, wiring the 1.0 library crates to TeamSpeak
   `pluginTimeout`; the connect plays `radio-sounds/on` and moves into the serious channel, the
   disconnect lifts every mute, plays `off`, restores channel, nickname and voice activation and
   sets needcfg.
-- **Audio.** The post-process callback runs `tfar_voice_pipeline_1_0`, the captured callback feeds
+- **Audio.** The post-process callback runs `tfar_plugin_logic_1_0::voice_pipeline`, the captured callback feeds
   speaker radios through the mixer's own-voice `StreamProducer`, the mixed-playback callback adds
   the radio sounds. The voice callbacks wait for the server lock, as the original waits on its
   critical section, since a block passed through unprocessed is an audible jump; no holder calls
   TeamSpeak or takes another lock under it, and the waits are logged at debug level once a second
   when any occurred. A remote tangent sound is shaped by `render_remote_tangent_sound`. An HRTF
-  direction source restarts itself after 200 ms without input (`tfar_hrtf`), so an utterance
+  direction source restarts itself after 200 ms without input (`tfar_audio::hrtf`), so an utterance
   never replays the last one's tail and no other thread cuts into a running one.
 - **Plugin folder.** `init` loads `radio-sounds/` and `tfar_hrir/` from `Ts3::plugin_folder`:
   `getPluginPath` under the plugin ID TeamSpeak registered last (its "Reload" keeps the `.so`
@@ -71,7 +71,7 @@ the result back; no game, a dormant plugin or an unknown sender leaves the block
 mixed-playback callback adds the mixer's playbacks and streams into channels 0 and 1 of the
 server in front. `RadioSounds` preloads `radio-sounds/` at init; a local tangent sound is queued
 at its gain into its ear, a remote one is shaped by `render_remote_tangent_sound` of
-`tfar_voice_pipeline_1_0` (gain, ear, vehicle and loudspeaker filters, under-water muffling,
+`tfar_plugin_logic_1_0::voice_pipeline` (gain, ear, vehicle and loudspeaker filters, under-water muffling,
 simple ILD) on the calling thread before the mixer gets it.
 
 ### `src/diagnostics/`
@@ -84,8 +84,8 @@ first use; without an X11 display it prints the reason in the chat tab instead.
 ### `src/events/`
 
 `plugin_command_received` accepts only commands of the server in front from a plugin whose name
-starts with `TFAR`, decodes them with `tfar_plugin_commands_1_0::decode` and applies them under the
-server lock: a remote tangent through `tfar_radio_routing_1_0::apply_remote_tangent`, which yields
+starts with `TFAR`, decodes them with `tfar_plugin_logic_1_0::plugin_commands::decode` and applies them under the
+server lock: a remote tangent through `tfar_plugin_logic_1_0::radio_routing::apply_remote_tangent`, which yields
 the remote sounds, the reception count and the heard list. The sounds are shaped and queued and the mute sent after the lock is released.
 `own_variable_changed` sends `VOLUME` to the channel when the own talking flag changes in game.
 
@@ -94,7 +94,7 @@ the remote sounds, the reception count and the heard list. The sounds are shaped
 `LinkHandler` holds a weak runtime handle. Every sync call and every async message except
 `MISSIONEND` counts as a game message (`record_game_message`, which runs a due connect transition
 first); `MISSIONEND` forgets the game's messages so the game disconnects. Sync calls are parsed
-with `tfar_game_commands_1_0::parse` and answered from the fixed replies or the session; a `POS`
+with `tfar_plugin_logic_1_0::game_commands::parse` and answered from the fixed replies or the session; a `POS`
 answers its speaking code and is queued with `GameLinkServer::queue_async` behind every async
 message already queued, as the original queues it. Async messages, those queued `POS` calls
 included, arrive from the link server's FIFO worker and go through `apply_async_message`; a
@@ -180,13 +180,13 @@ Cargo features, off by default: `tracy` (profiling zones to a Tracy viewer throu
 ## Boundaries
 
 - Depends on: `tfar_ts3_host` (the export layer, the function table, the log forwarder);
-  `tfar_ts3_settings_db` (the push-to-talk delay); `tfar_game_link_server`; `tfar_web_requests`
-  (update check, Piwik); `tfar_voice_pipeline_1_0`, `tfar_radio_routing_1_0`,
-  `tfar_client_state_1_0`, `tfar_game_commands_1_0`, `tfar_plugin_commands_1_0`,
-  `tfar_plugin_settings_1_0`, `tfar_antennas_1_0`; `tfar_playback_mixer`, `tfar_hrtf`,
-  `tfar_sample_buffer`; `tfar_arma_values`; `tfar_debug_window`; `parking_lot`, `arc-swap`, `crossbeam-channel`,
+  `tfar_ts3_settings_db` (the push-to-talk delay); `tfar_game_link::server`; `tfar_web_requests`
+  (update check, Piwik); `tfar_plugin_logic_1_0::voice_pipeline`, `tfar_plugin_logic_1_0::radio_routing`,
+  `tfar_plugin_logic_1_0::client_state`, `tfar_plugin_logic_1_0::game_commands`, `tfar_plugin_logic_1_0::plugin_commands`,
+  `tfar_plugin_logic_1_0::plugin_settings`, `tfar_plugin_logic_1_0::antennas`; `tfar_audio::playback_mixer`, `tfar_audio::hrtf`,
+  `tfar_audio::sample_buffer`; `tfar_foundation::arma_values`; `tfar_debug_window`; `parking_lot`, `arc-swap`, `crossbeam-channel`,
   `profiling`, `tracing`, `thiserror`, and `tracy-client` behind `tracy`. In tests,
-  `tfar_ts3_mock` and `tfar_game_link_client`.
+  `tfar_ts3_mock` and `tfar_game_link::client`.
 - Used by: TeamSpeak 3, which loads the shared library; `tools/tfar_ts3_mock` in the plugin test
   suites.
 - Rules: a plugin is dormant, making no side effect and passing audio through untouched, until
@@ -195,9 +195,7 @@ Cargo features, off by default: `tracy` (profiling zones to a Tracy viewer throu
   while a server lock is held; the audio callbacks never block; `ts3plugin_shutdown` returns
   within 2 s and joins every thread it started, except a web request still waiting for the
   network after its 1 s join budget (`shutdown_joins_every_thread_the_plugin_started_within_two_seconds`
-  in `tests/game_scenarios.rs`). Tier 6 in `crates/version_1_0`: every workspace
-  dependency has a lower tier and follows the category edge matrix
-  (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export glue only
+  in `tests/game_scenarios.rs`). `unsafe` is allowed here for the export glue only
   (`cargo xtask verify unsafe-allowlist`).
 
 ## Related documentation

@@ -3,7 +3,7 @@
 //! **Role:** the test oracle for the audio crates: the build script compiles DSPFilters and
 //! SimpleComp straight from `reference/` and the vendored F3DAudio with `cc`; the crate wraps them
 //! safely and supplies the test signals and error measures its comparison tests judge
-//! `tfar_dsp_filters`, `tfar_dynamics` and `tfar_spatial_audio` by.
+//! `tfar_audio::dsp_filters`, `tfar_audio::dynamics` and `tfar_audio::spatial_audio` by.
 //!
 //! **Position:** `tools`, tier 0, depending on no workspace crate; its integration tests use the
 //! audio crates as dev-dependencies.

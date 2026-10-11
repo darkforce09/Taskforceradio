@@ -4,7 +4,7 @@
 use std::sync::OnceLock;
 
 use tfar_arma_extension_abi::arma_command_line_contains;
-use tfar_game_link_client::prelude::{ClientConfig, Flavour, GameLinkClient, port};
+use tfar_game_link::client::prelude::{ClientConfig, Flavour, GameLinkClient, port};
 
 use crate::call_handling::answer_call;
 

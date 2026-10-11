@@ -11,16 +11,16 @@ the [1.0 plugin spec](/documentation/behaviour_specs/tfar_1_0_plugin.md#3-audio-
 
 | Step | Crate | Library | Replaces |
 |---|---|---|---|
-| Interleaved i16 frames, saturating gain and mix, bounds-safe stereo view | `tfar_sample_buffer` | — | `SampleBuffer`, `applyGain`, the stereo scratch copy (F-004, F-006) |
-| Butterworth LP/BP filters | `tfar_dsp_filters` | `sci-rs` designs second-order sections | DSPFilters `Butterworth::LowPass<N>`, `BandPass<N>` |
-| RBJ high-pass and low-pass | `tfar_dsp_filters` | `biquad` coefficients | DSPFilters `RBJ::HighPass`, `RBJ::LowPass` |
-| Filter processing | `tfar_dsp_filters` | f64 Direct Form II Transposed, one state per channel | DSPFilters f32 Direct Form II |
-| Compressor | `tfar_dynamics` | our feed-forward compressor | simpleSource `SimpleComp` |
-| Direction | `tfar_hrtf` | `hrtf` crate, IRCAM HRIR sphere, block adapter from TS frame sizes | clunk (an ear delay only, F-001) and X3DAudio panning |
-| Distance curve, emitter cone, simple ILD | `tfar_spatial_audio` | small gain model on `glam` | X3DAudio curve and cone (1.0), `applyILD` (F-012) |
-| Radio effects | `tfar_radio_effects_0_9`, `tfar_radio_effects_1_0` | built on `tfar_dsp_filters` | `RadioEffect.h`, `RadioEffect.hpp` |
-| WAV cache and playback mixing | `tfar_playback_mixer` | `hound`, `rtrb` queues | `PlaybackHandler`, the 0.9 playback deques (F-005) |
-| The chain itself, and the distance volume | `tfar_voice_pipeline_0_9`, `tfar_voice_pipeline_1_0` | — | the 0.9 stereo function and `volumeFromDistance`, 1.0 `processVoiceData` and `volumeAttenuation` |
+| Interleaved i16 frames, saturating gain and mix, bounds-safe stereo view | `tfar_audio::sample_buffer` | — | `SampleBuffer`, `applyGain`, the stereo scratch copy (F-004, F-006) |
+| Butterworth LP/BP filters | `tfar_audio::dsp_filters` | `sci-rs` designs second-order sections | DSPFilters `Butterworth::LowPass<N>`, `BandPass<N>` |
+| RBJ high-pass and low-pass | `tfar_audio::dsp_filters` | `biquad` coefficients | DSPFilters `RBJ::HighPass`, `RBJ::LowPass` |
+| Filter processing | `tfar_audio::dsp_filters` | f64 Direct Form II Transposed, one state per channel | DSPFilters f32 Direct Form II |
+| Compressor | `tfar_audio::dynamics` | our feed-forward compressor | simpleSource `SimpleComp` |
+| Direction | `tfar_audio::hrtf` | `hrtf` crate, IRCAM HRIR sphere, block adapter from TS frame sizes | clunk (an ear delay only, F-001) and X3DAudio panning |
+| Distance curve, emitter cone, simple ILD | `tfar_audio::spatial_audio` | small gain model on `glam` | X3DAudio curve and cone (1.0), `applyILD` (F-012) |
+| Radio effects | `tfar_plugin_logic_0_9::radio_effects`, `tfar_plugin_logic_1_0::radio_effects` | built on `tfar_audio::dsp_filters` | `RadioEffect.h`, `RadioEffect.hpp` |
+| WAV cache and playback mixing | `tfar_audio::playback_mixer` | `hound`, `rtrb` queues | `PlaybackHandler`, the 0.9 playback deques (F-005) |
+| The chain itself, and the distance volume | `tfar_plugin_logic_0_9::voice_pipeline`, `tfar_plugin_logic_1_0::voice_pipeline` | — | the 0.9 stereo function and `volumeFromDistance`, 1.0 `processVoiceData` and `volumeAttenuation` |
 
 Rules for every step:
 - **One panner.** `hrtf` gives direction; the curve and cone give level. Nothing pans twice (D20).
@@ -38,7 +38,7 @@ Rules for every step:
 |---|---|---|
 | `onEditPostProcessVoiceDataEvent` | Per sender: the voice chain below | Per sender: the voice chain below, in game only |
 | `onEditCapturedVoiceDataEvent` | In game, my data present, alive: my voice through the chain as sender = me, queued as the `my_radio_voice` playback; the outgoing samples stay unchanged | Same, also requires speakers present |
-| `onEditMixedPlaybackVoiceDataEvent` | `tfar_playback_mixer` adds every queued playback into channels 0–1, saturating | Same, current server only |
+| `onEditMixedPlaybackVoiceDataEvent` | `tfar_audio::playback_mixer` adds every queued playback into channels 0–1, saturating | Same, current server only |
 | `onCustom3dRolloffCalculationClientEvent` | `*volume = 1` (TeamSpeak's own 3D stays neutral) | Same |
 
 A dormant plugin (see the [game link protocol](/documentation/architecture/game_link_protocol.md#dormant-plugin))
@@ -55,7 +55,7 @@ so decaying filter and HRTF tails never fall into slow denormal arithmetic. Each
 lock waits and skipped blocks at debug level once a second when any occurred
 ([D27](/documentation/decisions/audio.md#2026-10-10--voice-callbacks-wait-for-the-state-and-sound-state-is-kept-across-resets-d27)).
 
-## 0.9 voice chain (`tfar_voice_pipeline_0_9`)
+## 0.9 voice chain (`tfar_plugin_logic_0_9::voice_pipeline`)
 
 ```text
 TS post-process samples (mono or more channels)
@@ -69,24 +69,24 @@ TS post-process samples (mono or more channels)
   |   hearing, other vehicle:  Butterworth LP2 at 20000*(1-loss)/4, gain = curve*(1-loss)^1.2
   |   cannot speak:            Butterworth LP4 at 100 Hz, gain = curve(not hearing)*14
   |   reach of zero or less: gain 0 beyond 1 m (F-051)
-  |   -> tfar_hrtf at the sender's position, rotated by my view angle (F-001), +4 dB makeup (D23)
+  |   -> tfar_audio::hrtf at the sender's position, rotated by my view angle (F-001), +4 dB makeup (D23)
   |
   |  RADIO ("original")
   |   -> compressor (threshold 65 dB, ratio 0.1, attack 1 ms, release 300 ms)
-  |   -> for each reception route (tfar_radio_routing_0_9):
+  |   -> for each reception route (tfar_plugin_logic_0_9::radio_routing):
   |        volume ((v+1)/10)^4, by the transmitter's subtype:
   |          digital            -> SW effect, error from distance (F-019), gain vol*0.35, stereo mode
   |          digital_lr/airborne-> LR effect, same
   |          dd                 -> underwater effect, error from raw distance, gain ddVol*0.6
   |          phone              -> Butterworth BP2 1850/1550, gain vol*10
   |        on a ground speaker:  Butterworth BP1 2000/1000 x4, speaker distance gain or vehicle LP,
-  |                              waveZ < -1.1 -> LP4 100 Hz x14, tfar_hrtf at the speaker position
+  |                              waveZ < -1.1 -> LP4 100 Hz x14, tfar_audio::hrtf at the speaker position
   |                              (with the +4 dB makeup, where D23 gives speakers none)
   |        -> saturating mix
   -> gain x globalVolume -> back into TS channels 0-1, others zeroed
 ```
 
-0.9 radio effect inside `tfar_radio_effects_0_9`, per sample, in the original order: 2399-sample delay
+0.9 radio effect inside `tfar_plugin_logic_0_9::radio_effects`, per sample, in the original order: 2399-sample delay
 line → ring modulation by the error level → foldback distortion → RBJ high-pass → RBJ low-pass →
 ×30. Filters per effect:
 
@@ -96,10 +96,10 @@ line → ring modulation by the error level → foldback distortion → RBJ high
 | LR and airborne | HP 520 Hz Q 0.97, LP 1300 Hz Q 1.0 |
 | Underwater (DD) | random sample drop with probability = error, Butterworth BP2 1000/400, ×30 |
 
-The simple ILD of `tfar_spatial_audio` stays available as the fallback panner when the HRIR sphere
+The simple ILD of `tfar_audio::spatial_audio` stays available as the fallback panner when the HRIR sphere
 cannot be loaded; the plugin logs the fallback once.
 
-## 1.0 voice chain (`tfar_voice_pipeline_1_0`)
+## 1.0 voice chain (`tfar_plugin_logic_1_0::voice_pipeline`)
 
 ```text
 TS post-process samples
@@ -116,15 +116,15 @@ TS post-process samples
   |   hearing, other vehicle:  LP2 at 20000*(1-loss)/4, gain = attenuation*(1-loss)^1.2
   |   cannot speak:            LP4 100 Hz, gain = attenuation(not hearing)*14
   |       attenuation = 10^(-1.5*d/maxD), 1 within 1 m, 0 below 0.001, maxD 5 m when not hearing
-  |   -> level: tfar_spatial_audio distance curve (the 25-point TFAR curve, scaled by the sender's
+  |   -> level: tfar_audio::spatial_audio distance curve (the 25-point TFAR curve, scaled by the sender's
   |      voiceVolume) x emitter cone (inner 90 deg, outer 135 deg, 1.8 / 1.0) when voiceCone is on
-  |   -> direction: tfar_hrtf at the unit direction to the sender (F-009) relative to my view,
+  |   -> direction: tfar_audio::hrtf at the unit direction to the sender (F-009) relative to my view,
   |      +4 dB makeup (D23)
   |   -> direct-speech compressor (threshold 80 dB, ratio 0.1, 1 ms / 300 ms)  (F-013)
   |
   |  RADIO ("original")
   |   -> radio compressor, its own instance (F-013)
-  |   -> for each reception route (tfar_radio_routing_1_0, antennas from tfar_antennas_1_0):
+  |   -> for each reception route (tfar_plugin_logic_1_0::radio_routing, antennas from tfar_plugin_logic_1_0::antennas):
   |        volume ((v+1)/10)^4; headsetLowered x0.1; subtype matched by name (F-010):
   |          digital    -> SW effect (or underwater effect when carried under water)
   |          airborne   -> airborne effect;   digital_lr -> LR effect
@@ -132,7 +132,7 @@ TS post-process samples
   |          error = calcErrorLevel(min(antenna loss, distance/range)) (F-011), gain vol*0.35
   |        ground speaker: BP1 2000/1000 x4, speaker distance gain or vehicle LP by the
   |                        speaker's vehicle alone (F-062), waveZ < -1.1 -> LP4 100 Hz x14,
-  |                        SW effect, tfar_hrtf at the speaker without the makeup (D23)
+  |                        SW effect, tfar_audio::hrtf at the speaker without the makeup (D23)
   |        intercom: LR effect at error 0, gain intercomVolume, x0.1 headset lowered,
   |                  x(1-intercomDucking) while I receive any LR transmission above
   |                  volume 2, from any sender (F-063)
@@ -140,7 +140,7 @@ TS post-process samples
   -> gain x globalVolume -> back into TS channels 0-1, others zeroed
 ```
 
-1.0 radio effect inside `tfar_radio_effects_1_0`, in the original order: foldback (threshold
+1.0 radio effect inside `tfar_plugin_logic_1_0::radio_effects`, in the original order: foldback (threshold
 0.3·(1−err)·mean/0.005) → ×30 → 2399-sample delay line → ring modulation → RBJ high-pass → RBJ
 low-pass; mono sum over channels, out to both channels or one side by stereo mode (×1.5 when not
 stereo).
@@ -152,21 +152,21 @@ stereo).
 | SW (personal) | 900 Hz, Q 0.85 | 3000 Hz, Q 2.0 |
 | Underwater | random sample drop, Butterworth BP2 1000/400, ×30 | — |
 
-## Sound playback (`tfar_playback_mixer`)
+## Sound playback (`tfar_audio::playback_mixer`)
 
 - Local and on/off sounds: `radio-sounds` WAVs played through TeamSpeak's `playWaveFile` from the
   plugin folder (the local start and end sounds per radio kind sw, lr, dd and ab, plus on and off).
 - Remote tangent sounds: decoded once (48 kHz, stereo, i16 only; anything else is refused with a
   log line), shaped by each pipeline's `render_remote_tangent_sound` on the plugin-command thread,
   queued per playback and mixed in the mixed-playback callback. Positional sounds get the speaker
-  band-pass, the vehicle low-pass, the underwater low-pass and direction from `tfar_hrtf`, exactly
+  band-pass, the vehicle low-pass, the underwater low-pass and direction from `tfar_audio::hrtf`, exactly
   as speech on a ground speaker.
 - The `my_radio_voice` stream: the captured-voice callback of each plugin pushes the processed own
   voice through a `StreamProducer` ring, which never blocks or allocates on the audio thread; the
   mixed-playback callback drains it.
 - Each playback owns its filters and is dropped when it ends; no thread per playback (F-005).
 
-## HRTF rendering (`tfar_hrtf`)
+## HRTF rendering (`tfar_audio::hrtf`)
 
 - **Sample format:** the `hrtf` crate convolves in f32; every other step processes in f64. The
   block adapter converts i16 to f32 on the way in and back on the way out.
@@ -198,7 +198,7 @@ stereo).
   `CREDITS.md` from `assets/hrir/` into `tfar_hrir/` of each version folder. When the file cannot
   be loaded, the simple ILD is the fallback panner.
 
-## Spatial gains (`tfar_spatial_audio`)
+## Spatial gains (`tfar_audio::spatial_audio`)
 
 - **ILD coefficients:** 0.375 for 0.9 (`reference/tfar_0_9_12/ts/src/plugin.cpp:621`) and
   21.5° in radians, 0.37525, for 1.0 (`reference/tfar_1_0/ts/src/datatypes.hpp:81`); both with the
@@ -206,11 +206,11 @@ stereo).
 - **The 1.0 cone call:** the original X3DAudio call swaps the roles on purpose: the X3DAudio
   listener sits at the sender's position facing my view direction, and the emitter sits at my
   position facing the sender's view direction with its x and y negated
-  (`reference/tfar_1_0/ts/src/helpers.cpp:75`). `tfar_voice_pipeline_1_0` honours both the swap and
+  (`reference/tfar_1_0/ts/src/helpers.cpp:75`). `tfar_plugin_logic_1_0::voice_pipeline` honours both the swap and
   the x/y flip when it calls `EmitterCone::gain`, so a sender facing me is the one at the inner
   volume, as in the original.
 - **Distance volume:** `volumeAttenuation` (1.0) and `volumeFromDistance` (0.9) belong to the voice
-  pipeline crates; `tfar_spatial_audio` builds the 25-point curve from the function it is given and
+  pipeline crates; `tfar_audio::spatial_audio` builds the 25-point curve from the function it is given and
   owns no distance rule of its own. The 1.0 attenuation is `10^(−1.5·d/maxD)`, the original's
   `10^((d/(2·maxD))·−60/20)` (−30 dB at `maxD`), 1 within 1 m and 0 below 0.001
   (`reference/tfar_1_0/ts/src/helpers.hpp:122`). The 0.9 gain is `d^−0.3·max(0, maxD − d)/maxD`,

@@ -44,8 +44,8 @@ pub(crate) const CATEGORIES: &[&str] = &[
 /// The folders whose manifests must all be workspace members.
 pub(crate) const MEMBER_ROOTS: &[&str] = &["crates", "tools"];
 
-/// The only `game_link` crate a version crate may use.
-pub(crate) const GAME_LINK_PROTOCOL: &str = "tfar_game_link_protocol";
+/// The only `game_link` crate a version library may use (not the Windows-only Arma ABI crate).
+pub(crate) const GAME_LINK_CRATE: &str = "tfar_game_link";
 
 /// The two TeamSpeak plugin apps.
 pub(crate) const PLUGIN_APPS: &[&str] = &["tfar_plugin_0_9", "tfar_plugin_1_0"];
@@ -149,9 +149,9 @@ pub(crate) fn edge_violation(
     };
     let is_version_library =
         !deliverable && (from_category == VERSION_0_9 || from_category == VERSION_1_0);
-    if is_version_library && to_category == GAME_LINK && to_name != GAME_LINK_PROTOCOL {
+    if is_version_library && to_category == GAME_LINK && to_name != GAME_LINK_CRATE {
         return Some(format!(
-            "`{to_name}` is in {GAME_LINK}: a version crate may use only {GAME_LINK_PROTOCOL} there"
+            "`{to_name}` is in {GAME_LINK}: a version crate may use only {GAME_LINK_CRATE} there"
         ));
     }
     (!allowed).then(|| {
@@ -200,15 +200,13 @@ pub(crate) const FIREWALLS: &[(&str, FirewallScope)] = &[
     ("winit", FirewallScope::Crates(&["tfar_debug_window"])),
     (
         "fastrand",
-        FirewallScope::Crates(&["tfar_radio_effects_0_9", "tfar_radio_effects_1_0"]),
+        FirewallScope::Crates(&["tfar_plugin_logic_0_9", "tfar_plugin_logic_1_0"]),
     ),
     ("cc", FirewallScope::Crates(&["tfar_golden_vectors"])),
-    ("sci-rs", FirewallScope::Crates(&["tfar_dsp_filters"])),
-    ("biquad", FirewallScope::Crates(&["tfar_dsp_filters"])),
-    ("hrtf", FirewallScope::Crates(&["tfar_hrtf"])),
-    ("rustfft", FirewallScope::Crates(&["tfar_hrtf"])),
-    ("realfft", FirewallScope::Crates(&["tfar_hrtf"])),
-    ("hound", FirewallScope::Crates(&["tfar_playback_mixer"])),
+    ("sci-rs", FirewallScope::Crates(&["tfar_audio"])),
+    ("biquad", FirewallScope::Crates(&["tfar_audio"])),
+    ("hrtf", FirewallScope::Crates(&["tfar_audio"])),
+    ("hound", FirewallScope::Crates(&["tfar_audio"])),
     (
         "ts3plugin-sys",
         FirewallScope::Crates(&["tfar_ts3_host", "tfar_ts3_mock"]),

@@ -93,8 +93,7 @@ None: the crate reads no setting. `DISPLAY` must name an X11 display.
   windows reopen on the same thread and event loop
   (`hide_closes_the_window_and_show_reopens_it_on_the_same_thread`,
   `a_real_window_opens_closes_reopens_and_shuts_down_on_one_event_loop`); shutdown joins within
-  one second (`shutdown_while_open_closes_the_window_and_joins_within_a_second`). Tier 0 in
-  `crates/interface` (`cargo xtask verify crate-tiers`).
+  one second (`shutdown_while_open_closes_the_window_and_joins_within_a_second`).
 
 ## Related documentation
 

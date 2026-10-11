@@ -19,7 +19,7 @@
 
 use std::time::Instant;
 
-use tfar_game_link_client::{GameLinkClient, SyncOutcome};
+use tfar_game_link::client::{GameLinkClient, SyncOutcome};
 
 use crate::focus_watch::FocusWatch;
 

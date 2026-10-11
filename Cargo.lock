@@ -2933,15 +2933,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tfar_antennas_1_0"
-version = "0.1.1"
-dependencies = [
- "tfar_arma_values",
- "tfar_geometry",
- "thiserror 2.0.21",
-]
-
-[[package]]
 name = "tfar_arma_extension_abi"
 version = "0.1.1"
 dependencies = [
@@ -2950,40 +2941,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "tfar_arma_values"
+name = "tfar_audio"
 version = "0.1.1"
 dependencies = [
- "tfar_geometry",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_client_state_0_9"
-version = "0.1.1"
-dependencies = [
- "tfar_dsp_filters",
- "tfar_dynamics",
- "tfar_game_commands_0_9",
- "tfar_geometry",
- "tfar_hrtf",
- "tfar_radio_effects_0_9",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_client_state_1_0"
-version = "0.1.1"
-dependencies = [
- "tfar_arma_values",
- "tfar_dsp_filters",
- "tfar_dynamics",
- "tfar_game_commands_1_0",
- "tfar_geometry",
- "tfar_hrtf",
- "tfar_plugin_commands_1_0",
- "tfar_plugin_settings_1_0",
- "tfar_radio_effects_1_0",
- "tfar_sample_buffer",
+ "biquad",
+ "glam",
+ "hound",
+ "hrtf",
+ "parking_lot",
+ "rtrb",
+ "sci-rs",
+ "tfar_foundation",
  "thiserror 2.0.21",
 ]
 
@@ -3000,31 +2968,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "tfar_dsp_filters"
-version = "0.1.1"
-dependencies = [
- "biquad",
- "sci-rs",
- "tfar_sample_buffer",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_dynamics"
-version = "0.1.1"
-dependencies = [
- "tfar_sample_buffer",
- "thiserror 2.0.21",
-]
-
-[[package]]
 name = "tfar_extension_0_9"
 version = "0.1.1"
 dependencies = [
  "tfar_arma_extension_abi",
- "tfar_game_link_client",
- "tfar_game_link_protocol",
- "tfar_game_link_server",
+ "tfar_game_link",
  "thiserror 2.0.21",
 ]
 
@@ -3033,8 +2981,7 @@ name = "tfar_extension_1_0"
 version = "0.1.1"
 dependencies = [
  "tfar_arma_extension_abi",
- "tfar_game_link_client",
- "tfar_game_link_server",
+ "tfar_game_link",
  "thiserror 2.0.21",
  "tracing",
 ]
@@ -3048,59 +2995,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "tfar_game_commands_0_9"
-version = "0.1.1"
-dependencies = [
- "tfar_arma_values",
- "tfar_geometry",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_game_commands_1_0"
-version = "0.1.1"
-dependencies = [
- "tfar_arma_values",
- "tfar_geometry",
- "tfar_plugin_settings_1_0",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_game_link_client"
-version = "0.1.1"
-dependencies = [
- "tfar_game_link_protocol",
- "thiserror 2.0.21",
- "tracing",
-]
-
-[[package]]
-name = "tfar_game_link_protocol"
-version = "0.1.1"
-dependencies = [
- "postcard",
- "serde",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_game_link_server"
-version = "0.1.1"
-dependencies = [
- "crossbeam-channel",
- "parking_lot",
- "tfar_game_link_protocol",
- "thiserror 2.0.21",
- "tracing",
-]
-
-[[package]]
-name = "tfar_geometry"
+name = "tfar_foundation"
 version = "0.1.1"
 dependencies = [
  "glam",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "tfar_game_link"
+version = "0.1.1"
+dependencies = [
+ "crossbeam-channel",
+ "parking_lot",
+ "postcard",
+ "serde",
+ "thiserror 2.0.21",
+ "tracing",
 ]
 
 [[package]]
@@ -3108,33 +3019,8 @@ name = "tfar_golden_vectors"
 version = "0.1.1"
 dependencies = [
  "cc",
- "tfar_dsp_filters",
- "tfar_dynamics",
- "tfar_geometry",
- "tfar_sample_buffer",
- "tfar_spatial_audio",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_hrtf"
-version = "0.1.1"
-dependencies = [
- "glam",
- "hrtf",
- "tfar_geometry",
- "tfar_sample_buffer",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_playback_mixer"
-version = "0.1.1"
-dependencies = [
- "hound",
- "parking_lot",
- "rtrb",
- "tfar_sample_buffer",
+ "tfar_audio",
+ "tfar_foundation",
  "thiserror 2.0.21",
 ]
 
@@ -3144,23 +3030,13 @@ version = "0.1.1"
 dependencies = [
  "crossbeam-channel",
  "parking_lot",
- "tfar_arma_values",
- "tfar_client_state_0_9",
- "tfar_dsp_filters",
- "tfar_game_commands_0_9",
- "tfar_game_link_client",
- "tfar_game_link_server",
- "tfar_geometry",
- "tfar_hrtf",
- "tfar_playback_mixer",
- "tfar_plugin_commands_0_9",
- "tfar_radio_routing_0_9",
- "tfar_sample_buffer",
- "tfar_spatial_audio",
+ "tfar_audio",
+ "tfar_foundation",
+ "tfar_game_link",
+ "tfar_plugin_logic_0_9",
  "tfar_ts3_host",
  "tfar_ts3_mock",
  "tfar_ts3_settings_db",
- "tfar_voice_pipeline_0_9",
  "tfar_web_requests",
  "thiserror 2.0.21",
  "tracing",
@@ -3174,23 +3050,14 @@ dependencies = [
  "crossbeam-channel",
  "parking_lot",
  "profiling",
- "tfar_antennas_1_0",
- "tfar_arma_values",
- "tfar_client_state_1_0",
+ "tfar_audio",
  "tfar_debug_window",
- "tfar_game_commands_1_0",
- "tfar_game_link_client",
- "tfar_game_link_server",
- "tfar_hrtf",
- "tfar_playback_mixer",
- "tfar_plugin_commands_1_0",
- "tfar_plugin_settings_1_0",
- "tfar_radio_routing_1_0",
- "tfar_sample_buffer",
+ "tfar_foundation",
+ "tfar_game_link",
+ "tfar_plugin_logic_1_0",
  "tfar_ts3_host",
  "tfar_ts3_mock",
  "tfar_ts3_settings_db",
- "tfar_voice_pipeline_1_0",
  "tfar_web_requests",
  "thiserror 2.0.21",
  "tracing",
@@ -3198,85 +3065,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "tfar_plugin_commands_0_9"
-version = "0.1.1"
-dependencies = [
- "tfar_arma_values",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_plugin_commands_1_0"
-version = "0.1.1"
-dependencies = [
- "tfar_arma_values",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_plugin_settings_1_0"
-version = "0.1.1"
-dependencies = [
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_radio_effects_0_9"
+name = "tfar_plugin_logic_0_9"
 version = "0.1.1"
 dependencies = [
  "fastrand",
- "tfar_arma_values",
- "tfar_dsp_filters",
- "tfar_sample_buffer",
+ "tfar_audio",
+ "tfar_foundation",
  "thiserror 2.0.21",
+ "tracing",
 ]
 
 [[package]]
-name = "tfar_radio_effects_1_0"
+name = "tfar_plugin_logic_1_0"
 version = "0.1.1"
 dependencies = [
  "fastrand",
- "tfar_arma_values",
- "tfar_dsp_filters",
- "tfar_sample_buffer",
+ "tfar_audio",
+ "tfar_foundation",
  "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_radio_routing_0_9"
-version = "0.1.1"
-dependencies = [
- "tfar_client_state_0_9",
- "tfar_geometry",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_radio_routing_1_0"
-version = "0.1.1"
-dependencies = [
- "tfar_antennas_1_0",
- "tfar_arma_values",
- "tfar_client_state_1_0",
- "tfar_geometry",
- "tfar_plugin_settings_1_0",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_sample_buffer"
-version = "0.1.1"
-dependencies = [
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_spatial_audio"
-version = "0.1.1"
-dependencies = [
- "tfar_geometry",
- "tfar_sample_buffer",
- "thiserror 2.0.21",
+ "tracing",
 ]
 
 [[package]]
@@ -3299,8 +3106,7 @@ dependencies = [
  "libc",
  "libloading 0.9.0",
  "parking_lot",
- "tfar_game_link_client",
- "tfar_game_link_protocol",
+ "tfar_game_link",
  "tfar_ts3_host",
  "thiserror 2.0.21",
  "ts3plugin-sys",
@@ -3312,43 +3118,6 @@ version = "0.1.1"
 dependencies = [
  "rusqlite",
  "thiserror 2.0.21",
-]
-
-[[package]]
-name = "tfar_voice_pipeline_0_9"
-version = "0.1.1"
-dependencies = [
- "tfar_client_state_0_9",
- "tfar_dsp_filters",
- "tfar_dynamics",
- "tfar_hrtf",
- "tfar_playback_mixer",
- "tfar_radio_effects_0_9",
- "tfar_radio_routing_0_9",
- "tfar_sample_buffer",
- "tfar_spatial_audio",
- "thiserror 2.0.21",
- "tracing",
-]
-
-[[package]]
-name = "tfar_voice_pipeline_1_0"
-version = "0.1.1"
-dependencies = [
- "tfar_antennas_1_0",
- "tfar_client_state_1_0",
- "tfar_dsp_filters",
- "tfar_dynamics",
- "tfar_geometry",
- "tfar_hrtf",
- "tfar_playback_mixer",
- "tfar_plugin_settings_1_0",
- "tfar_radio_effects_1_0",
- "tfar_radio_routing_1_0",
- "tfar_sample_buffer",
- "tfar_spatial_audio",
- "thiserror 2.0.21",
- "tracing",
 ]
 
 [[package]]

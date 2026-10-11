@@ -13,7 +13,7 @@ TODO in its `hrtf.cpp`), so only the ear delay remains. No other HRTF code exist
 ships in assets/hrir/ with its credit.
 
 **Consequences:** Direction sounds different from the originals (D3 accepts this), and better: the
-disabled filter is a bug fixed in both versions. `tfar_hrtf` writes the block adapter from TeamSpeak's
+disabled filter is a bug fixed in both versions. `tfar_audio::hrtf` writes the block adapter from TeamSpeak's
 frame sizes to the HRTF block and the per-source state. Whether the crate's artefacts on fast-moving
 sources are acceptable is an open question for the audio milestone.
 
@@ -28,7 +28,7 @@ it is not available on Linux, and no standalone Rust X3DAudio calculator exists.
 distance curve and the emitter cone. There is no full X3DAudio port and no double panning. FAudio's
 F3DAudio is used only as an oracle for the curve and cone maths.
 
-**Consequences:** `tfar_spatial_audio` holds the piecewise distance curve and the cone gain, about 150
+**Consequences:** `tfar_audio::spatial_audio` holds the piecewise distance curve and the cone gain, about 150
 lines, tested against golden vectors from F3DAudio built in `tfar_golden_vectors`. Direction comes from
 one place only, so a voice is never panned twice.
 
@@ -43,7 +43,7 @@ several orders, and RBJ high-pass and low-pass sections, in many radio and speak
 `biquad` provides the RBJ high-pass and low-pass coefficients, and everything processes in f64 Direct
 Form II Transposed.
 
-**Consequences:** `tfar_dsp_filters` wraps both crates per setup and holds the multi-channel state; no
+**Consequences:** `tfar_audio::dsp_filters` wraps both crates per setup and holds the multi-channel state; no
 filter design is written by hand. Its output is compared with DSPFilters built from `reference/` in
 `tfar_golden_vectors`, within a stated tolerance.
 
@@ -51,8 +51,8 @@ filter design is written by hand. Its output is compared with DSPFilters built f
 
 ### 2026-10-03 — Direct speech keeps a 4 dB makeup gain after the HRTF (D23)
 
-**Context:** The compensated IRCAM sphere is diffuse-field equalised, so a source leaves `tfar_hrtf`
-about 4 dB below its input straight ahead and about 9 dB below behind (measured in `tfar_hrtf`). The
+**Context:** The compensated IRCAM sphere is diffuse-field equalised, so a source leaves `tfar_audio::hrtf`
+about 4 dB below its input straight ahead and about 9 dB below behind (measured in `tfar_audio::hrtf`). The
 originals' X3DAudio panning and clunk ear delay lost no level, so direct speech would come out quieter
 than a Windows player hears it. The options were a fixed makeup gain after the HRTF, or accepting the
 quieter output (OF-022).
@@ -64,7 +64,7 @@ the HRTF without the makeup: the simple ILD they replace is itself 0.625 (−4.1
 what the HRTF leaves.
 
 **Consequences:** The constant and its linear factor `hrtf_makeup_gain` live in each voice pipeline
-(`tfar_voice_pipeline_0_9`, `tfar_voice_pipeline_1_0`), not in `tfar_hrtf`, which stays a neutral
+(`tfar_plugin_logic_0_9::voice_pipeline`, `tfar_plugin_logic_1_0::voice_pipeline`), not in `tfar_audio::hrtf`, which stays a neutral
 renderer. The gain is a fixed number, not a setting. The 1.0 pipeline renders speaker radios at the
 plain level; the 0.9 pipeline still passes its loudspeakers through the same placement as direct
 speech, with the makeup, until it follows this entry. Tests: `the_makeup_gain_is_four_decibels` in
@@ -117,8 +117,8 @@ sound state. Under D26, direction sources now go only with their sender, or with
 entry once `reset_radio_effects` empties it. Tests:
 - `an_audio_callback_waits_for_a_held_state_and_counts_the_wait` (0.9 plugin);
 - `a_frame_after_a_long_gap_starts_from_silence` and
-  `a_frame_after_a_short_gap_continues_the_utterance` (`tfar_hrtf`);
-- the voice-reset tests in both client-state crates and in `tfar_radio_routing_0_9`;
+  `a_frame_after_a_short_gap_continues_the_utterance` (`tfar_audio::hrtf`);
+- the voice-reset tests in both client-state crates and in `tfar_plugin_logic_0_9::radio_routing`;
 - the denormal guard tests (`tfar_ts3_host`);
 - the mock-host scenarios `a_sender_silent_past_the_idle_gap_never_replays_the_old_tail` (0.9) and
   `a_sender_silent_past_the_idle_gap_gets_a_fresh_hrtf_source` (1.0).

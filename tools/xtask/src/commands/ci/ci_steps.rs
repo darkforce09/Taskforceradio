@@ -45,7 +45,7 @@ fn words(text: &str) -> Vec<String> {
 
 /// The windows clippy step's packages: the extension side of the workspace.
 const WINDOWS_CLIPPY: &str = "clippy -p tfar_extension_0_9 -p tfar_extension_1_0 -p tfar_arma_extension_abi \
-     -p tfar_game_link_client -p tfar_game_link_protocol -p tfar_extension_probe \
+     -p tfar_game_link -p tfar_extension_probe \
      --target x86_64-pc-windows-gnu -- -D warnings";
 
 /// Every step of `ci-local`, in order.

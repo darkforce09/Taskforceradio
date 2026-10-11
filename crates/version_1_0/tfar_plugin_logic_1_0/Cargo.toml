@@ -1,0 +1,32 @@
+# The safe logic of the TFAR 1.0 TeamSpeak plugin: the settings, the antenna and tower model, the
+# game and plugin command parsers, the client state, the radio effects, the reception routing and
+# the voice pipeline. Used only by `tfar_plugin_1_0`, which adds the TeamSpeak exports and threads;
+# never by a 0.9 crate.
+[package]
+name = "tfar_plugin_logic_1_0"
+description = "The logic of the TFAR 1.0 TeamSpeak plugin: settings, antennas, commands, state, effects, routing, voice."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[package.metadata.layout]
+category = "crates/version_1_0"
+tier = 2
+targets = "any"
+
+[dependencies]
+# The seeded generator behind the underwater sample dropouts.
+fastrand.workspace = true
+# Derives each module's `Error`.
+thiserror.workspace = true
+# The shared voice DSP the effects and the pipeline run.
+tfar_audio.workspace = true
+# Geometry and Arma value parsing.
+tfar_foundation.workspace = true
+# The warning when a remote tangent sound's filter cannot be built.
+tracing.workspace = true
+
+[lints]
+workspace = true

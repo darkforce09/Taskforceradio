@@ -169,8 +169,7 @@ library; what the apps use) and `Ts3::config_path`.
   `tracing`, `tracing-subscriber`, `crossbeam-channel`, `thiserror`.
 - Used by: `tfar_plugin_0_9`, `tfar_plugin_1_0`.
 - Rules: no panic or unwind crosses into TeamSpeak; every C string handed over stays alive for the
-  call; the `ts3plugin-sys` layout matches the SDK headers (`src/tests/sdk_layout.rs`). Tier 0 in
-  `crates/teamspeak`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
+  call; the `ts3plugin-sys` layout matches the SDK headers (`src/tests/sdk_layout.rs`).
 
 ## Related documentation
 

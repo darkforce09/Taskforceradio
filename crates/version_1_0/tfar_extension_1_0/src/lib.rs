@@ -6,8 +6,8 @@
 //! process-wide game link client and [`FocusWatch`]; [`call_handling`] maps each call to the reply
 //! string of the original extension.
 //!
-//! **Position:** `crates/version_1_0`, tier 2, depending on `tfar_arma_extension_abi`,
-//! `tfar_game_link_client`; Arma 3 loads it through `callExtension` under Proton.
+//! **Position:** `crates/version_1_0`, tier 1, depending on `tfar_arma_extension_abi`,
+//! `tfar_game_link::client`; Arma 3 loads it through `callExtension` under Proton.
 //!
 //! **Signals and state:** the game link client the DLL keeps open, created on the first call in a
 //! `OnceLock` (its port is the 1.0 plugin's, or the debug port when Arma's command line holds

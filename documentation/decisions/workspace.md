@@ -177,18 +177,18 @@ test oracle (D9). The library map, checked on crates.io on 2026-10-02:
 | TS3 SDK API 26 bindings | `ts3plugin-sys` 0.5.0 | `tfar_ts3_host` | the export layer, C-string ownership, thread separation |
 | Arma extension | none fits | `tfar_arma_extension_abi` | `RVExtension`, `RVExtensionVersion`, truncating writes |
 | Win32 calls | `windows-sys` 0.61.2 | `tfar_arma_extension_abi` | — |
-| Vector maths | `glam` 0.33.12 | `tfar_geometry` and above | domain helpers (underwater distance, Arma angles) |
-| Butterworth design | `sci-rs` 0.4.1 | `tfar_dsp_filters` | per-setup wrappers, multi-channel state |
-| RBJ coefficients, DF2T | `biquad` 0.6.0 | `tfar_dsp_filters` | — |
-| HRTF | `hrtf` 0.9.0 + IRCAM sphere | `tfar_hrtf` | the block adapter, per-source state |
-| FFT, if needed | `rustfft` 6.4.1, `realfft` 3.5.0 | `tfar_hrtf` | — |
-| Compressor | none usable | `tfar_dynamics` | a feed-forward compressor |
-| Distance curve, cone | none | `tfar_spatial_audio` | the piecewise curve and the cone gain |
-| WAV | `hound` 3.5.1 | `tfar_playback_mixer` | 48 kHz, 16-bit, stereo validation and cache |
+| Vector maths | `glam` 0.33.12 | `tfar_foundation::geometry` and above | domain helpers (underwater distance, Arma angles) |
+| Butterworth design | `sci-rs` 0.4.1 | `tfar_audio::dsp_filters` | per-setup wrappers, multi-channel state |
+| RBJ coefficients, DF2T | `biquad` 0.6.0 | `tfar_audio::dsp_filters` | — |
+| HRTF | `hrtf` 0.9.0 + IRCAM sphere | `tfar_audio::hrtf` | the block adapter, per-source state |
+| FFT, if needed | `rustfft` 6.4.1, `realfft` 3.5.0 | `tfar_audio::hrtf` | — |
+| Compressor | none usable | `tfar_audio::dynamics` | a feed-forward compressor |
+| Distance curve, cone | none | `tfar_audio::spatial_audio` | the piecewise curve and the cone gain |
+| WAV | `hound` 3.5.1 | `tfar_audio::playback_mixer` | 48 kHz, 16-bit, stereo validation and cache |
 | SQLite | `rusqlite` 0.40.2 (`bundled`) | `tfar_ts3_settings_db` | — |
 | HTTP | `ureq` 3.4.2 (rustls) | `tfar_web_requests` | the update check and Piwik calls |
 | Version compare | `version-compare` | `tfar_web_requests`, the 1.0 settings | — |
-| Link framing | `postcard` 1.1.3 + `serde` 1.0.229 | `tfar_game_link_protocol` | the u32 length prefix |
+| Link framing | `postcard` 1.1.3 + `serde` 1.0.229 | `tfar_game_link::protocol` | the u32 length prefix |
 | Concurrency | `parking_lot` 0.12.5, `crossbeam-channel` 0.5.17, `arc-swap` 1.9.2, `rtrb` 0.4.0 | plugins, link, audio | — |
 | Logging | `tracing` 0.1.44 + `tracing-subscriber` 0.3.23 | everywhere | a layer forwarding to TeamSpeak's `logMessage` |
 | Profiling | `profiling` 1.0.18 + `tracy-client` 0.19.0 | plugins | — |
@@ -265,7 +265,7 @@ the probe (D18)".
 |---|---|---|---|
 | Tracking URLs and their query strings | `url` 2.5.8 (`std`) | `tfar_web_requests` | the Piwik parameters |
 | The X11 event loop off the main thread | `winit` 0.30.13 (`x11`) | `tfar_debug_window` | — |
-| Seeded per-effect random numbers | `fastrand` 2.5.0 (no default features) | `tfar_radio_effects_0_9`, `tfar_radio_effects_1_0` | the dropout rule of each version |
+| Seeded per-effect random numbers | `fastrand` 2.5.0 (no default features) | `tfar_plugin_logic_0_9::radio_effects`, `tfar_plugin_logic_1_0::radio_effects` | the dropout rule of each version |
 
 **Consequences:** `url` is firewalled to `tfar_web_requests`, `winit` to `tfar_debug_window` and
 `fastrand` to the two radio effect crates (`cargo xtask verify dependency-firewalls`); `libc` stays

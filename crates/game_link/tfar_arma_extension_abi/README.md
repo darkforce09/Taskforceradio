@@ -55,9 +55,7 @@ None: the crate reads no setting.
   (`Win32_System_Environment`, `Win32_UI_WindowsAndMessaging`).
 - Used by: `tfar_extension_0_9`, `tfar_extension_1_0`.
 - Rules: one of the unsafe-allow-listed crates; every `unsafe` block carries a `// SAFETY:`
-  comment. A reply never writes past the buffer Arma passes. Tier 0 in `crates/game_link`: every
-  workspace dependency has a lower tier and follows the category edge matrix
-  (`cargo xtask verify crate-tiers`).
+  comment. A reply never writes past the buffer Arma passes.
 
 ## Related documentation
 

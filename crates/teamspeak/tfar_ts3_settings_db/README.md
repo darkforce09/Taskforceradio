@@ -50,9 +50,7 @@ the Flatpak), the `Profiles` row `Capture/Default/PreProcessing`: `delay_ptt` (d
 - Rules: the database is opened read-only and never created
   (`a_missing_file_is_a_typed_error_and_is_not_created`,
   `reading_leaves_the_database_bytes_unchanged`); a malformed length is an error, never a panic
-  (`garbage_milliseconds_are_an_error`). Tier 0 in `crates/teamspeak`: every workspace dependency
-  has a lower tier and follows the category edge matrix
-  (`cargo xtask verify crate-tiers`).
+  (`garbage_milliseconds_are_an_error`).
 
 ## Related documentation
 

@@ -124,8 +124,8 @@ the fakes answer with; the default pre-processor value is `vad=false`.
 
 ## Boundaries
 
-- Depends on: `tfar_ts3_host` (the SDK newtypes and values), `tfar_game_link_protocol` and
-  `tfar_game_link_client` (for scenarios that play the game side); `ts3plugin-sys` (the raw table,
+- Depends on: `tfar_ts3_host` (the SDK newtypes and values), `tfar_game_link::protocol` and
+  `tfar_game_link::client` (for scenarios that play the game side); `ts3plugin-sys` (the raw table,
   enums and error codes), `libloading`, `libc`, `parking_lot`, `thiserror`; a plugin `.so` built
   for plugin API 26.
 - Used by: the plugin apps' integration tests (`tfar_plugin_0_9`, `tfar_plugin_1_0`) and
@@ -133,7 +133,7 @@ the fakes answer with; the default pre-processor value is `vad=false`.
 - Rules: every function the original plugins call has a typed fake, in the SDK slot order
   (`src/fake_functions/tests/fake_table.rs`); every slot holds a valid function; no plugin code
   runs under the fake-state lock; a scenario's outcome depends only on the scenario and the
-  plugin. Tier 2 in `tools`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
+  plugin.
 
 ## Related documentation
 

@@ -1,7 +1,7 @@
 //! The plugin's status in the local player's client metadata, which the other players' plugins
 //! read to decide whether this player runs TFAR.
 
-use tfar_plugin_commands_0_9::{DISABLED_METADATA, format_metadata, merge_metadata};
+use tfar_plugin_logic_0_9::plugin_commands::{DISABLED_METADATA, format_metadata, merge_metadata};
 use tfar_ts3_host::ServerConnectionHandlerId;
 
 use crate::plugin_core::PluginCore;

@@ -5,7 +5,7 @@
 //! on stereo `i16` blocks as the original `processCompressor` does.
 //!
 //! **Position:** inside `oracles`; called by the compressor comparison tests, which run the same
-//! signal through `tfar_dynamics`. The specification is `SimpleComp` in
+//! signal through `tfar_audio::dynamics`. The specification is `SimpleComp` in
 //! `reference/tfar_1_0/ts/include/simpleSource/`, set up in the order of
 //! `reference/tfar_1_0/ts/src/clientData.hpp` (rate, threshold, release, attack, ratio,
 //! `initRuntime`).

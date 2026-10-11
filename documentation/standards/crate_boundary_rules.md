@@ -36,14 +36,15 @@ A deliverable's row replaces its category's row for that crate.
 | crates/game_link | crates/foundation, crates/game_link |
 | crates/services | crates/foundation |
 | crates/interface | crates/foundation |
-| crates/version_0_9 libraries | crates/foundation, crates/audio, crates/teamspeak, `tfar_game_link_protocol`, crates/services, crates/interface, crates/version_0_9 |
-| crates/version_1_0 libraries | crates/foundation, crates/audio, crates/teamspeak, `tfar_game_link_protocol`, crates/services, crates/interface, crates/version_1_0 |
+| crates/version_0_9 libraries | crates/foundation, crates/audio, crates/teamspeak, `tfar_game_link`, crates/services, crates/interface, crates/version_0_9 |
+| crates/version_1_0 libraries | crates/foundation, crates/audio, crates/teamspeak, `tfar_game_link`, crates/services, crates/interface, crates/version_1_0 |
 | `tfar_plugin_0_9`, `tfar_plugin_1_0` | every crates/* category except the other version's |
 | `tfar_extension_0_9`, `tfar_extension_1_0` | crates/foundation, crates/game_link |
 | tools | every crates/* category |
 
 - **version_0_9 and version_1_0 never depend on each other**, in any kind of dependency.
 - No crate, tool or dev-dependency depends on a deliverable.
+- A version library uses `tfar_game_link` from game_link, never the Windows-only `tfar_arma_extension_abi`.
 
 ## External-crate firewalls
 
@@ -58,10 +59,8 @@ An external crate appears as a direct dependency only in the crates listed. Crat
 | `rusqlite` | `tfar_ts3_settings_db` | bundled SQLite stays out of the FFI crate |
 | `ureq`, `url` | `tfar_web_requests` | the TLS stack stays out of the audio path |
 | `eframe`, `egui`, `winit` | `tfar_debug_window` | the GUI stack |
-| `sci-rs`, `biquad` | `tfar_dsp_filters` | filter design |
-| `hrtf`, `rustfft`, `realfft` | `tfar_hrtf` | the convolution engine |
-| `hound` | `tfar_playback_mixer` | WAV decoding |
-| `fastrand` | `tfar_radio_effects_0_9`, `tfar_radio_effects_1_0` | radio noise |
+| `sci-rs`, `biquad`, `hrtf`, `hound` | `tfar_audio` | filter design, HRTF convolution, WAV decoding |
+| `fastrand` | `tfar_plugin_logic_0_9`, `tfar_plugin_logic_1_0` | radio noise |
 | `postcard` | the game_link crates | the wire encoding |
 | `libloading` | `tfar_ts3_mock`, `tfar_extension_probe` | loading built plugins and DLLs |
 | `tracy-client` | the two plugins, behind the `tracy` feature | profiling |

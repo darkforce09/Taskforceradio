@@ -16,7 +16,7 @@
 
 use std::path::{Path, PathBuf};
 
-use tfar_arma_values::RadioSubtype;
+use tfar_foundation::arma_values::RadioSubtype;
 
 #[cfg(test)]
 #[path = "tests/radio_sounds.rs"]

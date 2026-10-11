@@ -21,12 +21,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use parking_lot::{Mutex, RwLock};
-use tfar_antennas_1_0::AntennaManager;
-use tfar_client_state_1_0::prelude::{SessionState, TeamspeakClientId};
-use tfar_radio_routing_1_0::MuteTracker;
-use tfar_sample_buffer::StereoBuffer;
+use tfar_audio::sample_buffer::StereoBuffer;
+use tfar_plugin_logic_1_0::antennas::AntennaManager;
+use tfar_plugin_logic_1_0::client_state::prelude::{SessionState, TeamspeakClientId};
+use tfar_plugin_logic_1_0::radio_routing::MuteTracker;
+use tfar_plugin_logic_1_0::voice_pipeline::VoiceProcessor;
 use tfar_ts3_host::{AudioDiagnostics, ChannelId, ClientId, ServerConnectionHandlerId};
-use tfar_voice_pipeline_1_0::VoiceProcessor;
 
 /// The largest voice block, in frames, the scratch buffers hold without growing: 100 ms at
 /// 48 kHz, ten of TeamSpeak's usual 10 ms blocks.

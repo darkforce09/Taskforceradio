@@ -1,6 +1,6 @@
 //! Unit tests for the per-connection state.
 
-use tfar_voice_pipeline_0_9::DEFAULT_MAX_FRAMES;
+use tfar_plugin_logic_0_9::voice_pipeline::DEFAULT_MAX_FRAMES;
 
 use super::*;
 use crate::channel_snapshot::read_channel_snapshot;
