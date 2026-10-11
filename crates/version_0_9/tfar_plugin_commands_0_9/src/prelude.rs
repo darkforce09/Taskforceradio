@@ -5,7 +5,6 @@
 //! the command names and metadata tags stay in [`crate::plugin_command`] and [`crate::metadata`]
 //! so their short names keep their module.
 
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::metadata::{
     DISABLED_METADATA, format_metadata, info_data_text, merge_metadata, metadata_block,
     metadata_says_playing,

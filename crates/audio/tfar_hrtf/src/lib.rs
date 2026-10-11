@@ -17,7 +17,6 @@
 //! sizes; no sphere reaches the `hrtf` crate without passing the structural check.
 
 mod block_adapter;
-mod crate_role;
 mod error;
 mod hrir_library;
 mod hrtf_source;
@@ -30,7 +29,6 @@ mod sphere_file_check;
 #[path = "tests/real_sphere.rs"]
 mod real_sphere;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use hrir_library::HrirLibrary;
 pub use hrtf_source::HrtfSource;

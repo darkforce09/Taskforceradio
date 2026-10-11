@@ -3,7 +3,6 @@
 //! `Error` and `Result` stay out of the prelude so a glob import never shadows `std`'s `Result`.
 
 pub use crate::command_codec::{decode, encode};
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::metadata::{
     DISABLED_METADATA, INFO_DATA_BUFFER_SIZE, METADATA_END_TAG, METADATA_START_TAG,
     PLAYING_METADATA_PREFIX, format_metadata, info_data_text, merge_metadata, metadata_block,

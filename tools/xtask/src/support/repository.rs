@@ -88,17 +88,6 @@ impl Repository {
         Ok(self.folders.get_or_init(|| folders))
     }
 
-    /// Listed files under `prefix` (a folder path without a trailing slash).
-    pub(crate) fn files_under(&self, prefix: &str) -> Result<Vec<&str>> {
-        let with_slash = format!("{prefix}/");
-        Ok(self
-            .files()?
-            .iter()
-            .map(String::as_str)
-            .filter(|file| file.starts_with(&with_slash))
-            .collect())
-    }
-
     /// Whether a listed file has exactly this path.
     pub(crate) fn has_file(&self, relative: &str) -> Result<bool> {
         Ok(self

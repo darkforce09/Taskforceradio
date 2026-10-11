@@ -15,7 +15,6 @@
 
 mod arrays;
 mod booleans;
-mod crate_role;
 mod error;
 mod field_split;
 mod frequency_entries;
@@ -28,7 +27,6 @@ mod stereo_mode;
 
 pub use arrays::{parse_optional_position, parse_position_array, parse_string_array};
 pub use booleans::parse_bool;
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use field_split::split_fields;
 pub use frequency_entries::{FrequencyEntry, FrequencyEntryShape, parse_frequency_entries};

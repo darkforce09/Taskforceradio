@@ -12,7 +12,6 @@
 //! by its own token layout, never by shifted indices.
 
 mod command_codec;
-mod crate_role;
 mod error;
 mod metadata;
 mod plugin_command;
@@ -20,7 +19,6 @@ pub mod prelude;
 mod sender_filter;
 
 pub use command_codec::{decode, encode};
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use metadata::{
     DISABLED_METADATA, INFO_DATA_BUFFER_SIZE, METADATA_END_TAG, METADATA_START_TAG,

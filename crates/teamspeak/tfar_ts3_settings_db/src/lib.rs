@@ -11,13 +11,11 @@
 //! **Invariants:** the database is never written; every failure is a typed [`Error`] the
 //! plugins read as "no delay".
 
-mod crate_role;
 mod error;
 pub mod prelude;
 mod push_to_talk_delay;
 mod settings_database;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use push_to_talk_delay::PushToTalkDelay;
 pub use settings_database::{

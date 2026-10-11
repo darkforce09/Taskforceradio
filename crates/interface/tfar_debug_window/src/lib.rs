@@ -12,14 +12,12 @@
 //! **Invariants:** one UI thread and one event loop per process, reused for every window and
 //! joined at shutdown within one second.
 
-mod crate_role;
 mod debug_snapshot;
 mod egui_window;
 mod error;
 pub mod prelude;
 mod window_control;
 
-pub use crate_role::CRATE_ROLE;
 pub use debug_snapshot::{
     DebugSection, DebugSnapshot, DebugTable, KeyValueRow, SectionContent, TableRow,
 };

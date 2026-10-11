@@ -4,4 +4,3 @@
 
 pub use crate::compressor::{Compressor, DC_OFFSET};
 pub use crate::compressor_settings::CompressorSettings;
-pub use crate::crate_role::CRATE_ROLE;

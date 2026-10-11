@@ -19,7 +19,6 @@
 #![allow(unsafe_code)]
 
 mod comparison_metrics;
-mod crate_role;
 mod error;
 mod oracles;
 pub mod prelude;
@@ -28,7 +27,6 @@ mod test_signals;
 pub use comparison_metrics::{
     decibel_difference, decibels, max_absolute_difference, relative_rms_error, root_mean_square,
 };
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use oracles::{
     ORACLE_MAX_BUTTERWORTH_ORDER, ORACLE_MAX_CURVE_POINTS, OracleCompressor, OracleCompressorRun,

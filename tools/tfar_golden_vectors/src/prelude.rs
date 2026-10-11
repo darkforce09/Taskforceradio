@@ -5,7 +5,6 @@
 pub use crate::comparison_metrics::{
     decibel_difference, decibels, max_absolute_difference, relative_rms_error, root_mean_square,
 };
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::oracles::{
     ORACLE_MAX_BUTTERWORTH_ORDER, ORACLE_MAX_CURVE_POINTS, OracleCompressor, OracleCompressorRun,
     OracleCompressorSettings, OracleCone, OracleFilter, OracleFilterDesign, OracleSpatialResult,

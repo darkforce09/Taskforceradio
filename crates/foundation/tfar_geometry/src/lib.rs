@@ -14,7 +14,6 @@
 //! every constructor rejects non-finite coordinates with an `Error`.
 
 mod angle;
-mod crate_role;
 mod direction;
 mod error;
 mod position;
@@ -23,7 +22,6 @@ mod rotation;
 mod underwater_distance;
 
 pub use angle::Angle;
-pub use crate_role::CRATE_ROLE;
 pub use direction::Direction;
 pub use error::{Error, Result};
 pub use position::Position;

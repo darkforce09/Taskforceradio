@@ -13,14 +13,12 @@
 //! every field by position with a count check, so a malformed command is an `Error`, never a
 //! panic.
 
-mod crate_role;
 mod error;
 pub mod metadata;
 pub mod plugin_command;
 pub mod prelude;
 mod sender_filter;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use metadata::{
     DISABLED_METADATA, format_metadata, info_data_text, merge_metadata, metadata_block,

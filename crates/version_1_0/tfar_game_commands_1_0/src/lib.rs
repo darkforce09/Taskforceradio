@@ -15,7 +15,6 @@
 
 mod command_name;
 mod commands;
-mod crate_role;
 mod error;
 mod fields;
 mod game_command;
@@ -29,7 +28,6 @@ pub use commands::{
     TANGENT_PRESSED, TANGENT_RELEASED, TangentKind, TangentPress, TowerRecord,
     TrackerCustomVariable, TrackingEvent, TsInfoQuery,
 };
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use fields::{NetworkObjectId, VehicleDescriptor};
 pub use game_command::GameCommand;

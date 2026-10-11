@@ -20,7 +20,6 @@
 // Loading the extension and calling its C exports needs raw pointers and foreign calls.
 #![allow(unsafe_code)]
 
-mod crate_role;
 mod extension_library;
 mod probe_arguments;
 
@@ -33,7 +32,9 @@ fn main() -> ExitCode {
     let arguments = match parse_arguments(std::env::args().skip(1)) {
         Ok(arguments) => arguments,
         Err(usage) => {
-            eprintln!("{}\n{usage}", crate_role::CRATE_ROLE);
+            eprintln!(
+                "tfar_extension_probe: loads an Arma extension and calls it the way Arma does.\n{usage}"
+            );
             return ExitCode::from(2);
         }
     };

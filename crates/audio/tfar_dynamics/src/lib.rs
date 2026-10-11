@@ -16,11 +16,9 @@
 mod attack_release_envelope;
 mod compressor;
 mod compressor_settings;
-mod crate_role;
 mod error;
 pub mod prelude;
 
 pub use compressor::{Compressor, DC_OFFSET};
 pub use compressor_settings::CompressorSettings;
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};

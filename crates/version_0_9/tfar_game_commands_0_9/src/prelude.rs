@@ -6,7 +6,6 @@
 //! the reply strings and command names stay in [`crate::replies`] and [`crate::command_names`]
 //! so their short names keep their module.
 
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::game_activity::{IN_GAME_TRIGGER_EXEMPT_PREFIX, message_counts_as_game_activity};
 pub use crate::game_command::GameCommand;
 pub use crate::message_parsers::{

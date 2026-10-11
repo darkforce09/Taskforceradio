@@ -20,11 +20,9 @@
 #![allow(unsafe_code)]
 
 pub mod call_handling;
-mod crate_role;
 mod error;
 pub mod extension_exports;
 pub mod prelude;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use extension_exports::{DEBUG_SWITCH, EXTENSION_VERSION, FLAVOUR, client_config};

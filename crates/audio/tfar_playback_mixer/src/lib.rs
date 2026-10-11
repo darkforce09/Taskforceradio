@@ -17,7 +17,6 @@
 //! queued; finished playbacks are freed off the audio thread; nothing is mixed past
 //! `channels * frames` samples or into channels 2 and up.
 
-mod crate_role;
 mod error;
 mod output_block;
 mod playback;
@@ -27,7 +26,6 @@ pub mod prelude;
 mod stream_producer;
 mod wave_library;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use playback::{Playback, PlaybackId};
 pub use playback_mixer::{

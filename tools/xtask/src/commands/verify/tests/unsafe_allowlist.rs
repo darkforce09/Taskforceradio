@@ -27,11 +27,11 @@ fn an_allow_listed_crate_root_with_a_reason_comment_holds() {
     let fixture = with_host_crate();
     fixture.replace(
         HOST_LIB,
-        "mod crate_role;",
-        &format!("// The TeamSpeak C ABI lives here.\n{LIFT}\nmod crate_role;"),
+        "mod sample;",
+        &format!("// The TeamSpeak C ABI lives here.\n{LIFT}\nmod sample;"),
     );
     fixture.write(
-        "crates/teamspeak/tfar_ts3_host/src/crate_role.rs",
+        "crates/teamspeak/tfar_ts3_host/src/sample.rs",
         "//! Role.\n\nfn read(pointer: *const u8) -> u8 {\n    // SAFETY: the caller passes a valid pointer.\n    unsafe { *pointer }\n}\n",
     );
     assert_eq!(
@@ -43,11 +43,7 @@ fn an_allow_listed_crate_root_with_a_reason_comment_holds() {
 #[test]
 fn a_lift_without_a_reason_comment_fails() {
     let fixture = with_host_crate();
-    fixture.replace(
-        HOST_LIB,
-        "mod crate_role;",
-        &format!("{LIFT}\nmod crate_role;"),
-    );
+    fixture.replace(HOST_LIB, "mod sample;", &format!("{LIFT}\nmod sample;"));
     let found = described(&check(&fixture.repository()).unwrap());
     assert!(
         found
@@ -62,8 +58,8 @@ fn a_lift_in_a_crate_off_the_allow_list_fails() {
     let fixture = FixtureTree::sample_workspace();
     fixture.replace(
         GEOMETRY_LIB,
-        "mod crate_role;",
-        &format!("// A reason.\n{LIFT}\nmod crate_role;"),
+        "mod sample;",
+        &format!("// A reason.\n{LIFT}\nmod sample;"),
     );
     let found = described(&check(&fixture.repository()).unwrap());
     assert!(
@@ -79,8 +75,8 @@ fn a_multi_line_lift_off_the_allow_list_fails() {
     let fixture = FixtureTree::sample_workspace();
     fixture.replace(
         GEOMETRY_LIB,
-        "mod crate_role;",
-        "#![allow(\n    unsafe_code,\n    reason = \"glue\"\n)]\n\nmod crate_role;",
+        "mod sample;",
+        "#![allow(\n    unsafe_code,\n    reason = \"glue\"\n)]\n\nmod sample;",
     );
     let found = described(&check(&fixture.repository()).unwrap());
     assert!(
@@ -93,7 +89,7 @@ fn a_multi_line_lift_off_the_allow_list_fails() {
 fn a_lift_outside_the_crate_root_fails() {
     let fixture = with_host_crate();
     fixture.write(
-        "crates/teamspeak/tfar_ts3_host/src/crate_role.rs",
+        "crates/teamspeak/tfar_ts3_host/src/sample.rs",
         "//! Role.\n\n// A reason.\n#[allow(unsafe_code)]\nfn nothing() {}\n",
     );
     let found = described(&check(&fixture.repository()).unwrap());
@@ -109,18 +105,18 @@ fn a_lift_outside_the_crate_root_fails() {
 fn an_unsafe_block_without_a_safety_comment_fails() {
     let fixture = with_host_crate();
     fixture.write(
-        "crates/teamspeak/tfar_ts3_host/src/crate_role.rs",
+        "crates/teamspeak/tfar_ts3_host/src/sample.rs",
         "//! Role.\n\nfn read(pointer: *const u8) -> u8 {\n    // Reads the byte.\n    unsafe { *pointer }\n}\n",
     );
     let found = described(&check(&fixture.repository()).unwrap());
-    assert_eq!(found, vec!["crates/teamspeak/tfar_ts3_host/src/crate_role.rs:5: an `unsafe` block needs a `// SAFETY:` comment directly above it".to_owned()]);
+    assert_eq!(found, vec!["crates/teamspeak/tfar_ts3_host/src/sample.rs:5: an `unsafe` block needs a `// SAFETY:` comment directly above it".to_owned()]);
 }
 
 #[test]
 fn unsafe_words_inside_strings_and_comments_are_ignored() {
     let fixture = FixtureTree::sample_workspace();
     fixture.write(
-        "crates/foundation/tfar_geometry/src/crate_role.rs",
+        "crates/foundation/tfar_geometry/src/sample.rs",
         "//! Role: an unsafe { block in a comment.\n\nconst TEXT: &str = \"#![allow(unsafe_code)] unsafe { }\";\n",
     );
     assert_eq!(
@@ -133,7 +129,7 @@ fn unsafe_words_inside_strings_and_comments_are_ignored() {
 fn a_safety_comment_above_the_statement_holding_the_block_counts() {
     let fixture = with_host_crate();
     fixture.write(
-        "crates/teamspeak/tfar_ts3_host/src/crate_role.rs",
+        "crates/teamspeak/tfar_ts3_host/src/sample.rs",
         "//! Role.\n\nfn read(pointer: *const u8) -> u8 {\n    // SAFETY: the caller passes a valid pointer.\n    let value =\n        unsafe { *pointer };\n    value\n}\n",
     );
     assert_eq!(
@@ -146,7 +142,7 @@ fn a_safety_comment_above_the_statement_holding_the_block_counts() {
 fn a_safety_comment_above_an_earlier_statement_does_not_count() {
     let fixture = with_host_crate();
     fixture.write(
-        "crates/teamspeak/tfar_ts3_host/src/crate_role.rs",
+        "crates/teamspeak/tfar_ts3_host/src/sample.rs",
         "//! Role.\n\nfn read(pointer: *const u8) -> u8 {\n    // SAFETY: about the line below only.\n    let first = 1;\n    let value =\n        unsafe { *pointer };\n    value + first\n}\n",
     );
     let found = described(&check(&fixture.repository()).unwrap());

@@ -16,7 +16,6 @@
 //! and never panics; a bad design parameter is an [`Error`], never a panic.
 
 mod channel_filter;
-mod crate_role;
 mod designs;
 mod error;
 mod filter_design;
@@ -24,7 +23,6 @@ pub mod prelude;
 mod second_order_sections;
 
 pub use channel_filter::{ChannelFilter, MonoFilter, StereoFilter};
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use filter_design::{FilterDesign, MAX_BUTTERWORTH_ORDER};
 pub use second_order_sections::{SecondOrderSection, SecondOrderSections};

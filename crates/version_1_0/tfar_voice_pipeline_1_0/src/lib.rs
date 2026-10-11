@@ -21,7 +21,6 @@
 //! **Invariants:** each compressor runs once per frame; nothing pans twice; the audio path
 //! allocates nothing once its scratch fits the frame.
 
-mod crate_role;
 mod direct_speech;
 mod distance_gain;
 mod dsp_needs;
@@ -38,7 +37,6 @@ mod voice_context;
 mod voice_processor;
 mod voice_scratch;
 
-pub use crate_role::CRATE_ROLE;
 pub use distance_gain::{
     CANT_SPEAK_DISTANCE, CANT_SPEAK_GAIN, MAX_VEHICLE_LOSS, NO_VEHICLE_LOSS, SPEAKER_GAIN,
     UNDERWATER_LEVEL, speaker_audible_distance, vehicle_loss_gain, vehicle_volume_loss,

@@ -22,7 +22,6 @@
 #![allow(unsafe_code)]
 
 mod audio_diagnostics;
-mod crate_role;
 mod error;
 mod host_ids;
 mod host_values;
@@ -32,7 +31,6 @@ pub mod prelude;
 mod ts3_functions;
 
 pub use audio_diagnostics::{AudioDiagnosticCounts, AudioDiagnostics};
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result, Ts3Error};
 pub use host_ids::{ChannelId, ClientId, ServerConnectionHandlerId};
 pub use host_values::{

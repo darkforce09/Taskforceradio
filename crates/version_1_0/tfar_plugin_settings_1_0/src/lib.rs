@@ -14,7 +14,6 @@
 //! **Invariants:** an unknown key or a malformed value is an `Error` and leaves the settings
 //! unchanged; every setting keeps the kind of its default.
 
-mod crate_role;
 mod error;
 mod plugin_settings;
 pub mod prelude;
@@ -22,7 +21,6 @@ mod setting_key;
 mod setting_value;
 mod type_tag;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use plugin_settings::{PluginSettings, SettingChanged};
 pub use setting_key::SettingKey;

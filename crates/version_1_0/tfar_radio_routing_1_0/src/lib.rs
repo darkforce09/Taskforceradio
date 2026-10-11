@@ -15,7 +15,6 @@
 //! **Invariants:** routing reads client state and never changes it; the local player is never
 //! muted and never hears itself over its own radio.
 
-mod crate_role;
 mod effect_error;
 mod error;
 #[cfg(test)]
@@ -29,7 +28,6 @@ mod routing_context;
 mod serious_mode;
 mod underwater;
 
-pub use crate_role::CRATE_ROLE;
 pub use effect_error::{capped_by_antenna, effect_error_from_distance, underwater_effect_error};
 pub use error::{Error, Result};
 pub use mute::{

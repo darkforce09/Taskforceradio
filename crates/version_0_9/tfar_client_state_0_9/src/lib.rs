@@ -20,7 +20,6 @@
 mod client_data;
 mod client_id;
 mod command_application;
-mod crate_role;
 mod data_frames;
 mod dsp_state;
 mod error;
@@ -37,7 +36,6 @@ pub use command_application::{
     NICKNAMES_NEVER_ADOPTED, PositionOutcome, RemoteTangent, RemoteTangentOutcome,
     RemoteVolumeOutcome, RenameRequest, SpeakingState, TangentSound,
 };
-pub use crate_role::CRATE_ROLE;
 pub use data_frames::{DATA_FRAME_WINDOW, POSITION_EXPIRY};
 pub use dsp_state::{
     CANT_SPEAK_LOW_PASS, ClientDsp, DirectVoiceDsp, DirectVoiceRequirement, DspRequirements,

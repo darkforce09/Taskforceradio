@@ -18,7 +18,6 @@
 //! writes past `channels * frames` samples of a TeamSpeak block.
 
 mod channel_views;
-mod crate_role;
 mod error;
 mod float_conversion;
 mod gain;
@@ -28,7 +27,6 @@ mod sample_saturation;
 mod stereo_buffer;
 
 pub use channel_views::{copy_to_stereo, mono_to_stereo, write_back_from_stereo};
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use float_conversion::{
     INPUT_SCALE, OUTPUT_SCALE, float_to_sample, from_float_planar, sample_to_float, to_float_planar,

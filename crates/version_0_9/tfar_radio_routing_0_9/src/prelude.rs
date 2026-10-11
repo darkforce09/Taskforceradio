@@ -2,7 +2,6 @@
 //!
 //! `Error` and `Result` stay out of the prelude so a glob import never shadows `std`'s `Result`.
 
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::distances::{
     diver_radio_distance, effect_error_from_distance, effective_distance, raw_distance,
 };

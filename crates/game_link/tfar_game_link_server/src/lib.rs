@@ -20,7 +20,6 @@
 
 mod accept_loop;
 mod async_worker;
-mod crate_role;
 mod error;
 mod game_link_handler;
 mod game_link_server;
@@ -30,7 +29,6 @@ mod server_config;
 mod session_link;
 mod session_loop;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use game_link_handler::GameLinkHandler;
 pub use game_link_server::GameLinkServer;

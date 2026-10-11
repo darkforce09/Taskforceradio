@@ -2,7 +2,6 @@
 //!
 //! `Error` and `Result` stay out of the prelude so a glob import never shadows `std`'s `Result`.
 
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::effects::{LongRangeRadioEffect, PersonalRadioEffect, UnderWaterRadioEffect};
 pub use crate::error_level::error_level_from_distance;
 pub use crate::mono_mix_buffer::MonoMixBuffer;

@@ -16,7 +16,6 @@
 //! that has not started is never sent and a cancelled check never calls back.
 
 mod background_request;
-mod crate_role;
 mod error;
 mod http_client;
 mod piwik_tracking;
@@ -28,7 +27,6 @@ mod update_check;
 mod local_responder;
 
 pub use background_request::BackgroundRequest;
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use piwik_tracking::{
     CustomVariable, PIWIK_BETA_HOST, PIWIK_HOST, TRACK_TIMEOUT, build_track_request_0_9,

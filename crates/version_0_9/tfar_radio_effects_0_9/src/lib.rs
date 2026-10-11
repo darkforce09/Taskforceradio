@@ -17,7 +17,6 @@
 //! processing never panics and never allocates; the processing order of every effect is the
 //! original's.
 
-mod crate_role;
 mod effects;
 mod error;
 mod error_level;
@@ -31,7 +30,6 @@ mod signal_stages;
 #[path = "tests/signal_measurements.rs"]
 mod signal_measurements;
 
-pub use crate_role::CRATE_ROLE;
 pub use effects::{LongRangeRadioEffect, PersonalRadioEffect, UnderWaterRadioEffect};
 pub use error::{Error, Result};
 pub use error_level::error_level_from_distance;

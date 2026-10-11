@@ -1,15 +1,6 @@
-//! The small Markdown reader the documentation gates share: fences, headings, links, inline code
-//! spans and heading anchors.
-//!
-//! **Role:** splits a Markdown file into what the gates read (headings and links outside code
-//! fences, the lines of fenced blocks, inline code spans) without a full Markdown parser.
-//!
-//! **Position:** used by `readme-coverage`, `readme-sections`, `link-check` and `new-crate`; pure.
-//!
-//! **Signals and state:** none; pure functions.
-//!
-//! **Invariants:** line numbers are 1-based; text inside a fence is never read as a heading or a
-//! link; a fence closes only with the same character at least as long as its opening.
+//! The small Markdown reader `link-check` uses: lines with their fence state, headings, links,
+//! inline code spans and GitHub heading anchors. Text inside a fence is never read as a heading or
+//! a link; a fence closes only with the same character at least as long as its opening.
 
 #[cfg(test)]
 #[path = "tests/markdown.rs"]
@@ -26,24 +17,10 @@ pub(crate) struct MarkdownLine<'text> {
     pub(crate) in_fence: bool,
 }
 
-/// A fenced code block.
-pub(crate) struct FencedBlock<'text> {
-    /// The info string after the opening fence (`text`, `rust`, `bash`).
-    pub(crate) info: &'text str,
-    /// The 1-based line number of the opening fence.
-    pub(crate) opening_line: usize,
-    /// The lines between the fences, with their 1-based numbers.
-    pub(crate) lines: Vec<(usize, &'text str)>,
-}
-
 /// A heading outside the fences.
 pub(crate) struct Heading<'text> {
-    /// The number of `#` characters.
-    pub(crate) level: usize,
     /// The heading text after the `#` characters.
     pub(crate) text: &'text str,
-    /// The 1-based line number.
-    pub(crate) line: usize,
 }
 
 /// The fence opening of a line: its character, its length and its info string.
@@ -110,39 +87,6 @@ pub(crate) fn lines(text: &str) -> Vec<MarkdownLine<'_>> {
     result
 }
 
-/// Every fenced block, in order.
-pub(crate) fn fenced_blocks(text: &str) -> Vec<FencedBlock<'_>> {
-    let mut blocks = Vec::new();
-    let mut current: Option<(char, usize, FencedBlock<'_>)> = None;
-    for (index, line) in text.lines().enumerate() {
-        let number = index + 1;
-        if let Some((fence_char, length, mut block)) = current.take() {
-            let trimmed = line.trim();
-            let closing_length = trimmed
-                .chars()
-                .take_while(|character| *character == fence_char)
-                .count();
-            if closing_length >= length && closing_length == trimmed.chars().count() {
-                blocks.push(block);
-            } else {
-                block.lines.push((number, line));
-                current = Some((fence_char, length, block));
-            }
-        } else if let Some((fence_char, length, info)) = fence_opening(line) {
-            let block = FencedBlock {
-                info,
-                opening_line: number,
-                lines: Vec::new(),
-            };
-            current = Some((fence_char, length, block));
-        }
-    }
-    if let Some((_, _, block)) = current {
-        blocks.push(block);
-    }
-    blocks
-}
-
 /// Every ATX heading outside the fences.
 pub(crate) fn headings(text: &str) -> Vec<Heading<'_>> {
     lines(text)
@@ -155,11 +99,8 @@ pub(crate) fn headings(text: &str) -> Vec<Heading<'_>> {
                 .take_while(|character| *character == '#')
                 .count();
             let rest = line.text.get(level..)?;
-            (level > 0 && level <= 6 && rest.starts_with(' ')).then(|| Heading {
-                level,
-                text: rest.trim(),
-                line: line.number,
-            })
+            (level > 0 && level <= 6 && rest.starts_with(' '))
+                .then(|| Heading { text: rest.trim() })
         })
         .collect()
 }

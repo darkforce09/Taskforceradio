@@ -15,7 +15,6 @@
 //! client this plugin muted, and a request only on a change; a missing entry is muted without
 //! touching voice state.
 
-mod crate_role;
 mod distances;
 mod dsp_planning;
 mod error;
@@ -25,7 +24,6 @@ pub mod prelude;
 mod reception;
 mod serious_mode;
 
-pub use crate_role::CRATE_ROLE;
 pub use distances::{
     DIVER_RADIO_MAX_DISTANCE, DIVER_RADIO_MIN_DISTANCE, diver_radio_distance,
     effect_error_from_distance, effective_distance, raw_distance,

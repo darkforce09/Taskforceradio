@@ -6,7 +6,6 @@
 
 pub use crate::client_data::{ALIVE_TIMEOUT, ClientData};
 pub use crate::client_directory::ClientDirectory;
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::data_frame::DataFrame;
 pub use crate::effects::{
     CANT_SPEAK_FILTER_KEY, CANT_SPEAK_LOW_PASS, ClientEffects, DspContext, DspRequirement,

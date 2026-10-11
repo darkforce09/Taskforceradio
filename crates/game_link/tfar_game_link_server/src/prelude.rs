@@ -4,7 +4,6 @@
 //! [`Flavour`] is re-exported so a plugin builds a [`ServerConfig`] without naming the protocol
 //! crate.
 
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::game_link_handler::GameLinkHandler;
 pub use crate::game_link_server::GameLinkServer;
 pub use crate::server_config::ServerConfig;

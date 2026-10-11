@@ -2,7 +2,6 @@
 //!
 //! `Error` and `Result` stay out of the prelude so a glob import never shadows `std`'s `Result`.
 
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::playback::{Playback, PlaybackId};
 pub use crate::playback_mixer::{
     MAX_ACTIVE_PLAYBACKS, MAX_STREAMS, PLAYBACK_QUEUE_CAPACITY, PlaybackMixer,

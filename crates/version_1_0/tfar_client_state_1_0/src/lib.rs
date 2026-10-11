@@ -20,7 +20,6 @@
 
 mod client_data;
 mod client_directory;
-mod crate_role;
 mod data_frame;
 mod effects;
 mod error;
@@ -38,7 +37,6 @@ mod test_support;
 
 pub use client_data::{ALIVE_TIMEOUT, ClientData};
 pub use client_directory::ClientDirectory;
-pub use crate_role::CRATE_ROLE;
 pub use data_frame::DataFrame;
 pub use effects::{
     CANT_SPEAK_FILTER_KEY, CANT_SPEAK_LOW_PASS, ClientEffects, DspContext, DspRequirement,

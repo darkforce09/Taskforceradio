@@ -15,7 +15,6 @@
 mod antenna;
 mod antenna_connection;
 mod antenna_manager;
-mod crate_role;
 mod error;
 mod net_id;
 pub mod prelude;
@@ -23,6 +22,5 @@ pub mod prelude;
 pub use antenna::Antenna;
 pub use antenna_connection::{AntennaConnection, NO_CONNECTION_LOSS, loss_or_no_connection};
 pub use antenna_manager::AntennaManager;
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use net_id::NetId;

@@ -9,7 +9,6 @@ pub use crate::commands::{
     TANGENT_PRESSED, TANGENT_RELEASED, TangentKind, TangentPress, TowerRecord,
     TrackerCustomVariable, TrackingEvent, TsInfoQuery,
 };
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::fields::{NetworkObjectId, VehicleDescriptor};
 pub use crate::game_command::GameCommand;
 pub use crate::parse::parse;

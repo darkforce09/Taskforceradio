@@ -19,7 +19,6 @@
 //! **Invariants:** no frame within the scratch's size changes a scratch capacity; the compressor
 //! runs once per frame; a path whose sound object is missing stays silent; output saturates.
 
-mod crate_role;
 mod distance_gain;
 mod error;
 mod own_voice;
@@ -35,7 +34,6 @@ mod voice_scratch;
 #[path = "tests/test_scene.rs"]
 mod test_scene;
 
-pub use crate_role::CRATE_ROLE;
 pub use distance_gain::{
     CANT_SPEAK_DISTANCE, MINIMUM_AUDIBLE_GAIN, radio_volume_multiplier, volume_from_distance,
 };

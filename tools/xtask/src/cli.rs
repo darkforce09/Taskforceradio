@@ -1,7 +1,6 @@
 //! The command line of `cargo xtask`: the subcommands and their arguments.
 //!
-//! **Role:** declares the `clap` parser for `verify`, `ci`, `dist`, `new-crate` and
-//! `reference-manifest`.
+//! **Role:** declares the `clap` parser for `verify`, `ci`, `dist` and `reference-manifest`.
 //!
 //! **Position:** parsed by `main`, which dispatches to the command modules.
 //!
@@ -14,8 +13,7 @@ use clap::{Parser, Subcommand};
 
 use crate::commands::verify::gate::{GateSelection, parse_gate_selection};
 
-/// The repository task runner: verify gates, the local CI lane, dist, crate scaffolding and the
-/// reference manifest.
+/// The repository task runner: verify gates, the local CI lane, dist and the reference manifest.
 #[derive(Debug, Parser)]
 #[command(name = "cargo xtask", bin_name = "cargo xtask")]
 pub(crate) struct Cli {
@@ -41,19 +39,6 @@ pub(crate) enum Command {
     },
     /// Builds the plugins and extensions in release and copies them, renamed, into target/dist/.
     Dist,
-    /// Scaffolds a crate with the standard anatomy and adds it to the workspace.
-    NewCrate {
-        /// `crates/<category>` (or just the category) or `tools`.
-        category: String,
-        /// The package and folder name: lowercase words joined by underscores, with the `tfar_` prefix.
-        name: String,
-        /// One sentence on what the crate is for.
-        #[arg(long)]
-        summary: Option<String>,
-        /// Workspace crates the new crate depends on, comma-separated.
-        #[arg(long = "depends-on", value_delimiter = ',')]
-        depends_on: Vec<String>,
-    },
     /// Writes reference/MANIFEST.sha256; refuses to overwrite it without `--force --reason`.
     ReferenceManifest {
         /// Overwrite an existing manifest.

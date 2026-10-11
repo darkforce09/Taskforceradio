@@ -1,17 +1,21 @@
-//! Fixture trees for the gate tests: a temporary git folder, and a small sample workspace that
-//! every gate holds on.
+//! Fixture trees for the gate tests: a temporary git folder under the repository's `target/tmp/`,
+//! and a small sample workspace that every gate holds on.
 
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::commands::new_crate::crate_templates::{CrateSpec, crate_files};
-use crate::commands::verify::gate::{Gate, Violation};
+use crate::commands::verify::gate::Violation;
 use crate::support::reference_hashes;
 use crate::support::repository::Repository;
 
 static NEXT_FIXTURE: AtomicUsize = AtomicUsize::new(0);
+
+/// The folder fixtures are made in: `target/tmp/` of this checkout, never the system temp folder.
+fn fixture_parent() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/tmp")
+}
 
 /// A temporary folder with `git init` run in it; removed on drop.
 pub(crate) struct FixtureTree {
@@ -29,7 +33,7 @@ impl FixtureTree {
                 .duration_since(std::time::UNIX_EPOCH)
                 .map_or(0, |elapsed| elapsed.as_nanos())
         );
-        let root = std::env::temp_dir().join(unique);
+        let root = fixture_parent().join(unique);
         std::fs::create_dir_all(&root).unwrap();
         let status = Command::new("git")
             .args(["init", "-q"])
@@ -40,8 +44,8 @@ impl FixtureTree {
         Self { root }
     }
 
-    /// The sample workspace: three crates, the area and documentation READMEs, the README
-    /// standard's kind table, and a reference tree with its manifest.
+    /// The sample workspace: three crates, a crates README, a documentation README, and a
+    /// reference tree with its manifest.
     pub(crate) fn sample_workspace() -> Self {
         let fixture = Self::empty();
         fixture.write(".gitignore", "/target/\n");
@@ -65,37 +69,11 @@ impl FixtureTree {
         );
         fixture.write(
             "crates/README.md",
-            &area_readme(
-                "crates",
-                "Crates",
-                &["foundation/", "version_0_9/", "version_1_0/"],
-            ),
+            "# Crates\n\n## Contents\n\nThe sample crates.\n",
         );
         fixture.write(
-            "crates/foundation/README.md",
-            &area_readme("crates/foundation", "Foundation", &["tfar_geometry/"]),
-        );
-        fixture.write(
-            "crates/version_0_9/README.md",
-            &area_readme(
-                "crates/version_0_9",
-                "Version 0.9",
-                &["tfar_game_commands_0_9/"],
-            ),
-        );
-        fixture.write(
-            "crates/version_1_0/README.md",
-            &area_readme(
-                "crates/version_1_0",
-                "Version 1.0",
-                &["tfar_game_commands_1_0/"],
-            ),
-        );
-        fixture.write("documentation/README.md", SAMPLE_DOCUMENTATION_README);
-        fixture.write("documentation/standards/README.md", SAMPLE_STANDARDS_README);
-        fixture.write(
-            "documentation/standards/readme_standard.md",
-            SAMPLE_README_STANDARD,
+            "documentation/README.md",
+            "# Documentation\n\nThe sample documentation.\n",
         );
         fixture.write(
             "reference/README.md",
@@ -110,21 +88,34 @@ impl FixtureTree {
         fixture
     }
 
-    /// Writes one crate skeleton with the `new-crate` templates.
+    /// Writes one crate: its manifest with layout metadata, a crate root and one module with a
+    /// sibling test file.
     pub(crate) fn write_crate(&self, category: &str, name: &str, tier: u64, dependencies: &[&str]) {
-        let spec = CrateSpec {
-            category: category.to_owned(),
-            name: name.to_owned(),
-            tier,
-            summary: format!("The sample crate {name} for the gate tests."),
-            dependencies: dependencies
-                .iter()
-                .map(|dependency| (*dependency).to_owned())
-                .collect(),
-        };
-        for (relative, contents) in crate_files(&spec) {
-            self.write(&format!("{category}/{name}/{relative}"), &contents);
+        let mut manifest = format!(
+            "[package]\nname = \"{name}\"\nversion.workspace = true\nedition.workspace = true\n\
+             rust-version.workspace = true\nlicense.workspace = true\npublish.workspace = true\n\n\
+             [package.metadata.layout]\ncategory = \"{category}\"\ntier = {tier}\ntargets = \"any\"\n\n\
+             [dependencies]\nthiserror.workspace = true\n"
+        );
+        for dependency in dependencies {
+            let _ = writeln!(manifest, "{dependency}.workspace = true");
         }
+        manifest.push_str("\n[lints]\nworkspace = true\n");
+        let folder = format!("{category}/{name}");
+        self.write(&format!("{folder}/Cargo.toml"), &manifest);
+        self.write(
+            &format!("{folder}/src/lib.rs"),
+            &format!("//! The sample crate `{name}`.\n\nmod sample;\n"),
+        );
+        self.write(
+            &format!("{folder}/src/sample.rs"),
+            "//! A sample module.\n\n#[cfg(test)]\n#[path = \"tests/sample.rs\"]\nmod tests;\n\n\
+             /// A sample value.\npub const SAMPLE: u8 = 1;\n",
+        );
+        self.write(
+            &format!("{folder}/src/tests/sample.rs"),
+            "use super::*;\n\n#[test]\nfn the_sample_is_one() {\n    assert_eq!(SAMPLE, 1);\n}\n",
+        );
     }
 
     /// Rewrites `reference/MANIFEST.sha256` from the fixture's reference tree.
@@ -169,12 +160,6 @@ impl FixtureTree {
     pub(crate) fn remove(&self, relative: &str) {
         std::fs::remove_file(self.root.join(relative)).unwrap();
     }
-
-    /// Runs a gate on the fixture; panics when it could not run.
-    pub(crate) fn violations(&self, gate: Gate) -> Vec<Violation> {
-        gate.check(&self.repository())
-            .unwrap_or_else(|error| panic!("{} could not run: {error:#}", gate.name()))
-    }
 }
 
 impl Drop for FixtureTree {
@@ -194,26 +179,6 @@ pub(crate) fn described(violations: &[Violation]) -> Vec<String> {
             )
         })
         .collect()
-}
-
-/// An area-root README listing the given child folders.
-pub(crate) fn area_readme(folder: &str, title: &str, children: &[&str]) -> String {
-    let width = children.iter().map(|child| child.len()).max().unwrap_or(0) + 2;
-    let mut entries = String::new();
-    for (index, child) in children.iter().enumerate() {
-        let branch = if index + 1 == children.len() {
-            "└── "
-        } else {
-            "├── "
-        };
-        let padding = " ".repeat(width - child.len());
-        let _ = writeln!(entries, "{branch}{child}{padding}a sample child folder");
-    }
-    format!(
-        "# {title}\n\nA sample area for the gate tests.\n\n## Contents\n\n```text\n{folder}/\n{entries}```\n\n\
-         ## How it works\n\nEach child holds sample code.\n\n## Getting started\n\nNothing to run.\n\n\
-         ## Boundaries\n\n- Depends on: nothing.\n- Used by: nothing.\n- Rules: none beyond the laws.\n"
-    )
 }
 
 const SAMPLE_ROOT_MANIFEST: &str = r#"# The sample workspace of the xtask gate tests.
@@ -246,79 +211,3 @@ anyhow = { version = "1.0.104", default-features = false }
 [workspace.lints.rust]
 unsafe_code = "deny"
 "#;
-
-const SAMPLE_DOCUMENTATION_README: &str = "**Status:** live
-
-# Documentation
-
-The sample documentation tree.
-
-## Contents
-
-```text
-documentation/
-└── standards/  the sample standards
-```
-
-## How it works
-
-One folder of standards.
-
-## Code
-
-- [Crates](/crates/README.md) — the sample crates.
-
-## Boundaries
-
-- Depends on: nothing.
-- Used by: nothing.
-- Rules: every document opens with a status line.
-";
-
-const SAMPLE_STANDARDS_README: &str = "**Status:** live
-
-# Standards
-
-The sample standards.
-
-## Contents
-
-```text
-documentation/standards/
-└── readme_standard.md  the sample README standard and its kind table
-```
-
-## Code
-
-- [Crates](/crates/README.md#contents) — the sample crates.
-
-## Boundaries
-
-- Depends on: nothing.
-- Used by: the readme-sections gate.
-- Rules: the kind table stays parseable.
-";
-
-const SAMPLE_README_STANDARD: &str = "**Status:** live
-
-# README standard
-
-The sample standard.
-
-## Kinds
-
-| Kind | Kind sections, in order | Template | Examples |
-|---|---|---|---|
-| crate root | Getting started, Configuration, Public surface | crate root | a library |
-| app | Getting started, Configuration, Exports | app | an app |
-| area root | Getting started | area root | crates |
-| domain or subsystem | Public surface | domain | a src folder |
-| leaf | none | leaf | a module folder |
-| command-line | Commands | command-line | xtask commands |
-| data | Format, Producers and consumers | data | assets |
-| documentation folder | Code | documentation folder | documentation |
-
-The legal `##` headings, in their one order, are: Contents, How it works, Getting started, Configuration,
-Public surface, Exports, Commands, Format, Producers and consumers, Code, Boundaries, Related
-documentation. The readme-sections gate holds that order.
-";

@@ -1,5 +1,5 @@
-//! `cargo xtask`: the repository's single entry point for gates, the local CI lane, dist, crate
-//! scaffolding and the reference manifest.
+//! `cargo xtask`: the repository's single entry point for gates, the local CI lane, dist and
+//! the reference manifest.
 //!
 //! **Role:** parses the command line and runs one command, turning its result into the process
 //! exit code.
@@ -25,7 +25,6 @@ use std::process::ExitCode;
 use clap::Parser as _;
 
 use crate::cli::{CiLane, Cli, Command};
-use crate::commands::new_crate::scaffold::{self, NewCrateRequest};
 use crate::commands::verify::gate_runner;
 use crate::commands::{ci, dist, reference_manifest};
 use crate::support::repository::Repository;
@@ -47,27 +46,6 @@ fn main() -> ExitCode {
             lane: CiLane::CiLocal,
         } => ci::ci_local::run(&repository).map(ExitCode::from),
         Command::Dist => dist::run(&repository).map(|()| ExitCode::SUCCESS),
-        Command::NewCrate {
-            category,
-            name,
-            summary,
-            depends_on,
-        } => {
-            let request = NewCrateRequest {
-                category,
-                name,
-                summary,
-                depends_on,
-            };
-            scaffold::run(&repository, &request).map(|spec| {
-                println!(
-                    "created {} (tier {}); run `cargo xtask verify all` next",
-                    spec.folder(),
-                    spec.tier
-                );
-                ExitCode::SUCCESS
-            })
-        }
         Command::ReferenceManifest { reason, .. } => {
             reference_manifest::run(&repository, reason.as_deref()).map(|_| ExitCode::SUCCESS)
         }

@@ -13,7 +13,6 @@
 //! **Invariants:** a frame decodes back to the frame that was encoded; a zero or oversized length,
 //! an unknown kind and a payload that does not decode exactly are errors, never a guess.
 
-mod crate_role;
 mod error;
 mod flavour;
 mod frame;
@@ -24,7 +23,6 @@ mod game_link_port;
 pub mod prelude;
 mod protocol_constants;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use flavour::Flavour;
 pub use frame::{Frame, FrameKind, Hello, HelloMismatch};

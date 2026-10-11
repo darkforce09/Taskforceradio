@@ -32,7 +32,6 @@
 pub mod audio_callbacks;
 pub mod background_web_requests;
 pub mod channel_snapshot;
-mod crate_role;
 mod error;
 pub mod game_messages;
 pub mod game_session_transitions;
@@ -56,7 +55,6 @@ pub mod team_speak_events;
 #[path = "tests/fake_team_speak.rs"]
 mod fake_team_speak;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use plugin_exports::PLUGIN;
 pub use plugin_lifecycle::TfarPlugin;

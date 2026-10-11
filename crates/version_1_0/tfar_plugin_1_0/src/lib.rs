@@ -27,7 +27,6 @@
 #![allow(unsafe_code)]
 
 pub mod audio;
-mod crate_role;
 pub mod diagnostics;
 mod error;
 pub mod events;
@@ -41,7 +40,6 @@ pub mod runtime;
 pub mod service;
 pub mod teamspeak_actions;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use plugin_exports::PLUGIN;
 pub use plugin_lifecycle::TfarPlugin;

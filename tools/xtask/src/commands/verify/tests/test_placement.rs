@@ -3,7 +3,7 @@
 use super::*;
 use crate::fixture_tree::{FixtureTree, described};
 
-const ROLE: &str = "crates/foundation/tfar_geometry/src/crate_role.rs";
+const SAMPLE_MODULE: &str = "crates/foundation/tfar_geometry/src/sample.rs";
 
 #[test]
 fn the_sample_workspace_holds() {
@@ -18,8 +18,8 @@ fn the_sample_workspace_holds() {
 fn an_inline_test_module_fails() {
     let fixture = FixtureTree::sample_workspace();
     fixture.replace(
-        ROLE,
-        "#[cfg(test)]\n#[path = \"tests/crate_role.rs\"]\nmod tests;\n",
+        SAMPLE_MODULE,
+        "#[cfg(test)]\n#[path = \"tests/sample.rs\"]\nmod tests;\n",
         "#[cfg(test)]\nmod tests {\n    #[test]\n    fn holds() {}\n}\n",
     );
     let found = described(&check(&fixture.repository()).unwrap());
@@ -35,7 +35,7 @@ fn an_inline_test_module_fails() {
 fn a_test_function_in_a_production_file_fails() {
     let fixture = FixtureTree::sample_workspace();
     fixture.replace(
-        ROLE,
+        SAMPLE_MODULE,
         "mod tests;\n",
         "mod tests;\n\n#[test]\nfn holds() {}\n",
     );
@@ -51,7 +51,7 @@ fn a_test_function_in_a_production_file_fails() {
 #[test]
 fn a_test_module_without_a_path_attribute_fails() {
     let fixture = FixtureTree::sample_workspace();
-    fixture.replace(ROLE, "#[path = \"tests/crate_role.rs\"]\n", "");
+    fixture.replace(SAMPLE_MODULE, "#[path = \"tests/sample.rs\"]\n", "");
     let found = described(&check(&fixture.repository()).unwrap());
     assert!(
         found

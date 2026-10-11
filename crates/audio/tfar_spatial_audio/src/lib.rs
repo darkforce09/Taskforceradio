@@ -13,14 +13,12 @@
 //! **Invariants:** every gain is finite; curve gains are non-negative, cone volumes lie within 0
 //! to 2 as X3DAudio requires, and the pan gains lie within `0.625 ± coefficient`.
 
-mod crate_role;
 mod distance_curve;
 mod emitter_cone;
 mod error;
 mod interaural_level_difference;
 pub mod prelude;
 
-pub use crate_role::CRATE_ROLE;
 pub use distance_curve::{CurvePoint, DistanceCurve};
 pub use emitter_cone::EmitterCone;
 pub use error::{Error, Result};

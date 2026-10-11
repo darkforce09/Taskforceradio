@@ -14,15 +14,6 @@ fn headings_inside_fences_are_skipped() {
 }
 
 #[test]
-fn fenced_blocks_keep_their_info_and_lines() {
-    let blocks = fenced_blocks(SAMPLE);
-    assert_eq!(blocks.len(), 2);
-    assert_eq!(blocks[0].info, "markdown");
-    assert_eq!(blocks[1].info, "text");
-    assert_eq!(blocks[1].lines, [(13, "root/")]);
-}
-
-#[test]
 fn inline_code_spans_and_links_are_found() {
     let line = "See `a/b.rs` and ``c`d`` then [x](/y.md#z \"title\") but not `[q](/r)`.";
     assert_eq!(inline_code_spans(line), ["a/b.rs", "c`d", "[q](/r)"]);

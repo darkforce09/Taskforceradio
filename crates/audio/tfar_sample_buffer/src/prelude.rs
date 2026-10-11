@@ -3,7 +3,6 @@
 //! `Error` and `Result` stay out of the prelude so a glob import never shadows `std`'s `Result`.
 
 pub use crate::channel_views::{copy_to_stereo, mono_to_stereo, write_back_from_stereo};
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::float_conversion::{
     INPUT_SCALE, OUTPUT_SCALE, float_to_sample, from_float_planar, sample_to_float, to_float_planar,
 };

@@ -23,7 +23,6 @@
 )]
 
 mod command_line;
-mod crate_role;
 mod error;
 mod extension_exports;
 mod foreground_window;
@@ -31,7 +30,6 @@ pub mod prelude;
 mod reply_buffer;
 
 pub use command_line::arma_command_line_contains;
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use extension_exports::{answer_extension_call, answer_extension_version};
 pub use foreground_window::foreground_window_is_arma;

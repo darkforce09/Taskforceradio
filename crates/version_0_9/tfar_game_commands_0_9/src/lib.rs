@@ -13,7 +13,6 @@
 //! `tfar_arma_values`, so a short or malformed message is an `Error`, never a panic.
 
 pub mod command_names;
-mod crate_role;
 mod error;
 mod field_values;
 mod game_activity;
@@ -23,7 +22,6 @@ pub mod prelude;
 pub mod replies;
 mod vehicle_descriptor;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use game_activity::{IN_GAME_TRIGGER_EXEMPT_PREFIX, message_counts_as_game_activity};
 pub use game_command::GameCommand;

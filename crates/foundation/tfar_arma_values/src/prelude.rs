@@ -5,7 +5,6 @@
 
 pub use crate::arrays::{parse_optional_position, parse_position_array, parse_string_array};
 pub use crate::booleans::parse_bool;
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::field_split::split_fields;
 pub use crate::frequency_entries::{FrequencyEntry, FrequencyEntryShape, parse_frequency_entries};
 pub use crate::nickname::sanitize_nickname;

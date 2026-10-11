@@ -20,7 +20,6 @@
 // implements the C function table.
 #![allow(unsafe_code)]
 
-mod crate_role;
 mod error;
 mod fake_functions;
 mod fake_state;
@@ -31,7 +30,6 @@ mod plugin_library;
 pub mod prelude;
 mod temporary_folder;
 
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use fake_functions::{FAKED_FUNCTIONS, FakedFunction, SLOT_COUNT, mock_error_text};
 pub use fake_state::{

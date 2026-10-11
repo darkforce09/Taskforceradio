@@ -45,12 +45,6 @@ pub(crate) const CATEGORIES: &[&str] = &[
 /// The folders whose manifests must all be workspace members.
 pub(crate) const MEMBER_ROOTS: &[&str] = &["crates", "tools"];
 
-/// The folders whose every sub-folder carries a README.md.
-pub(crate) const README_SPAN_ROOTS: &[&str] = &["crates", "tools", "documentation", "assets"];
-
-/// Folder names exempt from the README span, with everything below them.
-pub(crate) const README_EXEMPT_FOLDERS: &[&str] = &["tests", "target"];
-
 /// The only `game_link` crate a version crate may use.
 pub(crate) const GAME_LINK_PROTOCOL: &str = "tfar_game_link_protocol";
 
@@ -256,34 +250,11 @@ pub(crate) const UNSAFE_ALLOWED: &[&str] = &[
     "tfar_golden_vectors",
 ];
 
-/// The feature any crate may declare.
-pub(crate) const FEATURE_ANYWHERE: &str = "test_fixtures";
-
-/// The features only the plugin apps may declare.
-pub(crate) const PLUGIN_APP_FEATURES: &[&str] = &["tracy", "api_profiler"];
-
 /// The longest production `.rs` file, in lines.
 pub(crate) const PRODUCTION_FILE_MAX_LINES: usize = 500;
 
 /// The longest test `.rs` file (anything under a `tests` folder), in lines.
 pub(crate) const TEST_FILE_MAX_LINES: usize = 1000;
-
-/// The longest `lib.rs`, in lines.
-pub(crate) const LIB_RS_MAX_LINES: usize = 80;
-
-/// The line count from which a production file needs the four-point header.
-pub(crate) const HEADER_REQUIRED_FROM_LINES: usize = 80;
-
-/// The longest live document, in lines.
-pub(crate) const LIVE_DOCUMENT_MAX_LINES: usize = 500;
-
-/// The four labels of the module header, in order.
-pub(crate) const MODULE_HEADER_LABELS: &[&str] = &[
-    "**Role:**",
-    "**Position:**",
-    "**Signals and state:**",
-    "**Invariants:**",
-];
 
 /// The only folders that may hold C or C++ sources.
 pub(crate) const C_SOURCE_FOLDERS: &[&str] = &[
@@ -319,12 +290,6 @@ pub(crate) const BANNED_EXTENSIONS: &[&str] = &["py", "sh", "bash", "js", "ts"];
 /// File names banned outside `reference/`.
 pub(crate) const BANNED_FILE_NAMES: &[&str] = &["Makefile", "makefile", "GNUmakefile"];
 
-/// The root Markdown files allowed outside `documentation/`.
-pub(crate) const ROOT_MARKDOWN_FILES: &[&str] = &["CLAUDE.md", "AGENTS.md", "README.md"];
-
-/// The Markdown file name allowed anywhere under `assets/`: third-party data attribution.
-pub(crate) const ASSET_CREDITS_FILE: &str = "CREDITS.md";
-
 /// The top-level folders a backticked path must start with for `link-check` to check it (a
 /// root file name also qualifies).
 pub(crate) const LINKABLE_TOP_FOLDERS: &[&str] =
@@ -339,13 +304,3 @@ pub(crate) const REFERENCE_MANIFEST: &str = "reference/MANIFEST.sha256";
 /// Paths under `reference/` the manifest leaves out, relative to `reference/`; a trailing `/`
 /// marks a folder.
 pub(crate) const REFERENCE_EXCLUDED: &[&str] = &["README.md", "MANIFEST.sha256", "tfar_1_0/.git/"];
-
-/// The README standard whose kind table `readme-sections` reads.
-pub(crate) const README_STANDARD: &str = "documentation/standards/readme_standard.md";
-
-/// The three status lines a document may open with; the frozen one carries a date.
-pub(crate) const STATUS_LIVE: &str = "**Status:** live";
-/// The archived status line.
-pub(crate) const STATUS_ARCHIVED: &str = "**Status:** archived";
-/// The opening of a frozen record's status line, followed by `(YYYY-MM-DD)`.
-pub(crate) const STATUS_FROZEN_PREFIX: &str = "**Status:** frozen record (";

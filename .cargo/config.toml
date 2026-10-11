@@ -1,5 +1,5 @@
 [alias]
-# Repository tasks run as Rust: gates, CI lane, dist, crate scaffolding.
+# Repository tasks run as Rust: gates, the CI lane, dist and the reference manifest.
 xtask = "run --quiet --package xtask --"
 
 [target.x86_64-pc-windows-gnu]

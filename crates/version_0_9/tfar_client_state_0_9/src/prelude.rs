@@ -9,7 +9,6 @@ pub use crate::command_application::{
     PositionOutcome, RemoteTangent, RemoteTangentOutcome, RemoteVolumeOutcome, RenameRequest,
     SpeakingState, TangentSound,
 };
-pub use crate::crate_role::CRATE_ROLE;
 pub use crate::dsp_state::{
     ClientDsp, DirectVoiceDsp, DirectVoiceRequirement, DspRequirements, RadioDsp, RadioEffectKind,
     RadioRequirement, SpeakerRequirement, VehicleFilter,

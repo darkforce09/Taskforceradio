@@ -19,7 +19,6 @@
 //! a response whose id is not the awaited request's is discarded.
 
 mod client_config;
-mod crate_role;
 mod error;
 mod game_link_client;
 pub mod prelude;
@@ -28,7 +27,6 @@ mod session_reader;
 mod sync_outcome;
 
 pub use client_config::ClientConfig;
-pub use crate_role::CRATE_ROLE;
 pub use error::{Error, Result};
 pub use game_link_client::GameLinkClient;
 pub use sync_outcome::SyncOutcome;
