@@ -1,22 +1,24 @@
-# Build output: every cargo target dir, including per-agent and per-purpose ones.
+# Build output and test scratch (target/tmp/): the one cargo target folder.
 /target/
-target-*/
 
-# The 1.0 reference tree is an upstream clone with its own .git; MANIFEST.sha256 guards it.
+# Machine-local state: logs (logs/ci/ holds the ci-local step logs), probes, session notes.
+/.workstation/
+
+# Linked git worktrees; the README keeps the folder in every clone.
+/.worktrees/*
+!/.worktrees/README.md
+
+# Machine-local agent settings.
+/.claude/
+/.codex/
+
+# The reference trees are local only; reference/MANIFEST.sha256 guards them. tfar_1_0 is an
+# upstream clone with its own .git; tfar_0_9_12 cannot be re-cloned.
 /reference/tfar_1_0/
+/reference/tfar_0_9_12/
 
 # Editor and OS clutter.
 .idea/
 .vscode/
 *.swp
 .directory
-
-# Machine-local agent settings.
-/.claude/
-/.codex/
-
-# The 0.9.12 reference tree is local only; MANIFEST.sha256 guards it.
-/reference/tfar_0_9_12/
-
-# Machine-local state: logs, probes, session notes.
-/.workstation/

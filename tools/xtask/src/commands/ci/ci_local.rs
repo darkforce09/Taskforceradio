@@ -2,13 +2,13 @@
 //! the first failure.
 //!
 //! **Role:** runs a list of [`CiStep`]s in order, writes each step's output to
-//! `target/ci-logs/<nn>-<step>.log`, prints `held`, `failed` or `not run` per step, and forms the
+//! `.workstation/logs/ci/<nn>-<step>.log`, prints `held`, `failed` or `not run` per step, and forms the
 //! lane's exit code.
 //!
 //! **Position:** called by `main`; runs cargo, cargo-deny, typos and this binary's own
 //! `verify <gate>` as children.
 //!
-//! **Signals and state:** one child process at a time; writes only under `target/ci-logs/`.
+//! **Signals and state:** one child process at a time; writes only under `.workstation/logs/ci/`.
 //!
 //! **Invariants:** a step that fails stops the lane and every later step prints `not run`; a
 //! missing tool, or a gate that exits 2, is `not run`, never `held`; exit 0 only when every step
@@ -53,7 +53,7 @@ impl StepOutcome {
 /// Runs the `ci-local` lane in the repository and returns its exit code.
 pub(crate) fn run(repository: &Repository) -> Result<u8> {
     let xtask = std::env::current_exe().context("finding the xtask binary")?;
-    let log_folder = repository.absolute("target/ci-logs");
+    let log_folder = repository.absolute(".workstation/logs/ci");
     let outcomes = run_steps(
         &ci_local_steps(),
         repository.root(),

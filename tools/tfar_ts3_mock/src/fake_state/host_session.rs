@@ -58,7 +58,7 @@ pub(crate) struct HostSession {
 
 impl HostSession {
     /// Waits until no other session is active, then resets the fake state. `plugin_path` and
-    /// `config_path` replace the folders the session would create under the system temp folder.
+    /// `config_path` replace the folders the session would create under `target/tmp/`.
     ///
     /// # Errors
     ///
@@ -104,11 +104,11 @@ impl Drop for HostSession {
     }
 }
 
-/// A fresh temp folder holding empty `plugins/` and `config/` folders.
+/// A fresh temporary folder holding empty `plugins/` and `config/` folders.
 fn create_session_folder() -> Result<TemporaryFolder> {
     let folder =
         TemporaryFolder::create("tfar_ts3_mock").map_err(|source| Error::TemporaryFolder {
-            path: std::env::temp_dir(),
+            path: crate::temporary_folder::temporary_root(),
             source,
         })?;
     for name in ["plugins", "config"] {

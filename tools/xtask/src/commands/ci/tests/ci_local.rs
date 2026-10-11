@@ -20,7 +20,7 @@ fn tool(name: &str, program: &str, arguments: &[&str]) -> CiStep {
 #[test]
 fn the_lane_stops_at_the_first_failure_and_logs_each_step() {
     let fixture = FixtureTree::empty();
-    let logs = fixture.root().join("target/ci-logs");
+    let logs = fixture.root().join(".workstation/logs/ci");
     let steps = [
         tool("version", "git", &["--version"]),
         tool("broken", "git", &["no-such-git-command"]),
@@ -53,7 +53,7 @@ fn the_lane_stops_at_the_first_failure_and_logs_each_step() {
 #[test]
 fn a_missing_tool_is_not_run_never_held() {
     let fixture = FixtureTree::empty();
-    let logs = fixture.root().join("target/ci-logs");
+    let logs = fixture.root().join(".workstation/logs/ci");
     let steps = [tool("missing", "xtask-no-such-tool", &[])];
     let outcomes = run_steps(
         &steps,

@@ -8,7 +8,7 @@ use rusqlite::Connection;
 
 use super::*;
 
-/// A fresh folder under the system temp folder, removed when dropped.
+/// A fresh folder under the repository's `target/tmp/`, removed when dropped.
 struct TemporaryFolder(PathBuf);
 
 impl TemporaryFolder {
@@ -19,7 +19,9 @@ impl TemporaryFolder {
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed)
         );
-        let path = std::env::temp_dir().join(unique);
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../target/tmp")
+            .join(unique);
         std::fs::create_dir_all(&path).unwrap();
         Self(path)
     }

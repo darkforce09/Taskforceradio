@@ -4,9 +4,11 @@
 use super::*;
 use crate::real_sphere::{real_library, real_sphere_path};
 
-/// A file path under the system temporary folder, unique to this process and `name`.
+/// A file path under the repository's `target/tmp/`, unique to this process and `name`.
 fn temporary_path(name: &str) -> PathBuf {
-    std::env::temp_dir().join(format!("tfar_hrtf_{}_{name}", std::process::id()))
+    let folder = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../target/tmp");
+    std::fs::create_dir_all(&folder).unwrap();
+    folder.join(format!("tfar_hrtf_{}_{name}", std::process::id()))
 }
 
 #[test]

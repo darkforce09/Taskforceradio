@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use super::*;
 
-/// A WAV file in the system temporary folder, removed when dropped.
+/// A WAV file under the repository's `target/tmp/`, removed when dropped.
 struct TemporaryWave {
     path: PathBuf,
 }
@@ -45,8 +45,11 @@ impl Drop for TemporaryWave {
     }
 }
 
+/// A file path under the repository's `target/tmp/`, unique to this process and `name`.
 fn temporary_path(name: &str) -> PathBuf {
-    std::env::temp_dir().join(format!(
+    let folder = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../target/tmp");
+    std::fs::create_dir_all(&folder).unwrap();
+    folder.join(format!(
         "tfar_playback_mixer_{}_{name}.wav",
         std::process::id()
     ))

@@ -70,8 +70,8 @@ mod reload {
     /// A plugins folder holding the 1.0 `radio-sounds/` from `reference/` and
     /// `tfar_hrir/IRC_1002_C.bin` from `assets/hrir/`, as `cargo xtask dist` lays them out.
     fn plugin_folder() -> PathBuf {
-        let folder =
-            std::env::temp_dir().join(format!("tfar-plugin-1-0-reload-{}", std::process::id()));
+        let folder = Path::new(env!("CARGO_TARGET_TMPDIR"))
+            .join(format!("tfar-plugin-1-0-reload-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
         copy_folder(

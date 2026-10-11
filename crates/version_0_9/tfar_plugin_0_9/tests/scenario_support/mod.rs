@@ -138,8 +138,8 @@ pub(crate) fn child_port() -> u16 {
 /// A fresh plugin folder for this process, holding the 0.9.12 `radio-sounds/` from `reference/`
 /// and `tfar_hrir/IRC_1002_C.bin` from `assets/hrir/`, as `cargo xtask dist` lays them out.
 pub(crate) fn plugin_folder() -> PathBuf {
-    let folder =
-        std::env::temp_dir().join(format!("tfar_plugin_0_9_scenario_{}", std::process::id()));
+    let folder = Path::new(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("tfar_plugin_0_9_scenario_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&folder);
     let root = repository_root();
     copy_folder(

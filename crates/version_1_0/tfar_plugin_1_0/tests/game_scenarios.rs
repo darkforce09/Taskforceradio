@@ -101,10 +101,10 @@ mod scenarios {
         bytes
     }
 
-    /// A plugins folder with every radio sound, under the temp folder.
+    /// A plugins folder with every radio sound, under the target temp folder.
     fn plugin_folder(name: &str) -> PathBuf {
-        let folder =
-            std::env::temp_dir().join(format!("tfar-plugin-1-0-{name}-{}", std::process::id()));
+        let folder = Path::new(env!("CARGO_TARGET_TMPDIR"))
+            .join(format!("tfar-plugin-1-0-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         for kind in ["sw", "lr", "ab"] {
             std::fs::create_dir_all(folder.join("radio-sounds").join(kind)).unwrap();
