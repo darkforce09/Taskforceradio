@@ -3,15 +3,6 @@
 The `tfar_game_link_server` crate: the plugin side of the game link: a localhost TCP listener that
 answers the extension. Used by `tfar_plugin_0_9`, `tfar_plugin_1_0`.
 
-## Contents
-
-```text
-crates/game_link/tfar_game_link_server/
-├── Cargo.toml  the `tfar_game_link_server` package (lib): tier 1, workspace lints and dependencies
-├── src/        the server handle, its threads, the session handling and the async queue
-└── tests/      loopback integration tests with a raw-socket extension stand-in
-```
-
 ## How it works
 
 `GameLinkServer::start` binds `127.0.0.1` on each listen port, the normal one and, when
@@ -34,6 +25,17 @@ extension ──TCP──> accept thread (one per port) ──> session thread �
                                           │  ──FOCUS──> handler.focus_changed
                                           └─ STATUS every 500 ms, and at once from set_needcfg
 ```
+
+`game_link_server.rs` builds the `link_state.rs` state, makes the first bind attempt on each listen
+port and starts one `accept_loop.rs` thread per port and `async_worker.rs`. Each accept loop polls
+its own non-blocking listener, retries its own bind while the port is busy, and starts a
+`session_loop.rs` thread per connection. After a valid `HELLO`, `LinkState::open_session` closes and
+reports any session it replaces, then sends `HELLO` and `STATUS` through `session_link.rs` while
+holding the write lock, so a `set_needcfg` push can never overtake them. The session thread reads
+with a timeout no longer than 20 ms, so it sees the heartbeat time, a replacement and shutdown on
+time. Each `ASYNC`, and each `GameLinkServer::queue_async` text, is queued through
+`LinkState::queue_async_text` with the current mission generation; a `MISSIONEND` bumps the
+generation first, so the worker skips every message queued before it.
 
 ## Getting started
 
@@ -59,7 +61,7 @@ cargo test -p tfar_game_link_server  # unit tests and the loopback session tests
 - `GameLinkHandler`: `sync_request`, `async_message`, `focus_changed`, `session_opened`,
   `session_closed`, implemented by the plugin.
 - `ServerConfig` (`new`, `for_plugin`, `for_plugin_on_both_ports`, `with_debug_port`,
-  `listen_ports`) and the `DEFAULT_*` periods; `Error`, `Result`, `CRATE_ROLE` and `prelude`.
+  `listen_ports`) and the `DEFAULT_*` periods; `Error`, `Result` and `prelude`.
 
 ## Boundaries
 
@@ -79,5 +81,5 @@ cargo test -p tfar_game_link_server  # unit tests and the loopback session tests
 
 - [Game link protocol](/documentation/architecture/game_link_protocol.md) — the authoritative frame
   table, handshake, plugin semantics, timeouts and ports.
-- [Arma extensions](/documentation/program/behaviour_specs/extensions.md) — the original
+- [Arma extensions](/documentation/behaviour_specs/extensions.md) — the original
   `task_force_radio_pipe` extensions the protocol replaces the transport of.

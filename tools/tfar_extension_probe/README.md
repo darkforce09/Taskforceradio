@@ -4,14 +4,6 @@ The `tfar_extension_probe` crate: a Windows executable that loads an extension D
 `RVExtension`, run under Proton's wine. Developers run it under Proton's wine against a built
 extension.
 
-## Contents
-
-```text
-tools/tfar_extension_probe/
-├── Cargo.toml  the `tfar_extension_probe` package (bin): tier 0, workspace lints and dependencies
-└── src/        the probe's `main`, its command line, the library loader and their tests
-```
-
 ## How it works
 
 The stand-in for Arma. It loads the extension library with `libloading` (`LoadLibrary` on Windows,
@@ -28,6 +20,13 @@ version: tfar_extension_1_0 0.1.1
 call:  DFRAME~
 reply: Not connected to TeamSpeak
 ```
+
+`main.rs` parses the arguments with `probe_arguments::parse_arguments` (usage error: exit 2), loads
+the library with `ExtensionLibrary::load`, prints `version()` and then each `call(text)`; any error
+on the way ends the run with exit 1. `extension_library.rs` holds every `unsafe` block: the
+library load, the two symbol lookups and the two foreign calls, each with its `// SAFETY:`
+comment. `reply_from_buffer` reads the reply up to the first NUL and is tested on its own. Each
+module attaches its sibling test file under `tests/` with `#[path]`.
 
 ## Getting started
 
@@ -60,12 +59,12 @@ None: the probe reads only its command line.
 - Rules: the call text reaches the extension unchanged but for the `\t` escape, and the reply is
   printed as the extension wrote it (`src/tests/`); the probe never depends on the extension apps
   (tools never use the deliverables). Tier 0 in `tools`: every workspace dependency has a lower
-  tier and follows the edge matrix in `crates/README.md` (`cargo xtask verify crate-tiers`). `unsafe` is
+  tier and follows the category edge matrix (`cargo xtask verify crate-tiers`). `unsafe` is
   allowed here for loading and calling the library (`cargo xtask verify unsafe-allowlist`).
 
 ## Related documentation
 
-- [Arma extensions](/documentation/program/behaviour_specs/extensions.md) — the original
+- [Arma extensions](/documentation/behaviour_specs/extensions.md) — the original
   `task_force_radio_pipe` extensions and the Arma ABI facts.
 - [Game link protocol](/documentation/architecture/game_link_protocol.md) — the replies an
   extension gives with and without a plugin.

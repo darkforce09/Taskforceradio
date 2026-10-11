@@ -4,20 +4,6 @@ Everything of the 0.9.12 mod: its two deliverables, the TeamSpeak plugin and the
 and the libraries behind them: game commands, plugin commands, radio effects, client state,
 reception routing and voice pipeline.
 
-## Contents
-
-```text
-crates/version_0_9/
-├── tfar_client_state_0_9/     tier 3: the 0.9 per-client state
-├── tfar_extension_0_9/        tier 2: the 0.9.12 `task_force_radio_pipe` extension DLL (deliverable)
-├── tfar_game_commands_0_9/    tier 2: the typed 0.9 game commands
-├── tfar_plugin_0_9/           tier 6: the 0.9.12 TeamSpeak plugin `.so` (deliverable)
-├── tfar_plugin_commands_0_9/  tier 2: the 0.9 plugin command and metadata formats
-├── tfar_radio_effects_0_9/    tier 2: the 0.9 radio effect chains
-├── tfar_radio_routing_0_9/    tier 4: the 0.9 reception decisions
-└── tfar_voice_pipeline_0_9/   tier 5: the 0.9 voice frame processing
-```
-
 ## How it works
 
 Arma calls `tfar_extension_0_9` through `callExtension`; the extension forwards each call over
@@ -72,6 +58,6 @@ cargo build -p tfar_extension_0_9 --target x86_64-pc-windows-gnu
 
 ## Related documentation
 
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the original plugin this track ports.
-- [Arma extensions](/documentation/program/behaviour_specs/extensions.md) — the original
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the original plugin this track ports.
+- [Arma extensions](/documentation/behaviour_specs/extensions.md) — the original
   extensions and the Arma ABI facts.

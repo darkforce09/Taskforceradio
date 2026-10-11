@@ -4,14 +4,6 @@ The `tfar_plugin_commands_1_0` crate: the 1.0 plugin-to-plugin commands sent thr
 byte-compatible with the original, and the TFAR block of a client's metadata. Used by
 `tfar_plugin_1_0`.
 
-## Contents
-
-```text
-crates/version_1_0/tfar_plugin_commands_1_0/
-├── Cargo.toml  the `tfar_plugin_commands_1_0` package (lib): tier 2, workspace lints and dependencies
-└── src/        the commands, their codec, the sender filter, the metadata block and the error type
-```
-
 ## How it works
 
 Plugins of the same mod talk through TeamSpeak's `sendPluginCommand`, TAB-separated
@@ -45,6 +37,12 @@ Addon version: [B]<addon version>[/B]
 removes it when empty), `metadata_says_playing` is the plugin-enabled check other clients run,
 and `info_data_text` is the info panel's text, cut to the 512-byte buffer.
 
+`command_codec.rs` matches the split tokens against each command's name and token count in one
+slice pattern per command, so a count the original does not accept is `Error::Unrecognised`, and
+reads the tangent's tail (`[sw, dd, nick]` or `[classname, sw, dd, nick]`) by its own layout.
+`metadata.rs` works on whole metadata strings with `str::find` for the first tags, as the
+original's `std::string::find`.
+
 ## Getting started
 
 Run from the repository root:
@@ -65,7 +63,7 @@ None: the crate reads no setting.
   `info_data_text`, `METADATA_START_TAG`, `METADATA_END_TAG`, `DISABLED_METADATA`,
   `PLAYING_METADATA_PREFIX`, `INFO_DATA_BUFFER_SIZE`.
 - `Error` (`Unrecognised`, whose message is the original's `UNKNOWN PLUGIN COMMAND` log line, and
-  `Malformed`), `Result`, `CRATE_ROLE`, `prelude`.
+  `Malformed`), `Result`, `prelude`.
 
 ## Boundaries
 
@@ -75,11 +73,10 @@ None: the crate reads no setting.
   (`every_command_round_trips_byte_for_byte`, `the_status_block_is_the_original_text`); an 8-token
   tangent reads its flags from tokens 5 and 6
   (`an_eight_token_tangent_reads_its_flags_from_tokens_five_and_six`). Tier 2 in
-  `crates/version_1_0`: every workspace dependency has a lower tier and follows the edge matrix in
-  `crates/README.md` (`cargo xtask verify crate-tiers`).
+  `crates/version_1_0`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — §4 the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — §4 the
   client-to-client protocol and the metadata.
-- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs this crate fixes.
+- [Bug fixes](/documentation/architecture/bug_fixes.md) — the original bugs this crate fixes.

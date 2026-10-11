@@ -4,14 +4,6 @@ The `tfar_plugin_settings_1_0` crate: the 1.0 plugin's settings: the values `SET
 defaults. Used by `tfar_client_state_1_0`, `tfar_game_commands_1_0`, `tfar_plugin_1_0`,
 `tfar_radio_routing_1_0`, `tfar_voice_pipeline_1_0`.
 
-## Contents
-
-```text
-crates/version_1_0/tfar_plugin_settings_1_0/
-├── Cargo.toml  the `tfar_plugin_settings_1_0` package (lib): tier 0, workspace lints and dependencies
-└── src/        the settings, their keys and values, the type tags, the error type and the prelude
-```
-
 ## How it works
 
 `PluginSettings` holds the twenty settings of `reference/tfar_1_0/ts/src/settings.hpp` as typed
@@ -32,6 +24,13 @@ message as `CommandProcessor.cpp:388-414` does:
 
 Every error leaves the settings unchanged. The refresh flag behind `NEEDCFG` starts true, clears on
 any successful set and is set again by `mark_needs_refresh` when the game disconnects.
+
+`PluginSettings::set` finds the key with `SettingKey::from_key_text`, reads the value with
+`TypeTag::read_value` (or takes the empty text when there is no tag), and converts it into the
+setting's kind with `SettingValue::into_bool`, `into_number` or `into_text` before writing the
+typed field; only then does the refresh flag clear. `SettingKey::default_value` is the single
+table of defaults and kinds; `PluginSettings::default` holds the same values in its fields, and a
+test holds the two equal.
 
 ## Getting started
 
@@ -80,7 +79,7 @@ The two durations are cut to whole milliseconds and never negative.
 - `SettingValue`, `SettingKind`: a value, its kind and the cross-kind conversions.
 - `TypeTag`: `from_wire`, `read_value`.
 - `Error` (`UnknownKey` with the original's message, `MalformedNumber`, `TextForTypedSetting`),
-  `Result`, `CRATE_ROLE`, `prelude`.
+  `Result`, `prelude`.
 
 ## Boundaries
 
@@ -90,10 +89,10 @@ The two durations are cut to whole milliseconds and never negative.
 - Rules: an unknown key or a malformed value is an `Error` and leaves the settings unchanged
   (`a_failed_set_changes_nothing_and_keeps_the_refresh_flag`); the defaults and key order are the
   original's (`the_defaults_are_the_original_table`). Tier 0 in `crates/version_1_0`: every
-  workspace dependency has a lower tier and follows the edge matrix in `crates/README.md`
+  workspace dependency has a lower tier and follows the category edge matrix
   (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — §2.2
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — §2.2
   `SETCFG` and `NEEDCFG`, §5 the settings table.

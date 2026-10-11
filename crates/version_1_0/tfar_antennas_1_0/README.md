@@ -3,14 +3,6 @@
 The `tfar_antennas_1_0` crate: the 1.0 antenna and radio tower model used for terrain-aware
 reception. Used by `tfar_plugin_1_0`, `tfar_radio_routing_1_0`.
 
-## Contents
-
-```text
-crates/version_1_0/tfar_antennas_1_0/
-├── Cargo.toml  the `tfar_antennas_1_0` package (lib): tier 2, workspace lints and dependencies
-└── src/        the tower, the manager, the connection, the net id and the error type
-```
-
 ## How it works
 
 The game reports radio towers with `RadioTwrAdd` (`netId;range;[x,y,z]` records) and removes them
@@ -34,6 +26,12 @@ radio effect's error level, map `None` to `NO_CONNECTION_LOSS` (7) with
 `string_view` that is not terminated, so an id without a colon borrows the colon of the text
 after it (`reference/tfar_1_0/ts/src/datatypes.hpp:187-212`).
 
+`AntennaManager` keeps a `Vec<Antenna>` in insertion order; `find_connection` scans it once,
+keeping the tower of lowest loss below 1 among those both ends reach, and returns it with its loss
+as an `AntennaConnection` (a copy of the tower, so no reference outlives the caller's lock).
+`Antenna::new` refuses a negative or non-finite range, which the original stores but can never
+connect through.
+
 ## Getting started
 
 Run from the repository root:
@@ -52,7 +50,7 @@ None: the crate reads no setting.
 - `AntennaManager`: `add`, `remove`, `clear`, `antennas`, `find_connection`.
 - `AntennaConnection` (`antenna`, `loss`), `NO_CONNECTION_LOSS`, `loss_or_no_connection`.
 - `NetId`: `new`, `parse`, `creator`, `object`, `is_null`, `NULL`.
-- `Error`, `Result`, `CRATE_ROLE`, `prelude`.
+- `Error`, `Result`, `prelude`.
 
 ## Boundaries
 
@@ -62,10 +60,9 @@ None: the crate reads no setting.
 - Rules: a connection is only found through towers both ends reach, with a loss below 1
   (`the_lowest_loss_tower_below_one_is_chosen`, `a_tower_the_sender_cannot_reach_is_no_connection`);
   the net id is read within its own text (`net_id_parse_never_reads_past_its_own_text`). Tier 2 in
-  `crates/version_1_0`: every workspace dependency has a lower tier and follows the edge matrix in
-  `crates/README.md` (`cargo xtask verify crate-tiers`).
+  `crates/version_1_0`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports, §3.8 for the antenna rule.

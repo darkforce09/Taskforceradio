@@ -1,10 +1,8 @@
-**Status:** frozen record (2026-10-02)
-
 # TFAR 0.9.12 TeamSpeak plugin: behaviour spec
 
 This is the functional spec of the C++ plugin at `reference/tfar_0_9_12/ts/src/`: `plugin.cpp` (P),
 `RadioEffect.h` (RE), `Clunk.h` (CL), `plugin.h`. It describes the original behaviour, bugs included. The
-Rust port fixes the bugs listed in `/documentation/program/bug_fixes.md`.
+Rust port fixes the bugs listed in `/documentation/architecture/bug_fixes.md`.
 
 Behaviours most likely to break a faithful reading:
 - **KILLED never runs.** The parser needs more than 2 tokens; Arma sends exactly 2, so it returns `FAIL`

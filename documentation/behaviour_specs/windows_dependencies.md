@@ -1,5 +1,3 @@
-**Status:** frozen record (2026-10-02)
-
 # Windows dependencies of the original plugins
 
 This lists every Windows-only dependency in the C++ TS plugins and what replaces it in the Rust port. `A/` is

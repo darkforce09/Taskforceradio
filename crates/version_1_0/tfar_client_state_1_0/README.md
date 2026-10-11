@@ -5,14 +5,6 @@ tangents, vehicles and effect state, the local player's game data, the game link
 state, and the apply function of each game and plugin message. Used by `tfar_plugin_1_0`,
 `tfar_radio_routing_1_0`, `tfar_voice_pipeline_1_0`.
 
-## Contents
-
-```text
-crates/version_1_0/tfar_client_state_1_0/
-├── Cargo.toml  the `tfar_client_state_1_0` package (lib): tier 3, workspace lints and dependencies
-└── src/        the session, the clients, the game data, the effects and the game link state
-```
-
 ## How it works
 
 A `SessionState` holds a `GameData` (what the game says about the local player: radios by
@@ -71,6 +63,46 @@ replaces a client's vehicle only when it changed.
 | proposed: `rstflt` forgets the airborne effects | `resetting_radio_effects_drops_the_airborne_effects_too` |
 | `RELEASE_ALL_TANGENTS` leaves the tangent pressed | `release_all_tangents_clears_the_tangent_so_the_next_press_acts` |
 
+`SessionState` (in `session/`) owns a `GameData` and a `ClientDirectory`. The directory maps a
+nickname to its `ClientData` in a `BTreeMap` and a client id to its nickname in a `HashMap`, and
+every change goes through it so the two always agree; the local player is the entry whose id the
+directory marks as own. A `ClientData` keeps its position as reported and extrapolates it by the
+vehicle velocity for the time since the last `POS` (`client_position(now)`); liveness uses a
+separate activity clock, which tangents also refresh. Each `ClientData` owns a `ClientEffects`
+(in `effects/`) and shares its vehicle descriptor (`Arc`). `reception.rs` holds `HeardVia`,
+which the routing crate produces and the tangent handling and voice pipeline read; a `HeardVia`
+shares its radio id and vehicle with the session, so making one copies no text. `GameLinkState` stands apart: one per plugin.
+
+## Modules
+
+### `src/effects/`
+
+`ClientEffects::ensure_dsp(requirements, context)` creates the two compressors (direct speech and
+radio, so each envelope advances once per frame), reserves the object-interception buffer for
+`frames_per_block`, and creates every required object that does not exist yet: radio effects by
+radio id, HRTF sources by key (the HRIR sphere comes in `DspContext`), the can't-speak, vehicle
+(per loss), speaker and phone filters by key, and the object-interception low-pass per object
+count at the given strength. The audio path then borrows each object with a `*_mut(key)`
+accessor, a `HashMap` lookup by `&str` that allocates nothing. `reset_radio_effects` and
+`reset_voices` drop what the original's `resetRadioEffect` and `resetVoices` drop (the airborne
+effects too).
+
+The object-interception slots remember the strength they were designed with and are redesigned
+when it changes; a cutoff `2000 − min(count, 5) · strength` at or below 0 Hz is
+`ObjectInterceptionFilter::Silence`.
+
+### `src/session/`
+
+Each apply function takes a parsed message (from `tfar_game_commands_1_0` or
+`tfar_plugin_commands_1_0`) and `now`, writes it into the session, and returns what the app does
+next in TeamSpeak. `apply_remote_tangent` takes the reception routing as a closure so this crate
+stays below the routing crate: for a release the closure runs before the sender's state is reset,
+with the sender's abilities as the ignore flags; for a press after. Only a real press or release
+plays a remote sound, and the local player's received transmissions count each sender once.
+`apply_local_tangent` takes the game's own tangent: only a change of the tangent flag acts, and it
+returns the local sound and the broadcast for the app to play and send once the lock is released;
+`apply_local_release_all_tangents` clears the flag, so the next press acts again.
+
 ## Getting started
 
 Run from the repository root:
@@ -115,11 +147,10 @@ cargo test -p tfar_client_state_1_0  # the unit tests
 - Rules: effect state is only reached while its session's lock is held; clients are keyed by the
   full nickname (`nicknames_are_keyed_by_their_full_text_so_no_two_share_an_entry`); queries are
   pure (`is_alive_is_a_pure_query_and_never_changes_the_data_frame`). Tier 3 in
-  `crates/version_1_0`: every workspace dependency has a lower tier and follows the edge matrix in
-  `crates/README.md` (`cargo xtask verify crate-tiers`).
+  `crates/version_1_0`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports, §5 for the data models and §8 for PTT and liveness.
-- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs fixed here.
+- [Bug fixes](/documentation/architecture/bug_fixes.md) — the original bugs fixed here.

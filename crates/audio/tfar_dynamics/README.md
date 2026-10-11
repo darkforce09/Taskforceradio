@@ -4,14 +4,6 @@ The `tfar_dynamics` crate: the feed-forward compressor the radio effects run onc
 `tfar_client_state_0_9`, `tfar_client_state_1_0`, `tfar_voice_pipeline_0_9`,
 `tfar_voice_pipeline_1_0`.
 
-## Contents
-
-```text
-crates/audio/tfar_dynamics/
-├── Cargo.toml  the `tfar_dynamics` package (lib): tier 1, workspace lints and dependencies
-└── src/        the compressor, its settings and presets, and the attack and release envelope
-```
-
 ## How it works
 
 `Compressor` is the stereo-linked SimpleComp of ChunkWare SimpleSource 1.12
@@ -36,6 +28,13 @@ Credit: the compressor follows SimpleSource 1.12, © 2006 ChunkWare Music Softwa
 source under an MIT-style permission notice, which the original files under
 `reference/tfar_1_0/ts/include/simpleSource/` carry in full.
 
+`Compressor::new` checks the `CompressorSettings` and builds an `AttackReleaseEnvelope` from the
+attack and release time constants; `process_frame` turns the louder channel into a decibel excess
+over the threshold, runs it through the envelope against the compressor's own envelope state, and
+scales both channels by the resulting gain. `lib.rs` re-exports the public items at the crate root
+and `prelude.rs` the same items except `Error` and `Result`. Each module attaches its sibling test
+file in `tests/` with `#[path]`.
+
 ## Getting started
 
 Run from the repository root:
@@ -54,7 +53,7 @@ None: the crate reads no setting. Each caller picks a `CompressorSettings` prese
   `process_stereo_i16`.
 - `CompressorSettings` (`sample_rate_hz`, `threshold_db`, `ratio`, `attack_ms`, `release_ms`)
   with `VERSION_0_9`, `VERSION_1_0` and `validate`.
-- `DC_OFFSET`, `Error`, `Result`, `CRATE_ROLE` and `prelude`.
+- `DC_OFFSET`, `Error`, `Result` and `prelude`.
 
 ## Boundaries
 
@@ -63,12 +62,12 @@ None: the crate reads no setting. Each caller picks a `CompressorSettings` prese
   `tfar_voice_pipeline_1_0`.
 - Rules: one `process_stereo_i16` call is one pass over the block; the caller never runs a block
   through it twice. Processing allocates nothing. Tier 1 in `crates/audio`: every workspace
-  dependency has a lower tier and follows the edge matrix in `crates/README.md`
+  dependency has a lower tier and follows the category edge matrix
   (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
 - [Audio pipeline](/documentation/architecture/audio_pipeline.md) — where the compressors sit in
   the 0.9 and 1.0 voice chains.
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports.

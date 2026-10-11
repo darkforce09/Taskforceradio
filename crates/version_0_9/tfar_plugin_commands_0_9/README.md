@@ -4,14 +4,6 @@ The `tfar_plugin_commands_0_9` crate: the 0.9.12 plugin-to-plugin commands sent 
 the sender filter and the client metadata block, byte-compatible with the original. Used by
 `tfar_plugin_0_9`.
 
-## Contents
-
-```text
-crates/version_0_9/tfar_plugin_commands_0_9/
-├── Cargo.toml  the `tfar_plugin_commands_0_9` package (lib): tier 2, workspace lints and dependencies
-└── src/        the plugin commands, the sender filter, the metadata block and the error type
-```
-
 ## How it works
 
 Players' plugins talk through TeamSpeak's `sendPluginCommand` to the current channel, and show
@@ -39,6 +31,18 @@ longer than `[I]Connected[/I] [B]Y[/B] [I]Play[/I] [B]Y` and starts with it (plu
 `merge_metadata` replaces the text of an existing block and keeps what surrounds it; without a
 block the result is the block alone, as the original's `setMetaData` writes it.
 
+```text
+send:    PluginCommand ──encode──▶ text ──▶ sendPluginCommand(CURRENT_CHANNEL)
+receive: onPluginCommandEvent(name, text) ──accepts_sender(name)──▶ decode(text) ──▶ PluginCommand
+status:  format_metadata ──merge_metadata(own metadata)──▶ setClientSelfVariableAsString
+others:  client metadata ──metadata_says_playing / info_data_text──▶ playing flag, info pane text
+```
+
+`plugin_command.rs` splits a received text with `tfar_arma_values::split_fields` and matches its
+fields by slice pattern, so the field count is checked before any field is read; numbers go
+through `tfar_arma_values`. `metadata.rs` finds the block from the first `<TFAR>` to the first
+`</TFAR>` after it and never indexes: every cut is a checked `str::get`.
+
 ## Getting started
 
 Run from the repository root:
@@ -58,7 +62,7 @@ None: the crate reads no setting.
 - `PLUGIN_NAME_PREFIX`, `accepts_sender`.
 - `format_metadata`, `merge_metadata`, `metadata_block`, `metadata_says_playing`,
   `info_data_text`, `DISABLED_METADATA`, and the tags and sizes in `metadata`.
-- `Error`, `Result`, `CRATE_ROLE`, `prelude`.
+- `Error`, `Result`, `prelude`.
 
 ## Boundaries
 
@@ -67,10 +71,9 @@ None: the crate reads no setting.
 - Used by: `tfar_plugin_0_9`.
 - Rules: the encoded texts match what the original 0.9.12 plugin sends, held by the byte-exact
   tests in `src/tests/plugin_command.rs` and `src/tests/metadata.rs`. Tier 2 in
-  `crates/version_0_9`: every workspace dependency has a lower tier and follows the edge matrix in
-  `crates/README.md` (`cargo xtask verify crate-tiers`).
+  `crates/version_0_9`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports; section 4 lists the plugin commands and the metadata.

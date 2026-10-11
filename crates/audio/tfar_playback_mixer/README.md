@@ -4,14 +4,6 @@ The `tfar_playback_mixer` crate: loading and mixing of the radio sound WAV files
 stream into the outgoing audio. Used by `tfar_plugin_0_9`, `tfar_plugin_1_0`,
 `tfar_voice_pipeline_0_9`, `tfar_voice_pipeline_1_0`.
 
-## Contents
-
-```text
-crates/audio/tfar_playback_mixer/
-├── Cargo.toml  the `tfar_playback_mixer` package (lib): tier 1, workspace lints and dependencies
-└── src/        the WAV library, the playback, the named stream and the mixer
-```
-
 ## How it works
 
 `WaveLibrary` decodes a radio sound with `hound` once and caches it by canonical path as a shared
@@ -32,6 +24,19 @@ captured-voice callback feeds a stream through a `StreamProducer` from
 `PlaybackMixer::stream_producer` instead: an `rtrb` ring of the same 500 ms whose `push` never
 blocks or allocates, even while another thread holds the mixer, drops the oldest frames when the
 ring is full, and is drained in order by `mix_into`.
+
+`lib.rs` declares the modules privately and re-exports their public items at the crate root;
+`prelude.rs` re-exports the same items except `Error` and `Result`, so a glob import never
+shadows `std`'s `Result`. `output_block.rs` is the one place samples reach the TeamSpeak block:
+playbacks and streams both feed it an iterator of interleaved stereo samples, so a stream's ring
+of samples never has to be made contiguous. `PlaybackMixer` keeps four locks: the hand-off of new
+and finished playbacks (non-audio threads), the mixing state (the audio thread, `try_lock`), the
+streams (`append_stream` locks, `mix_into` uses `try_lock`) and the list of producer streams
+(`stream_producer` and `release_finished` lock, `mix_into` uses `try_lock`). A `StreamProducer`
+writes its own ring without any mixer lock; it shares the ring's reading side with the mixer
+behind a lock both take only with `try_lock`, the mixer to drain and the producer to drop the
+oldest frames when the ring is full. Each module attaches its sibling
+test file in `tests/` with `#[path]`.
 
 ## Getting started
 
@@ -54,7 +59,7 @@ None: the crate reads no setting. The plugins pass the WAV paths under their plu
   `stream_producer`, `mix_into`, `active_playback_count`, `stream_queued_frames`; `MAX_ACTIVE_PLAYBACKS`,
   `PLAYBACK_QUEUE_CAPACITY`, `MAX_STREAMS`, `STREAM_CAPACITY_FRAMES`.
 - `StreamProducer`: `name`, `push` (audio thread: never blocks or allocates).
-- `Error`, `Result`, `CRATE_ROLE` and `prelude`.
+- `Error`, `Result` and `prelude`.
 
 ## Boundaries
 
@@ -67,13 +72,13 @@ None: the crate reads no setting. The plugins pass the WAV paths under their plu
   `mix_into` and `StreamProducer::push` never wait and never allocate
   (`a_producer_push_succeeds_while_another_thread_holds_every_mixer_lock`), and `mix_into` never
   writes past `channels * frames` samples or into channels 2 and up. Tier 1 in `crates/audio`: every workspace dependency has a lower tier and
-  follows the edge matrix in `crates/README.md` (`cargo xtask verify crate-tiers`).
+  follows the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
 - [Audio pipeline](/documentation/architecture/audio_pipeline.md) — the sound playback section and
   the mixed-playback callback.
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports.
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports.

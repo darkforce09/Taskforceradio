@@ -2,17 +2,7 @@
 
 The two original Task Force Arrowhead Radio mods, kept byte for byte as the specification the Rust port
 follows. Nothing here is built, formatted or edited; the port reads these files and the behaviour specs
-in `documentation/program/behaviour_specs/` record what they do.
-
-## Contents
-
-```text
-reference/
-├── MANIFEST.sha256  sha256 of every file in both trees, written by cargo xtask reference-manifest
-├── tfar_0_9_12/     the TFAR 0.9.12 release: SQF addons, the C++ plugin, the C++ pipe extension;
-│                    local only, gitignored here
-└── tfar_1_0/        upstream master at fce977fa, a git clone with its own .git, gitignored here
-```
+in `documentation/behaviour_specs/` record what they do.
 
 ## How it works
 
@@ -77,5 +67,5 @@ reference/** -filter -diff -merge -text
 
 - [Workspace decisions](/documentation/decisions/workspace.md) — why the mods live here (D5) and how the
   1.0 clone is guarded (D15).
-- [Behaviour specs](/documentation/program/behaviour_specs/README.md) — what the original plugins and
+- [Behaviour specs](/documentation/behaviour_specs/README.md) — what the original plugins and
   extensions do, cited by file and line.

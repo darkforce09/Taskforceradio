@@ -1,10 +1,8 @@
-**Status:** live
-
 # Bug policy decisions
 
 What the port does with the originals' bugs and features, where C and C++ may still appear, and in which
 order the work is done. The bugs themselves are catalogued in
-[bug fixes](/documentation/program/bug_fixes.md).
+[bug fixes](/documentation/architecture/bug_fixes.md).
 
 ### 2026-10-02 — Fix every bug; wire formats stay compatible (D3)
 
@@ -63,6 +61,6 @@ and no antennas or settings.
 
 **Consequences:** The milestones run foundations, the TeamSpeak host layer, the game link, the audio
 primitives, services and diagnostics, then the 0.9 track and the 1.0 track, then release readiness, as
-the [roadmap](/documentation/roadmap.md) sets out.
+the program set out.
 
 **Supersedes:** none.

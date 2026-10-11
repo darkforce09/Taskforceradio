@@ -2,13 +2,6 @@
 
 The plugins' own user interface: the 1.0 debug window.
 
-## Contents
-
-```text
-crates/interface/
-└── tfar_debug_window/  tier 0: the debug window
-```
-
 ## How it works
 
 `tfar_debug_window` runs one long-lived `eframe` thread on X11 and draws the snapshots the 1.0
@@ -36,4 +29,3 @@ cargo test \
 
 ## Related documentation
 
-- [Library survey](/documentation/program/research/library_survey.md) — the external crates chosen for each need.

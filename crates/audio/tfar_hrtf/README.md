@@ -4,14 +4,6 @@ The `tfar_hrtf` crate: binaural direction rendering over the IRCAM HRIR sphere t
 crate. Used by `tfar_client_state_0_9`, `tfar_client_state_1_0`, `tfar_voice_pipeline_0_9`,
 `tfar_voice_pipeline_1_0`.
 
-## Contents
-
-```text
-crates/audio/tfar_hrtf/
-├── Cargo.toml  the `tfar_hrtf` package (lib): tier 1, workspace lints and dependencies
-└── src/        the sphere loader, direction conversion, block adapter and per-source renderer
-```
-
 ## How it works
 
 The crate replaces clunk's ear delay with real binaural rendering through the `hrtf` crate.
@@ -43,6 +35,17 @@ The crate replaces clunk's ear delay with real binaural rendering through the `h
   about 4 dB below its input and a source behind about 9 dB below; the distance curve and cone
   of `tfar_spatial_audio` set the level on top.
 
+`hrir_library.rs` reads the file, passes it through `sphere_file_check.rs` (which refuses every
+input that would make the `hrtf` crate panic), lets the crate resample and transform it, and keeps
+one prepared `hrtf::HrtfProcessor`. `hrtf_source.rs` copies that processor per source and pairs it
+with `block_adapter.rs`: each input sample goes into the pending block at the position the output
+sample comes out of the rendered block, and a full pending block is rendered by the source's
+renderer (direction and gain from the latest call, gliding from the previous block's). The numbers
+the three agree on live in `render_timing.rs`. `listener_relative_direction.rs` holds the only
+axis convention: Arma (x east, y north, z up, compass heading) to the listener's (right, forward,
+up) to the sphere's (x right, y up, z backwards). Each module attaches its sibling test file in
+`tests/` with `#[path]`; `lib.rs` attaches `tests/real_sphere.rs` under `cfg(test)`.
+
 ## Getting started
 
 Run from the repository root:
@@ -64,7 +67,7 @@ None: the crate reads no setting. The caller passes the sphere path to `HrirLibr
 - `ListenerRelativeDirection`: `from_arma`, `from_listener_axes`, `STRAIGHT_AHEAD`, `right`,
   `forward`, `up`.
 - `SAMPLE_RATE_HZ`, `CONVOLUTION_BLOCK_FRAMES`, `INTERPOLATION_STEPS`, `RENDER_BLOCK_FRAMES`,
-  `ADDED_LATENCY_FRAMES`, `IDLE_RESET_AFTER`; `Error`, `Result`, `CRATE_ROLE`, `prelude`.
+  `ADDED_LATENCY_FRAMES`, `IDLE_RESET_AFTER`; `Error`, `Result`, `prelude`.
 
 ## Boundaries
 
@@ -76,15 +79,13 @@ None: the crate reads no setting. The caller passes the sphere path to `HrirLibr
 - Rules: a source's state belongs to one speaker and is never shared between two; `load` and
   `HrtfSource::new` allocate and run off the audio thread where possible, `process`,
   `process_mono` and `reset` allocate nothing. Tier 1 in `crates/audio`: every workspace
-  dependency has a lower tier and follows the edge matrix in `crates/README.md`
+  dependency has a lower tier and follows the category edge matrix
   (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
 - [Audio pipeline](/documentation/architecture/audio_pipeline.md) — where the HRTF sits in both
   voice chains.
-- [HRIR sphere](/assets/hrir/README.md) — the sphere file, its format and its credits.
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [HRIR sphere](/assets/README.md) — the sphere file, its format and its credits.
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports.
-- [Library survey](/documentation/program/research/library_survey.md) — the external crates chosen
-  for each need and why.

@@ -4,14 +4,6 @@ The `tfar_spatial_audio` crate: the distance curve and emitter cone gains that r
 plus the simple stereo panner both versions fall back to. Used by `tfar_voice_pipeline_0_9`,
 `tfar_voice_pipeline_1_0`.
 
-## Contents
-
-```text
-crates/audio/tfar_spatial_audio/
-├── Cargo.toml  the `tfar_spatial_audio` package (lib): tier 1, workspace lints and dependencies
-└── src/        the distance curve, the emitter cone and the interaural level difference
-```
-
 ## How it works
 
 The 1.0 plugin got level and direction for direct speech from X3DAudio. Here `tfar_hrtf` gives
@@ -24,6 +16,13 @@ beyond half the outer angle, linear between; `EmitterCone::TFAR_VOICE` is the 1.
 simple interaural level difference, `stereo_pan_gains`, gives `0.625 ∓ c·cos(dir)` with the 0.9 or
 the 1.0 coefficient, wrapping `dir` into (-π, π], and `apply_pan` applies the pair. FAudio's
 `F3DAudio.c` is the oracle the golden vectors compare the curve and cone against.
+
+`lib.rs` declares the modules privately and re-exports their public items at the crate root;
+`prelude.rs` re-exports the same items except `Error` and `Result`, so a glob import never
+shadows `std`'s `Result`. `DistanceCurve` keeps its points in a fixed array of
+`DistanceCurve::MAX_POINTS`, so it is `Copy` and never allocates; its constructor checks every
+point and refuses unsorted ones. `EmitterCone` works on the `glam` vectors inside
+`tfar_geometry::Direction`. Each module attaches its sibling test file in `tests/` with `#[path]`.
 
 ## Getting started
 
@@ -45,7 +44,7 @@ whether the cone applies.
   `outer_volume`.
 - `stereo_pan_gains`, `apply_pan`, `ILD_COEFFICIENT_0_9`, `ILD_COEFFICIENT_1_0`, `ILD_BASE_GAIN`:
   the simple interaural level difference.
-- `Error`, `Result`, `CRATE_ROLE` and `prelude`.
+- `Error`, `Result` and `prelude`.
 
 ## Boundaries
 
@@ -54,13 +53,13 @@ whether the cone applies.
 - Used by: `tfar_voice_pipeline_0_9`, `tfar_voice_pipeline_1_0`.
 - Rules: every gain is finite; nothing allocates, construction included, so curves and cones may
   be built on the TeamSpeak audio thread. Tier 1 in `crates/audio`: every workspace dependency has
-  a lower tier and follows the edge matrix in `crates/README.md` (`cargo xtask verify crate-tiers`).
+  a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
 - [Audio pipeline](/documentation/architecture/audio_pipeline.md) — where the curve, the cone and
   the panner sit in each voice chain.
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports.
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports.

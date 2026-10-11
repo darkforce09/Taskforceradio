@@ -1,11 +1,9 @@
-**Status:** frozen record (2026-10-02)
-
 # TFAR 1.0 TeamSpeak plugin: behaviour spec
 
 This is the functional spec of the C++ plugin at `reference/tfar_1_0/ts/src/`. All file:line references
 are relative to that folder unless written as `extensions/...` or `addons/...` (relative to
 `reference/tfar_1_0/`). It describes the original behaviour, bugs included. The Rust port fixes the bugs
-listed in `/documentation/program/bug_fixes.md`.
+listed in `/documentation/architecture/bug_fixes.md`.
 
 Behaviours most likely to break a faithful reading:
 - `Vector3D::normalized()` uses the wrong formula (§8).

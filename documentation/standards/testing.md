@@ -12,7 +12,7 @@ Core logic only:
 - radio routing, antennas, client state and the voice pipelines of both mods;
 - the FFI layouts (`size_of`, `offset_of`) against the TeamSpeak SDK headers, and the host exports run
   against a built plugin through `tools/tfar_ts3_mock`;
-- every fixed original bug in [bug fixes](/documentation/program/bug_fixes.md);
+- every fixed original bug in [bug fixes](/documentation/architecture/bug_fixes.md);
 - the xtask gates, each with a fixture tree that holds and a perturbed copy that fails.
 
 Never pin prose, constants, file layout or `Debug`/`Display` output; an assert that restates a

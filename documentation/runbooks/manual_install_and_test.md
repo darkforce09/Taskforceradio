@@ -1,15 +1,10 @@
-**Status:** live
-
 # Install the Rust plugins and extensions by hand and test them
 
 Builds both mods' artifacts, installs the plugins into the Flatpak TeamSpeak and the extension DLL
 into an installed mod, and checks the link from TeamSpeak, from Proton's wine and from Arma. No
-script copies anything into TeamSpeak or a mod folder (decision D13); every copy below is done by
+script copies anything into TeamSpeak or a mod folder (see the workspace decisions); every copy below is done by
 the owner. Run the build from the repository root,
-`/run/media/system/Main_storage/Projects/Taskforceradio`.
-
-Every step below works with the code of M8: both plugins and both extensions are complete, and the
-mock scenarios of both versions pass. What is left is this live check, deferred by the owner.
+`/run/media/system/Disk_2/Projects/Taskforceradio`.
 
 ## Prerequisites
 
@@ -168,4 +163,3 @@ plugin gives the nickname back, lifts its mutes and goes dormant (D25).
 
 - [Game link protocol](/documentation/architecture/game_link_protocol.md) — ports, frames and every
   reply string this runbook checks.
-- [Roadmap](/documentation/roadmap.md) — which milestone makes each step meaningful.

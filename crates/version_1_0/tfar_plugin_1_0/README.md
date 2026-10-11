@@ -3,15 +3,6 @@
 The `tfar_plugin_1_0` crate: the TeamSpeak 3 plugin for the 1.0 mod, built as a native Linux shared
 library. TeamSpeak 3 loads it from its plugins folder.
 
-## Contents
-
-```text
-crates/version_1_0/tfar_plugin_1_0/
-├── Cargo.toml  the `tfar_plugin_1_0` package (cdylib + rlib): tier 6, workspace lints and dependencies
-├── src/        the exports, the lifecycle, the runtime, the game link handler, events, audio, services
-└── tests/      the built `.so` in the mock TeamSpeak host, driven by a real game link client, and through a reload
-```
-
 ## How it works
 
 The TeamSpeak plugin for the 1.0 mod, wiring the 1.0 library crates to TeamSpeak:
@@ -56,6 +47,94 @@ The TeamSpeak plugin for the 1.0 mod, wiring the 1.0 library crates to TeamSpeak
 - **Dormant.** Until the first game message, and again after each game end has been handled
   (mutes lifted, `off` played, channel and nickname back, the not-in-game metadata written once),
   the plugin sends nothing and passes audio through; the next game message wakes it.
+
+`plugin_exports.rs` expands `ts3_plugin!(PLUGIN)`. `TfarPlugin::init` installs the log forwarder,
+loads the radio sounds and the HRIR sphere, reads TeamSpeak's push-to-talk delay, builds the
+`PluginRuntime`, starts the `GameLinkServer` on both ports with a `LinkHandler`, the service
+thread and the cancellable update check, and publishes the runtime in an `ArcSwapOption`. Every
+callback loads it: the event callbacks call runtime methods, the audio callbacks the functions of
+`audio::voice_callbacks`, which wait only for a server lock whose holders never call TeamSpeak. All TeamSpeak traffic goes through `TeamSpeakActions`; side effects only
+through `PluginRuntime::act`, which is `None` while the plugin is dormant. `TfarPlugin::shutdown`
+takes the runtime out, runs `PluginRuntime::shut_down` (web requests cancelled, game end, metadata
+cleared, mutes lifted, link server, service, release thread and debug window stopped and joined,
+web requests joined within 1 s) and drops the log forwarder last, all within 2 s.
+
+## Modules
+
+### `src/audio/`
+
+The post-process callback waits for the server state (counting the wait in the runtime's
+`AudioDiagnostics`), copies the block to stereo, runs `VoiceProcessor::process_sender` and writes
+the result back; no game, a dormant plugin or an unknown sender leaves the block untouched. The captured callback runs
+`VoiceProcessor::process_own_voice_for_speakers` and pushes the result through the mixer's
+`StreamProducer` for the stream `my_radio_voice`, which never blocks or allocates. The
+mixed-playback callback adds the mixer's playbacks and streams into channels 0 and 1 of the
+server in front. `RadioSounds` preloads `radio-sounds/` at init; a local tangent sound is queued
+at its gain into its ear, a remote one is shaped by `render_remote_tangent_sound` of
+`tfar_voice_pipeline_1_0` (gain, ear, vehicle and loudspeaker filters, under-water muffling,
+simple ILD) on the calling thread before the mixer gets it.
+
+### `src/diagnostics/`
+
+Every report reads the runtime under short locks and calls no TeamSpeak function meanwhile. The
+dump writes `diag.log`, `pos.log`, `settings.log` and `game_messages.log` into a folder named by
+the UTC time under TeamSpeak's config path. `/tfar debug` starts the debug window's UI thread on
+first use; without an X11 display it prints the reason in the chat tab instead.
+
+### `src/events/`
+
+`plugin_command_received` accepts only commands of the server in front from a plugin whose name
+starts with `TFAR`, decodes them with `tfar_plugin_commands_1_0::decode` and applies them under the
+server lock: a remote tangent through `tfar_radio_routing_1_0::apply_remote_tangent`, which yields
+the remote sounds, the reception count and the heard list. The sounds are shaped and queued and the mute sent after the lock is released.
+`own_variable_changed` sends `VOLUME` to the channel when the own talking flag changes in game.
+
+### `src/game_link/`
+
+`LinkHandler` holds a weak runtime handle. Every sync call and every async message except
+`MISSIONEND` counts as a game message (`record_game_message`, which runs a due connect transition
+first); `MISSIONEND` forgets the game's messages so the game disconnects. Sync calls are parsed
+with `tfar_game_commands_1_0::parse` and answered from the fixed replies or the session; a `POS`
+answers its speaking code and is queued with `GameLinkServer::queue_async` behind every async
+message already queued, as the original queues it. Async messages, those queued `POS` calls
+included, arrive from the link server's FIFO worker and go through `apply_async_message`; a
+`TRACK` starts a cancellable Piwik request the runtime keeps until shutdown. The local tangent
+goes through `SessionState::apply_local_tangent` and `apply_local_release_all_tangents`, then
+push-to-talk and the broadcast.
+
+### `src/push_to_talk/`
+
+A press, unless a release is waiting, saves and switches off voice activation, sets
+`CLIENT_INPUT_DEACTIVATED` to active and sends the broadcast; with a release waiting it marks that
+release skipped. A release marks itself waiting and hands a job to `tfar-tangent-release`, which
+waits `push_to_talk_delay + tangentReleaseDelay` (cut short only by shutdown) and then, unless
+skipped, restores voice activation and the microphone and sends the broadcast. A game end cancels
+every release still waiting (the gate's release generation moves on, so a job from before it does
+nothing), and the plugin, dormant again after its game, never broadcasts a release.
+
+### `src/runtime/`
+
+`PluginRuntime` holds a `ServerRegistry` of `parking_lot::Mutex<ServerState>`, one per established
+connection; a `ServerState` bundles the `SessionState`, the `MuteTracker`, the `AntennaManager`, the
+`VoiceProcessor` with its stereo scratch, the metadata cache the voice gate reads, the channel
+cache and the nickname and channel to restore. Every handler takes the lock, runs the apply
+function of a library crate, collects what TeamSpeak must do, releases the lock and only then
+calls `TeamSpeakActions`. `PluginRuntime::act` answers `None` while the plugin is dormant, so no
+side effect reaches TeamSpeak before the first game message, nor after a game end (once its
+handling ran) until the next one. The web requests live in `BackgroundRequests` until shutdown
+cancels them and joins them within one budget. The game link state lives in its own leaf lock;
+`poll_game_link` runs the transition it reports after releasing it.
+
+### `src/service/`
+
+Every tick the thread polls the game link (timeout, debounced transitions) and frees finished
+radio sounds. Unless the plugin is dormant, every 4 s it moves into the serious channel while in
+game (focus-gated unless `moveWhileTabbedOut`, never for a spectator with
+`noAutomoveSpectator`), expires stale clients, recomputes every mute, reads the client metadata,
+builds the DSP objects and writes the own metadata; every 500 ms it publishes a debug window
+snapshot while the window is open. The periods are `ServicePeriods`; the test-only
+`TFAR_SERVICE_TICK_MS` shortens the tick and scales the sweep (40 ticks) and the snapshot (5 ticks)
+with it, so a test sees many seconds of ticks quickly.
 
 ## Getting started
 
@@ -117,7 +196,7 @@ Cargo features, off by default: `tracy` (profiling zones to a Tracy viewer throu
   within 2 s and joins every thread it started, except a web request still waiting for the
   network after its 1 s join budget (`shutdown_joins_every_thread_the_plugin_started_within_two_seconds`
   in `tests/game_scenarios.rs`). Tier 6 in `crates/version_1_0`: every workspace
-  dependency has a lower tier and follows the edge matrix in `crates/README.md`
+  dependency has a lower tier and follows the category edge matrix
   (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export glue only
   (`cargo xtask verify unsafe-allowlist`).
 
@@ -127,7 +206,7 @@ Cargo features, off by default: `tracy` (profiling zones to a Tracy viewer throu
   handshake and the plugin side of the link.
 - [Audio pipeline](/documentation/architecture/audio_pipeline.md) — the 1.0 voice chain the
   callbacks run.
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports.
-- [Windows dependencies](/documentation/program/behaviour_specs/windows_dependencies.md) — the Win32
+- [Windows dependencies](/documentation/behaviour_specs/windows_dependencies.md) — the Win32
   objects the originals use and what replaces them.

@@ -3,14 +3,6 @@
 The `tfar_ts3_mock` crate: a fake TeamSpeak host that loads a plugin .so and drives it through
 scripted scenarios. The plugin apps' integration tests and developers run it.
 
-## Contents
-
-```text
-tools/tfar_ts3_mock/
-├── Cargo.toml  the `tfar_ts3_mock` package (lib + bin): tier 2, workspace lints and dependencies
-└── src/        the host, the fake function table, the fake state, the plugin loader and the binary
-```
-
 ## How it works
 
 `MockHost::load` opens a plugin `.so` with `libloading`, resolves its `ts3plugin_*` exports and
@@ -30,6 +22,74 @@ test ──▶ MockHost driver ──▶ fake state (locked, changed, unlocked)
                          └─▶ ts3plugin_on…Event (plugin code)
                                    └─▶ fake Ts3Functions slot ──▶ fake state + call log
 ```
+
+`mock_host` opens a plugin through `plugin_library`, begins a session in `fake_state` (waiting
+for any other host, resetting the state, creating the folders) and hands the plugin the table
+from `fake_functions`. From then on two kinds of code touch the fake state: the drivers on the
+test's thread, which change it and then call a plugin export with the lock released, and the
+fakes on whichever thread the plugin calls from, which read or change it, append a `HostCall`
+and, for strings and lists, record a `malloc`ed block in the ledger. The lock is re-entrant over
+a `RefCell`, so a nested use fails at once instead of deadlocking.
+
+## Modules
+
+### `src/fake_functions/`
+
+`fake_table.rs` fills all 230 slots with `unexpected_slot::<N>` stubs (one per index, so a call
+logs `HostCall::UnexpectedFunction { slot: N }` and answers `ERROR_not_implemented`), then writes
+the 32 typed fakes over their slots from the one `faked_functions!` list, which also yields
+`FAKED_FUNCTIONS`. Each fake has the exact signature of its slot, copies its arguments through
+`fake_answers.rs`, takes the fake-state lock once, logs a `HostCall` and answers as TeamSpeak
+does: `ERROR_not_connected` for an unknown server, `ERROR_client_invalid_id` or
+`ERROR_channel_invalid_id` for an unknown ID, `ERROR_parameter_invalid` for a flag or setting it
+does not model; `getPluginPath` answers the plugin folder only for the registered plugin ID and an
+empty path for any other, as TeamSpeak answers a stale ID after a reload. A null vector argument
+(the listener's forward and up, which the plugins pass as
+null) is logged as `None`. Strings and lists go out `malloc`ed and recorded in the ledger; `freeMemory`
+takes them back.
+
+The 32 faked functions: `getErrorMessage`, `freeMemory`, `logMessage`, `playWaveFile`,
+`getPreProcessorConfigValue`, `setPreProcessorConfigValue`, `systemset3DListenerAttributes`,
+`systemset3DSettings`, `channelset3DAttributes`, `requestClientMove`, `requestMuteClients`,
+`requestUnmuteClients`, `getClientID`, `getClientSelfVariableAsInt`,
+`setClientSelfVariableAsInt`, `setClientSelfVariableAsString`, `flushClientSelfUpdates`,
+`getClientVariableAsInt`, `getClientVariableAsString`, `getClientList`, `getChannelOfClient`,
+`getChannelVariableAsString`, `getChannelList`, `getChannelClientList`,
+`getServerConnectionHandlerList`, `getServerVariableAsString`, `getConnectionStatus`,
+`getConfigPath`, `getPluginPath`, `getCurrentServerConnectionHandlerID`,
+`printMessageToCurrentTab`, `sendPluginCommand`.
+
+### `src/fake_state/`
+
+`host_session.rs` keeps one `FakeTeamSpeak` in a `static` (a function pointer carries no
+context, so the fakes reach it globally) behind a re-entrant `parking_lot` mutex over a
+`RefCell`. `HostSession::begin` waits on a condition variable until no other session is active,
+then replaces the state with a fresh one whose plugin and config paths are new temporary folders
+(or the ones given) and whose registered plugin ID is `mock_plugin_id` (a reload replaces it);
+its drop frees every block still handed out and wakes the next waiter. The
+ledger in `allocation_ledger.rs` maps each outstanding block's address to the function that
+handed it out; a free of an unknown or already freed address is recorded, never passed to
+`free`.
+
+### `src/mock_host/`
+
+`MockHost::start` refuses a plugin not built for API 26, begins the session, then calls
+`setFunctionPointers`, `registerPluginID("mock_plugin_id")` and `init`; a non-zero `init` is
+`Error::InitFailed`. An event driver changes the fake state under the lock, releases it and calls
+the export, so the plugin's queries see the change; a callback the plugin does not export is
+skipped. `set_talking` only sets `CLIENT_FLAG_TALKING`; `talk_status_change` sets it and then
+raises `onTalkStatusChangeEvent`, as TeamSpeak does when a client starts or stops talking. An
+audio driver copies the caller's samples, passes the counts, one speaker bit per channel and the
+flags TeamSpeak passes, and returns what the plugin left; a missing export is
+`Error::MissingExport`. `reload(plugin_id)` plays TeamSpeak's "Reload" on the loaded library:
+`shutdown` (unless it ran), `setFunctionPointers`, `registerPluginID(plugin_id)` and `init`; the
+fake state then answers `getPluginPath` for the new ID only, so a plugin that kept the old ID gets
+the empty path TeamSpeak gives it. `shutdown` runs once per start or reload, from the call or the
+drop, before the library unloads.
+
+`tests/in_process_plugin.rs` defines `extern "C"` exports inside the test binary and hands them
+to the host over the test executable itself, so the tests run the real start order, drivers and
+memory rules without a separately built plugin.
 
 ## Getting started
 
@@ -59,7 +119,7 @@ the fakes answer with; the default pre-processor value is `vad=false`.
 - `HostCall`, `HostQuery`, `SentCommandTarget`; `FakeTeamSpeak`, `FakeServer`, `FakeChannel`,
   `FakeClient`; `LeakReport`, `UnfreedAllocation`.
 - `locate_cdylib`, `FAKED_FUNCTIONS`, `FakedFunction`, `SLOT_COUNT`, `mock_error_text`.
-- `Error`, `Result`, `CRATE_ROLE`, `prelude` (which also re-exports the `tfar_ts3_host` newtypes).
+- `Error`, `Result`, `prelude` (which also re-exports the `tfar_ts3_host` newtypes).
 - The binary `tfar_ts3_mock <plugin.so>`.
 
 ## Boundaries
@@ -73,14 +133,13 @@ the fakes answer with; the default pre-processor value is `vad=false`.
 - Rules: every function the original plugins call has a typed fake, in the SDK slot order
   (`src/fake_functions/tests/fake_table.rs`); every slot holds a valid function; no plugin code
   runs under the fake-state lock; a scenario's outcome depends only on the scenario and the
-  plugin. Tier 2 in `tools`: every workspace dependency has a lower tier and follows the edge
-  matrix in `crates/README.md` (`cargo xtask verify crate-tiers`).
+  plugin. Tier 2 in `tools`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin and the TeamSpeak API it uses.
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin and the TeamSpeak API it uses.
 - [Coding standards](/documentation/standards/code_and_documentation.md) — the FFI and test rules the
   mock holds.

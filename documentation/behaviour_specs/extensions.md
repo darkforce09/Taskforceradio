@@ -1,5 +1,3 @@
-**Status:** frozen record (2026-10-02)
-
 # Arma extensions (`task_force_radio_pipe`): behaviour spec
 
 This describes both original C++ extensions. Every SQF call uses the plain-string form `"task_force_radio_pipe"
@@ -34,7 +32,7 @@ string. Only the transport changes (see `/documentation/architecture/game_link_p
   (active), `NamedPipeTransfer.*` (unused), `stdafx.h` (`PIPE_TIMEOUT 1000`, `-tfdebug` parameter).
 - The DLL **opens** the plugin-created objects: `Local\TFARSHAMEM_EVTREQ`, `Local\TFARSHAMEM_EVTRESP`,
   `Local\TFARSHAMEM_MTX`, mapping `Local\TFARSHAMEM` (`SharedMemoryTransfer.cpp:150-240`). The layout is in
-  `/documentation/program/behaviour_specs/tfar_1_0_plugin.md` §2.1.
+  `/documentation/behaviour_specs/tfar_1_0_plugin.md` §2.1.
 - `transactMessage` (`SharedMemoryTransfer.cpp:250-281`):
   1. Not ready → the stored error message, else `Not connected to TeamSpeak`.
   2. `!isConnected()` (plugin tick older than 1000 ms) → `Not connected to TeamSpeak`.

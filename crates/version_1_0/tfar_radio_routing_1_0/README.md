@@ -4,14 +4,6 @@ The `tfar_radio_routing_1_0` crate: whether and how a 1.0 listener hears a speak
 intercom or speaker radio, the radio effect error levels, the serious-mode mute rules and the
 serious channel lookup. Used by `tfar_plugin_1_0`, `tfar_voice_pipeline_1_0`.
 
-## Contents
-
-```text
-crates/version_1_0/tfar_radio_routing_1_0/
-├── Cargo.toml  the `tfar_radio_routing_1_0` package (lib): tier 4, workspace lints and dependencies
-└── src/        the reception rules, the mute rules, the error levels and the serious channel
-```
-
 ## How it works
 
 Every rule reads a `RoutingContext` (the session, the settings, the antenna manager and `now`)
@@ -48,6 +40,29 @@ this plugin muted, so requests go out only on a change and `unmute_all` returns 
 radio effect, with no antenna read as the original's loss of 7. `apply_remote_tangent` runs
 `SessionState::apply_remote_tangent` with `is_over_radio` as its routing.
 
+`reception/` turns a `RoutingContext` and a sender into `HeardVia` values; `mute/` decides mutes
+on top of it; `effect_error.rs` and `underwater.rs` hold the formulas the voice pipeline shares
+with the rules. `remote_tangent.rs` wires `is_over_radio` into the client state's tangent
+handling, which cannot depend on this crate.
+
+## Modules
+
+### `src/mute/`
+
+The plugin app asks `mute_decision` after a client's position, volume or tangent and
+`killed_mute_matrix` after a kill, feeds the answers to its `MuteTracker`, and sends TeamSpeak only
+the changes the tracker reports. On game end or disconnect `unmute_all` returns every client the
+plugin muted; a client that leaves is forgotten with `client_left`.
+
+### `src/reception/`
+
+`is_over_radio` checks the intercom, stops for a sender without range, finds the best tower with
+`AntennaManager::find_connection` (not for the listener itself), adds the carried-radio reception,
+stops when the sender is beyond range without a tower, and adds the speakers with the tower's loss.
+Each `HeardVia` carries the tower's loss when one connects the two, and shares its radio id and
+vehicle with the session; `is_over_radio_into` fills a reused list, so routing a frame allocates
+nothing once the list holds every reception.
+
 ## Getting started
 
 Run from the repository root:
@@ -74,7 +89,7 @@ Read from `tfar_plugin_settings_1_0::PluginSettings` through the context:
 - `serious_mode_channel`, `ChannelId`, `CHANNEL_ID_PREFIX`.
 - `effect_error_from_distance`, `capped_by_antenna`, `underwater_effect_error`;
   `diver_radio_distance`, `underwater_weighted_distance`; `prelude` adds `distance_underwater`.
-- `Error`, `Result`, `CRATE_ROLE`.
+- `Error`, `Result`.
 
 ## Boundaries
 
@@ -86,10 +101,10 @@ Read from `tfar_plugin_settings_1_0::PluginSettings` through the context:
 - Rules: routing reads client state and never changes it; the listener never hears itself on its
   own radio (`the_listener_never_hears_itself_on_its_own_radio`) and is never muted
   (`the_local_player_is_never_muted`). Tier 4 in `crates/version_1_0`: every workspace dependency
-  has a lower tier and follows the edge matrix in `crates/README.md`
+  has a lower tier and follows the category edge matrix
   (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports, §3.8 for the routing and §8 for the mute rules.

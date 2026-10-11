@@ -4,22 +4,6 @@ Everything of the 1.0 mod: its two deliverables, the TeamSpeak plugin and the Ar
 the libraries behind them: settings, antennas, game commands, plugin commands, radio effects,
 client state, reception routing and voice pipeline.
 
-## Contents
-
-```text
-crates/version_1_0/
-├── tfar_antennas_1_0/         tier 2: the 1.0 antenna and tower model
-├── tfar_client_state_1_0/     tier 3: the 1.0 per-client state
-├── tfar_extension_1_0/        tier 2: the 1.0 `task_force_radio_pipe` extension DLL (deliverable)
-├── tfar_game_commands_1_0/    tier 2: the typed 1.0 game commands
-├── tfar_plugin_1_0/           tier 6: the 1.0 TeamSpeak plugin `.so` (deliverable)
-├── tfar_plugin_commands_1_0/  tier 2: the 1.0 plugin command and metadata formats
-├── tfar_plugin_settings_1_0/  tier 0: the 1.0 settings
-├── tfar_radio_effects_1_0/    tier 2: the 1.0 radio effect chains
-├── tfar_radio_routing_1_0/    tier 4: the 1.0 reception decisions
-└── tfar_voice_pipeline_1_0/   tier 5: the 1.0 voice frame processing
-```
-
 ## How it works
 
 Arma calls `tfar_extension_1_0` through `callExtension`; the extension forwards each call over
@@ -77,6 +61,6 @@ cargo build -p tfar_extension_1_0 --target x86_64-pc-windows-gnu
 
 ## Related documentation
 
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the original plugin this track ports.
-- [Arma extensions](/documentation/program/behaviour_specs/extensions.md) — the original
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the original plugin this track ports.
+- [Arma extensions](/documentation/behaviour_specs/extensions.md) — the original
   extensions and the Arma ABI facts.

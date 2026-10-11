@@ -2,13 +2,6 @@
 
 The plugins' outbound network services: the update check and the Piwik tracking calls.
 
-## Contents
-
-```text
-crates/services/
-└── tfar_web_requests/  tier 0: the update check and Piwik calls
-```
-
 ## How it works
 
 `tfar_web_requests` makes blocking HTTPS calls on a worker thread, so no request touches a TeamSpeak
@@ -35,4 +28,3 @@ cargo test \
 
 ## Related documentation
 
-- [Library survey](/documentation/program/research/library_survey.md) — the external crates chosen for each need.

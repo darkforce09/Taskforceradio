@@ -4,14 +4,6 @@ The `tfar_client_state_0_9` crate: the per-client state of the 0.9.12 plugin: po
 tangents and effect state, with the application of every game message and plugin command. Used by
 `tfar_plugin_0_9`, `tfar_radio_routing_0_9`, `tfar_voice_pipeline_0_9`.
 
-## Contents
-
-```text
-crates/version_0_9/tfar_client_state_0_9/
-├── Cargo.toml  the `tfar_client_state_0_9` package (lib): tier 3, workspace lints and dependencies
-└── src/        the server and client state, the command application, the game session and sound state
-```
-
 ## How it works
 
 The crate is pure state and decisions: it calls no TeamSpeak function, starts no thread and reads
@@ -70,6 +62,49 @@ are held behind an `Arc`, so a reception of `tfar_radio_routing_0_9` names them 
 instead of a copy of the text, and the audio path routes without allocating. A `POS` replaces a
 player's vehicle only when it changed.
 
+```text
+GameCommand / PluginCommand ──apply_*──▶ ServerRadioData ──clients──▶ ClientData ──dsp──▶ ClientDsp
+        (game link, events)                │ data_frames: has_fresh_data, remove_expired
+                                           │ game_session: start_game, end_game
+GameSession ◀── record_message / check_timeout (game link thread, service tick)
+DspRequirements (from the routing) ──ClientData::ensure_dsp──▶ ClientDsp (made off the audio thread)
+```
+
+`server_radio_data.rs` holds the state; `command_application/` adds the methods that apply each
+command and return what the plugin does next (a reply, a rename, a sound, a mute check);
+`data_frames.rs` and `nickname_list.rs` add the lookups and the client list. `client_data.rs` holds
+one player, whose `ClientDsp` (`dsp_state/`) owns the compressor, direct-voice and per-radio sound
+objects. `game_session.rs` turns the message traffic into the in-game flag.
+
+## Modules
+
+### `src/command_application/`
+
+Each method takes the typed command (`tfar_game_commands_0_9` for the game, the decoded fields of
+`tfar_plugin_commands_0_9` for the plugins) and `now` where the original stamps a time, changes the
+state as `processGameCommand`, `processUnitPosition` and `processPluginCommand` in
+`reference/tfar_0_9_12/ts/src/plugin.cpp` do, and returns an outcome naming the TeamSpeak side
+effect: `PositionOutcome` (centre the listener, check the mute, or refresh the client list),
+`RenameRequest`, the tangent-changed flag, `RemoteTangentOutcome` (route, mute and play the start or
+end sound) and `RemoteVolumeOutcome`. None of them fails: an unknown nickname changes nothing and
+says so.
+
+### `src/dsp_state/`
+
+The original makes every object on first use, on the TeamSpeak audio thread, under keys such as
+`voice_clunk`, `local_cantspeak`, `local_vehicle` and the radio id
+(`reference/tfar_0_9_12/ts/src/plugin.cpp:232-341`). Here `ClientDsp::ensure` makes them from a
+`DspRequirements` while the plugin handles a command, so the audio thread only borrows: the direct
+voice's objects sit in `DirectVoiceDsp`, the radio-keyed ones in a `RadioDsp` per radio id, and the
+lookups by `&str` allocate nothing. The [HRTF](/documentation/glossary.md#hrtf) sources replace the
+clunks: one for the direct voice and one per loudspeaker radio, made only when the plugin passes the
+HRIR sphere. An existing object is never replaced, except a vehicle low-pass whose isolation
+changed. `reset_radio_effects` drops the effects and the phone and loudspeaker band-passes;
+`reset_voices` clears the memory of the can't-speak, under-water and vehicle low-passes and frees
+nothing: in serious mode it runs on every `POS` of a silent player, under the server lock the
+audio thread waits for, so it must not free or rebuild a two-megabyte direction source. The
+direction sources restart themselves after 200 ms without input (`tfar_hrtf`); the compressor stays.
+
 ## Getting started
 
 Run from the repository root:
@@ -97,7 +132,7 @@ None: the crate reads no setting. The HRIR sphere reaches it as an optional `&Hr
 - The outcome types `PositionOutcome`, `SpeakingState`, `RenameRequest`, `RemoteTangent`,
   `RemoteTangentOutcome`, `TangentSound`, `RemoteVolumeOutcome`.
 - `ClientId`, `FrequencySettings`, `SpeakerRadio`, `VehicleMuffling`, the constants, `Error`,
-  `Result`, `CRATE_ROLE`, `prelude`.
+  `Result`, `prelude`.
 
 ## Boundaries
 
@@ -111,11 +146,10 @@ None: the crate reads no setting. The HRIR sphere reaches it as an optional `&Hr
   `in_game_without_a_serious_channel`, `the_original_nickname_after_two_renames`,
   `a_lookup_by_client_id_returns_the_fresh_entry_not_a_stale_one_left_by_a_rename` and
   `fields_the_original_leaves_uninitialised_start_at_defined_defaults`. Tier 3 in
-  `crates/version_0_9`: every workspace dependency has a lower tier and follows the edge matrix in
-  `crates/README.md` (`cargo xtask verify crate-tiers`).
+  `crates/version_0_9`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports; sections 1, 2 and 4.
-- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs this crate fixes.
+- [Bug fixes](/documentation/architecture/bug_fixes.md) — the original bugs this crate fixes.

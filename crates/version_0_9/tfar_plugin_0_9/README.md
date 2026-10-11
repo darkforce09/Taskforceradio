@@ -3,15 +3,6 @@
 The `tfar_plugin_0_9` crate: the TeamSpeak 3 plugin for the 0.9.12 mod, built as a native Linux
 shared library. TeamSpeak 3 loads it from its plugins folder.
 
-## Contents
-
-```text
-crates/version_0_9/tfar_plugin_0_9/
-├── Cargo.toml  the `tfar_plugin_0_9` package (cdylib + rlib): tier 6, workspace lints and dependencies
-├── src/        the exports, the shared core, the game messages, the events, the voice callbacks
-└── tests/      the `.so` in the mock host: game session, dormancy, game end, HRTF reset, reload, shutdown
-```
-
 ## How it works
 
 Every domain decision lives in the 0.9 library crates; the app is wiring, threads and TeamSpeak
@@ -68,6 +59,64 @@ service thread   ──▶ game timeout, 4 s sweep and metadata, finished sounds
   forwarder last. A web request whose network call is still in flight then cannot be interrupted:
   it is cancelled (its answer is dropped), logged, and ends within its own timeout (10 s for the
   update check, 5 s for a tracking request) after `ts3plugin_shutdown` returned.
+
+`plugin_exports.rs` expands `ts3_plugin!(PLUGIN)`; `TfarPlugin` (in `plugin_lifecycle.rs`) keeps a
+`RunningPlugin` behind a mutex and the `PluginCore` behind a `parking_lot::RwLock`. Main-thread
+callbacks clone the core's `Arc` and call it; the audio callbacks `try_read` the lock and pass
+through while `init` or `shutdown` holds it.
+
+`PluginCore` methods are spread by concern over the modules: `game_messages/` for the game link,
+`incoming_plugin_commands.rs` and `team_speak_events.rs` for TeamSpeak's events,
+`audio_callbacks.rs` for the voice blocks, `service_thread.rs` for the tick,
+`game_session_transitions.rs` and `status_metadata.rs` for the game's start, end and status. Every
+one follows the same pattern: read TeamSpeak through the `TeamSpeak` traits, lock the connection's
+`ServerState` to apply and decide with the library crates, unlock, then call TeamSpeak
+(`send_mute_decision` forgets a mute TeamSpeak refused). The voice callbacks read
+`TeamSpeakFacts`, which `channel_snapshot.rs` fills on every channel or client event and sweep.
+A remote push-to-talk sound is shaped by the voice pipeline's `render_remote_tangent_sound`; the
+own voice reaches the mixer through the `StreamProducer` each `ServerState` holds.
+
+Threads: TeamSpeak's main thread (lifecycle, events, plugin commands), its audio threads (voice
+callbacks), the game link server's accept and session threads (game messages), `tfar-service`,
+`tfar-push-to-talk-release`, the web request threads (`tfar-update-check`, `tfar-piwik-track`)
+and the log forwarder. The unit tests drive the core over `tests/fake_team_speak.rs`, a recording
+fake of both traits, and the service tick with the time injected (`ServiceSchedule`); each module
+attaches its sibling test file with `#[path]`.
+
+## Modules
+
+### `src/game_messages/`
+
+`GameLinkBridge::sync_request` decodes the text lossily and calls
+`PluginCore::handle_game_message` on the link's session thread. A message that counts as game
+activity first wakes a dormant plugin and stamps the game session, both under the session lock
+(`PluginCore::record_game_activity`), so it never races the service thread's return to dormant
+after a game end; `GameCommand::parse` types it (a refused message is `FAIL`); the command is
+applied to the current server's `ServerState` under its lock with the library's `apply_*`
+methods, and the TeamSpeak side effects follow with the lock released; then the game starts when
+this activity began one. `VERSION` that names a serious channel after the game started makes the
+serious-mode move once, and a new addon version reaches the metadata at once. `TRACK` starts a
+cancellable Piwik request kept in the core's `BackgroundWebRequests` for shutdown to join.
+
+### `src/push_to_talk/`
+
+A press with no release waiting saves the `vad` pre-processor state, switches voice activation off
+when it was on, switches the microphone on (`CLIENT_INPUT_DEACTIVATED` = `INPUT_ACTIVE`, flushed)
+and broadcasts the `TANGENT…PRESSED` command; a press while a release waits cancels that release and
+sends nothing, since the others never saw it. A release is scheduled with TeamSpeak's push-to-talk
+delay; the `tfar-push-to-talk-release` thread waits on a condvar until it is due, then restores voice
+activation, switches the microphone off unless voice activation keeps it open, and broadcasts the
+release. The lock is held across those TeamSpeak calls so a press and a release never interleave;
+no audio callback and no TeamSpeak event takes it. A game end cancels a waiting release: voice
+activation and the microphone are restored at once and nothing is broadcast, so a plugin dormant
+again after its game sends no release. On stop, a waiting release is sent at once.
+
+### `src/team_speak/`
+
+`PluginCore` holds an `Arc<dyn TeamSpeak>`: `Ts3TeamSpeak` in the plugin, the recording fake in the
+unit tests. A failed read becomes the neutral answer the original falls back to (`None`, an empty
+list, `false`) with a debug line; a failed write returns TeamSpeak's error so the caller can react
+(a refused mute is forgotten by the tracker).
 
 ## Getting started
 
@@ -128,8 +177,7 @@ ILD, and the chat tab says so.
   `src/tests/service_thread.rs`); `ts3plugin_shutdown` returns within 2 s with every plugin thread
   joined (`shutdown_joins_every_plugin_thread_within_two_seconds`), only a web request still in
   flight outlives it (`a_web_request_in_flight_never_holds_the_shutdown_past_two_seconds`), and no
-  TeamSpeak memory leaks (`leak_report` in the host tests). Tier 6 in `crates/version_0_9`: every workspace dependency has a lower tier and follows the edge matrix
-  in `crates/README.md` (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export
+  TeamSpeak memory leaks (`leak_report` in the host tests). Tier 6 in `crates/version_0_9`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export
   glue only (`cargo xtask verify unsafe-allowlist`).
 
 ## Related documentation
@@ -138,6 +186,6 @@ ILD, and the chat tab says so.
   handshake, the dormant rule and the plugin side of the link.
 - [Audio pipeline](/documentation/architecture/audio_pipeline.md) — the 0.9 voice chain and the
   callbacks.
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports.
-- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs the port fixes.
+- [Bug fixes](/documentation/architecture/bug_fixes.md) — the original bugs the port fixes.

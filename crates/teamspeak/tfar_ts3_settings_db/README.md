@@ -4,14 +4,6 @@ The `tfar_ts3_settings_db` crate: reads TeamSpeak's settings.db for the values t
 today the push-to-talk delay of the default capture profile. Used by `tfar_plugin_0_9`,
 `tfar_plugin_1_0`.
 
-## Contents
-
-```text
-crates/teamspeak/tfar_ts3_settings_db/
-├── Cargo.toml  the `tfar_ts3_settings_db` package (lib): tier 0, workspace lints and dependencies
-└── src/        the read-only query, the profile parser, the error type and their tests
-```
-
 ## How it works
 
 A plugin's `ts3plugin_init` asks TeamSpeak for its config folder, builds the database path with
@@ -22,6 +14,12 @@ read-only with `rusqlite` (TeamSpeak holds the file open), checks the `Profiles`
 `PushToTalkDelay`, whose `effective()` is the length when enabled and zero otherwise. A missing
 file, table or row, a failed query and a malformed length are each a typed `Error`, which the
 plugins read as zero delay.
+
+`settings_database.rs` opens the file with `SQLITE_OPEN_READ_ONLY`, looks for the `Profiles`
+table in `sqlite_master`, reads the `Capture/Default/PreProcessing` value (TEXT, BLOB, a number or
+NULL, all as text) and hands it to `PushToTalkDelay::parse_pre_processing` in
+`push_to_talk_delay.rs`, which reads one `key=value` per line, `\n` or `\r\n` ended. Each module
+attaches its sibling test file in `tests/` with `#[path]`.
 
 ## Getting started
 
@@ -42,7 +40,7 @@ the Flatpak), the `Profiles` row `Capture/Default/PreProcessing`: `delay_ptt` (d
 - `read_push_to_talk_delay(settings_db)`: the delay from a `settings.db` file.
 - `PushToTalkDelay` (`enabled`, `milliseconds`, `effective()`, `parse_pre_processing`).
 - `settings_database_path(config_path)` and `SETTINGS_DATABASE_FILE_NAME`.
-- `Error`, `Result`, `CRATE_ROLE`, `prelude`.
+- `Error`, `Result`, `prelude`.
 
 ## Boundaries
 
@@ -53,12 +51,12 @@ the Flatpak), the `Profiles` row `Capture/Default/PreProcessing`: `delay_ptt` (d
   (`a_missing_file_is_a_typed_error_and_is_not_created`,
   `reading_leaves_the_database_bytes_unchanged`); a malformed length is an error, never a panic
   (`garbage_milliseconds_are_an_error`). Tier 0 in `crates/teamspeak`: every workspace dependency
-  has a lower tier and follows the edge matrix in `crates/README.md`
+  has a lower tier and follows the category edge matrix
   (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin and its settings.db query.
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin and its settings.db query.

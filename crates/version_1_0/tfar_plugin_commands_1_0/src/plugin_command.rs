@@ -8,7 +8,7 @@
 //! **Signals and state:** none; value types.
 //!
 //! **Invariants:** each variant is one row of the protocol table in
-//! `/documentation/program/behaviour_specs/tfar_1_0_plugin.md` §4, read from
+//! `/documentation/behaviour_specs/tfar_1_0_plugin.md` §4, read from
 //! `reference/tfar_1_0/ts/src/plugin.cpp:1026-1068` and `CommandProcessor.cpp:326`, `:378`.
 
 use tfar_arma_values::RadioSubtype;

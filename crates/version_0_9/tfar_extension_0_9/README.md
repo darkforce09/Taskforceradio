@@ -3,15 +3,6 @@
 The `tfar_extension_0_9` crate: the `task_force_radio_pipe` Arma extension for the 0.9.12 mod, a
 Windows x64 DLL run under Proton. Arma 3 loads it through `callExtension` under Proton.
 
-## Contents
-
-```text
-crates/version_0_9/tfar_extension_0_9/
-├── Cargo.toml  the `tfar_extension_0_9` package (cdylib + rlib): tier 2, workspace lints and dependencies
-├── src/        the exports, the process-wide link client and the call handling with its reply strings
-└── tests/      the call handling over the real client against a real server and a raw stand-in plugin
-```
-
 ## How it works
 
 Every `callExtension` is a sync round trip to the 0.9 plugin over the game link.
@@ -33,6 +24,13 @@ A trailing `~` has no meaning in 0.9 and is sent as is. The client connects lazi
 waits at most 250 ms for the plugin's `HELLO` and then backs off for 1 s after a failure, so a call
 never holds Arma longer than about 1.3 s. `RVExtensionVersion` writes
 `tfar_extension_0_9 <version>`.
+
+`extension_exports.rs` expands `arma_extension!` with `answer_game_call` as the handler and
+`EXTENSION_VERSION` as the version. `answer_game_call` takes the process-wide `GameLinkClient`
+(made on the first call with `client_config(arma_command_line_contains("-tfdebug"))`) and hands it
+to `call_handling::answer_call`. `answer_call` is a pure function over the `GameLinkCalls` trait,
+which `GameLinkClient` implements, so `tests/call_handling.rs` checks every `SyncOutcome` against
+its string with a fake. Each module attaches its sibling test file under `tests/` with `#[path]`.
 
 ## Getting started
 
@@ -67,15 +65,14 @@ selects the plugin's debug port 47811 instead of 47810. Nothing else.
 - Used by: Arma 3 under Proton, which loads the DLL as `task_force_radio_pipe`;
   `tools/tfar_extension_probe`, which calls it the same way.
 - Rules: every call returns within the sync timeout, connected or not, and each failure has the
-  original's string (`src/tests/call_handling.rs`, `tests/game_link_round_trip.rs`). Tier 2 in `crates/version_0_9`: every workspace dependency has a lower tier and follows the edge matrix in
-  `crates/README.md` (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export
+  original's string (`src/tests/call_handling.rs`, `tests/game_link_round_trip.rs`). Tier 2 in `crates/version_0_9`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`). `unsafe` is allowed here for the export
   glue only (`cargo xtask verify unsafe-allowlist`).
 
 ## Related documentation
 
 - [Game link protocol](/documentation/architecture/game_link_protocol.md) — the 0.9 extension
   semantics and the game-facing strings this crate returns.
-- [Arma extensions](/documentation/program/behaviour_specs/extensions.md) — the original
+- [Arma extensions](/documentation/behaviour_specs/extensions.md) — the original
   `task_force_radio_pipe` extensions and the Arma ABI facts.
-- [Windows dependencies](/documentation/program/behaviour_specs/windows_dependencies.md) — the Win32
+- [Windows dependencies](/documentation/behaviour_specs/windows_dependencies.md) — the Win32
   objects the originals use and what replaces them.

@@ -4,14 +4,6 @@ The `tfar_game_commands_1_0` crate: the 1.0 messages Arma sends the plugin, pars
 commands, and the answers the plugin gives sync calls. Used by `tfar_client_state_1_0`,
 `tfar_plugin_1_0`.
 
-## Contents
-
-```text
-crates/version_1_0/tfar_game_commands_1_0/
-├── Cargo.toml  the `tfar_game_commands_1_0` package (lib): tier 2, workspace lints and dependencies
-└── src/        the parser, the command payloads, the field readers, the replies and the error type
-```
-
 ## How it works
 
 `parse(text)` splits a message at its tabs, keeping every field as `helpers::split` does
@@ -62,6 +54,40 @@ a silent zero.
 | `IS_SPEAKING_BULK` | one code and a tab per nickname, the last tab kept | `CommandProcessor.cpp:103-144` |
 | a rejected message | `Error::sync_reply`: `00` for `POS` and `IS_SPEAKING`, `FAIL` for `TS_INFO`, the async text for the rest | |
 
+```text
+text ── parse ──► split at TAB (every field kept) ──► CommandName::from_wire_name
+                                                          │ none ──► GameCommand::Unknown
+                                                          ▼
+                            MessageFields { command, tokens } ──► commands/<payload> parser
+                                                          │
+                                   GameCommand::<variant>(payload)  or  Error
+```
+
+`fields::MessageFields` wraps the tokens with the command they belong to, so every count check
+and field read names the command and field in its error. The plugin answers a sync call with
+`GameCommand::fixed_sync_reply` where no state is needed, from its state otherwise (the
+`replies` builders), and with `Error::sync_reply` for a rejected message.
+
+## Modules
+
+### `src/commands/`
+
+Each parser takes the `MessageFields` of one message, checks its token count and reads the fields
+at the original's indices (`tokens[i]` of `reference/tfar_1_0/ts/src/CommandProcessor.cpp`), so a
+field's index in the code is its index in the C++. Lists inside a field (frequency entries,
+speaker records, tower records, custom variables) are split with their own separators; a record
+of the wrong shape is skipped where the original skips it (and, for speakers, where the original
+abandons the rest of the list), and a malformed number rejects the message.
+
+### `src/fields/`
+
+Every command parser reads its message through `MessageFields`: `require_count`,
+`require_at_least` and `require_between` check the token count, and `text`, `nickname`, `truth`,
+`number`, `integer` and `read` return a field or an error that names the command and the field.
+The coordinate and vehicle readers return `None` for a malformed text; `MessageFields::read` turns
+that into `Error::Malformed`. `NetworkObjectId::parse` never fails, as the original's `NetID`
+never does: a text without a colon is the null id.
+
 ## Getting started
 
 Run from the repository root:
@@ -84,7 +110,7 @@ None: the crate reads no setting. `SETCFG` is parsed here and applied by
   `VehicleDescriptor`, `NetworkObjectId`.
 - `replies`: the reply strings, `speaking_code`, `speaking_code_text`, `bulk_speaking_reply`.
 - `Error` (`WrongTokenCount`, `Malformed`, with `command` and `sync_reply`), `Result`,
-  `CRATE_ROLE`, `prelude`.
+  `prelude`.
 
 ## Boundaries
 
@@ -96,11 +122,11 @@ None: the crate reads no setting. `SETCFG` is parsed here and applied by
   (`a_short_pos_message_is_an_error_not_an_out_of_bounds_read`); a short speaker record is skipped
   and the rest kept (`a_short_speaker_record_is_skipped_and_the_rest_kept`); the reply strings are
   the original's (`the_reply_strings_are_the_originals`). Tier 2 in `crates/version_1_0`: every
-  workspace dependency has a lower tier and follows the edge matrix in `crates/README.md`
+  workspace dependency has a lower tier and follows the category edge matrix
   (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — §2.2 the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — §2.2 the
   command table, §5 the vehicle descriptor, §8 subtypes and nicknames.
-- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs this crate fixes.
+- [Bug fixes](/documentation/architecture/bug_fixes.md) — the original bugs this crate fixes.

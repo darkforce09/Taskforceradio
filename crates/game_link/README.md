@@ -3,16 +3,6 @@
 The localhost TCP link between the Arma extensions (Windows DLLs under Proton) and the native
 TeamSpeak plugins, and the Arma side of an extension DLL.
 
-## Contents
-
-```text
-crates/game_link/
-├── tfar_arma_extension_abi/  tier 0: the Arma extension exports
-├── tfar_game_link_client/    tier 1: the extension-side link client
-├── tfar_game_link_protocol/  tier 0: the game link frames and ports
-└── tfar_game_link_server/    tier 1: the plugin-side link listener
-```
-
 ## How it works
 
 `tfar_game_link_protocol` defines the frames. The plugins run `tfar_game_link_server`, the
@@ -49,5 +39,5 @@ cargo test \
 
 ## Related documentation
 
-- [Arma extensions](/documentation/program/behaviour_specs/extensions.md) — the original extensions and the Arma ABI facts.
-- [Windows dependencies](/documentation/program/behaviour_specs/windows_dependencies.md) — the Win32 objects the link replaces.
+- [Arma extensions](/documentation/behaviour_specs/extensions.md) — the original extensions and the Arma ABI facts.
+- [Windows dependencies](/documentation/behaviour_specs/windows_dependencies.md) — the Win32 objects the link replaces.

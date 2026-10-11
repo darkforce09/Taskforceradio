@@ -1,13 +1,11 @@
-**Status:** live
-
 # Audio pipeline
 
 The voice and radio processing chain of each plugin version as the Rust port builds it: which
 TeamSpeak callback feeds it, which crate does each step, and where the port differs from the original
-on purpose (marked with bug-fix ids from [bug fixes](/documentation/program/bug_fixes.md)). The
+on purpose (marked with bug-fix ids from [bug fixes](/documentation/architecture/bug_fixes.md)). The
 original chains, with every constant, are in the
-[0.9 plugin spec](/documentation/program/behaviour_specs/tfar_0_9_plugin.md#3-audio-pipeline) and
-the [1.0 plugin spec](/documentation/program/behaviour_specs/tfar_1_0_plugin.md#3-audio-pipeline).
+[0.9 plugin spec](/documentation/behaviour_specs/tfar_0_9_plugin.md#3-audio-pipeline) and
+the [1.0 plugin spec](/documentation/behaviour_specs/tfar_1_0_plugin.md#3-audio-pipeline).
 
 ## Building blocks
 
@@ -231,5 +229,5 @@ D3 accepts that sound differs: real HRTF instead of an ear delay (F-001), unit d
 the corrected error-level curves (F-011, F-019), one compressor run per path (F-013) and saturation
 instead of wrap (F-004). Wire formats do not change, so mixed sessions with Windows players work;
 only what each listener hears locally differs. Whether the `hrtf` crate's clicks on fast-moving
-sources are acceptable is an open question of the [roadmap](/documentation/roadmap.md), settled by
-listening in the owner's live checks.
+sources are acceptable is an open item of the [open-work checklist](/README.md#open-work), settled by
+listening in the live checks.

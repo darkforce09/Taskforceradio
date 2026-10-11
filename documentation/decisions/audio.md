@@ -1,5 +1,3 @@
-**Status:** live
-
 # Audio decisions
 
 How the plugins place a voice in space and shape its sound: the HRTF, the distance and cone gains that

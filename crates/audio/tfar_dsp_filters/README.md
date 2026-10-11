@@ -5,14 +5,6 @@ per-channel state. Used by `tfar_client_state_0_9`, `tfar_client_state_1_0`,
 `tfar_radio_effects_0_9`, `tfar_radio_effects_1_0`, `tfar_voice_pipeline_0_9`,
 `tfar_voice_pipeline_1_0`.
 
-## Contents
-
-```text
-crates/audio/tfar_dsp_filters/
-├── Cargo.toml  the `tfar_dsp_filters` package (lib): tier 1, workspace lints and dependencies
-└── src/        the filter designs, the coefficient cascade and the per-channel filter
-```
-
 ## How it works
 
 A caller describes a filter as a `FilterDesign` and builds a `ChannelFilter<CHANNELS>` from it
@@ -49,6 +41,27 @@ on them and the unit peak at the same warped centre. For TFAR's band-passes the 
 gain at both edges is −3.0103 dB: to 1e-9 in the designed magnitude, and to 0.01 dB when a sine is
 measured through the filter.
 
+`FilterDesign::second_order_sections` dispatches each variant to `designs/`, which checks the
+parameters and calls `sci-rs` or `biquad`; the result is a `SecondOrderSections` of normalised,
+finite sections. `ChannelFilter::from_sections` turns each section into a `biquad`
+`DirectForm2Transposed<f64>` and keeps one chain of them per channel; every processing method folds
+a sample through its channel's chain. `lib.rs` re-exports the public items at the crate root and
+`prelude.rs` the same items except `Error` and `Result`. Each module attaches its sibling test file
+in `tests/` (or `designs/tests/`) with `#[path]`.
+
+## Modules
+
+### `src/designs/`
+
+Each design checks its parameters with `parameter_checks.rs` first, using the normalised frequency
+`2 · f / fs` that `sci-rs` computes, so the `panic!`s inside `butter_dyn` (a frequency outside
+(0, Nyquist), band edges out of order) cannot be reached. `butterworth_design.rs` derives the
+band-pass edges as `centre ∓ width / 2`, DSPFilters' convention, and asks `butter_dyn` for
+second-order sections; `rbj_design.rs` asks `biquad::Coefficients::from_params` for the cookbook
+section DSPFilters' `RBJ` filters compute. Both normalise through
+`SecondOrderSection::from_unnormalised`, which refuses a zero leading coefficient or a coefficient
+that is not finite.
+
 ## Getting started
 
 Run from the repository root:
@@ -70,7 +83,7 @@ None: the crate reads no setting.
 - `ChannelFilter<CHANNELS>` (`new`, `from_sections`, `sections`, `reset`, `process_frame`,
   `process_frames_f64`, `process_frames_f32`); `MonoFilter` (`process_sample`) and
   `StereoFilter` (`process_stereo_i16`).
-- `Error`, `Result`, `CRATE_ROLE` and `prelude`.
+- `Error`, `Result` and `prelude`.
 
 ## Boundaries
 
@@ -82,14 +95,12 @@ None: the crate reads no setting.
 - Rules: coefficients are designed once at construction, off the audio thread; processing
   allocates nothing and never panics; every parameter is checked before a design library is
   called, so their panics are unreachable. Tier 1 in `crates/audio`: every workspace dependency
-  has a lower tier and follows the edge matrix in `crates/README.md`
+  has a lower tier and follows the category edge matrix
   (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
 - [Audio pipeline](/documentation/architecture/audio_pipeline.md) — where each filter sits in the
   0.9 and 1.0 voice chains.
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports.
-- [Library survey](/documentation/program/research/library_survey.md) — the external crates chosen
-  for each need and why.

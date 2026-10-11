@@ -3,14 +3,6 @@
 The lowest layer of the library crates: the geometry and the Arma value parsers that every
 positional or game-facing crate shares.
 
-## Contents
-
-```text
-crates/foundation/
-├── tfar_arma_values/  tier 1: the parsers for Arma's field, array and position strings
-└── tfar_geometry/     tier 0: positions, directions and distances
-```
-
 ## How it works
 
 `tfar_geometry` wraps `glam` with Arma's frame and the distance rules; `tfar_arma_values` parses the
@@ -39,4 +31,3 @@ cargo test \
 
 ## Related documentation
 
-- [Library survey](/documentation/program/research/library_survey.md) — the external crates chosen for each need.

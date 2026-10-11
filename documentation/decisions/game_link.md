@@ -1,5 +1,3 @@
-**Status:** live
-
 # Game link decisions
 
 Where the parts run, how the Arma extension and the TeamSpeak plugin talk, on which ports, how window

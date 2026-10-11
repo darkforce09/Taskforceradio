@@ -4,14 +4,6 @@ The `tfar_game_link_protocol` crate: the frames the Arma extensions and the Team
 exchange over localhost TCP. Used by `tfar_game_link_client`, `tfar_game_link_server`,
 `tfar_ts3_mock`.
 
-## Contents
-
-```text
-crates/game_link/tfar_game_link_protocol/
-├── Cargo.toml  the `tfar_game_link_protocol` package (lib): tier 0, workspace lints and dependencies
-└── src/        the frame kinds, the codec, the streaming decoder, the read and write helpers, the ports
-```
-
 ## How it works
 
 A frame on the wire is a `u32` little-endian length, a kind byte and the `postcard` encoding of the
@@ -20,6 +12,13 @@ bodies, a streaming `FrameDecoder` for sockets that deliver bytes in arbitrary c
 `read_frame` and `write_frame` helpers. Every malformed input (a zero or oversized length, an unknown
 kind, a payload that does not decode exactly) is an `Error`, after which the receiver closes the
 connection.
+
+`frame_codec.rs` writes a placeholder length, the kind byte from `frame.rs` and the `postcard`
+payload, then fills in the length, refusing a body above `MAX_FRAME_LENGTH`. Decoding checks the
+length first (`frame_body_length`), then maps the kind byte and decodes the payload, refusing bytes
+left over. `frame_decoder.rs` buffers chunks and runs the same two steps once a whole frame is in;
+`frame_io.rs` reads one frame with `read_exact`, allocating the body only after its length passed.
+Text fields are byte strings (`postcard` writes a varint length, then the bytes).
 
 ## Getting started
 
@@ -42,7 +41,7 @@ None: the crate reads no setting.
 - `Flavour` (`V0_9 = 9`, `V1_0 = 10`), `port(flavour, debug)` and the four port constants: 47810 and
   47811 for 0.9, 47820 and 47821 for 1.0.
 - `MAGIC`, `PROTOCOL_VERSION`, `MAX_FRAME_LENGTH`, `FRAME_LENGTH_PREFIX_SIZE`, `Error`, `Result`,
-  `CRATE_ROLE` and `prelude`.
+  `prelude`.
 
 ## Boundaries
 
@@ -58,5 +57,5 @@ None: the crate reads no setting.
 
 - [Game link protocol](/documentation/architecture/game_link_protocol.md) — the authoritative frame
   table, handshake, timeouts and ports.
-- [Arma extensions](/documentation/program/behaviour_specs/extensions.md) — the original
+- [Arma extensions](/documentation/behaviour_specs/extensions.md) — the original
   `task_force_radio_pipe` extensions and the Arma ABI facts.

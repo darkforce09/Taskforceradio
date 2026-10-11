@@ -3,14 +3,6 @@
 The `tfar_debug_window` crate: the 1.0 plugin's debug window, an egui window on X11. Used by
 `tfar_plugin_1_0`.
 
-## Contents
-
-```text
-crates/interface/tfar_debug_window/
-├── Cargo.toml  the `tfar_debug_window` package (lib): tier 0, workspace lints and dependencies
-└── src/        the snapshot model, the handle and its UI thread, and the eframe window
-```
-
 ## How it works
 
 The `/tfar debug` window, redone as panels: the plugin builds a `DebugSnapshot` (titled sections of
@@ -32,6 +24,45 @@ close windows on it. The event loop is forced onto X11 (the Flatpak TeamSpeak ha
 socket) and allowed off the main thread. Without `DISPLAY`, `spawn` returns `Error::NoDisplay` and
 the plugin prints a message instead.
 
+`window_control` owns the threads: `DebugWindow::spawn` checks `DISPLAY`, claims the process's one
+UI thread and starts it over the `EframeBackend` from `egui_window`; the handle turns show, hide
+and shutdown into requests on shared state, and publish into an `ArcSwap` store. `egui_window`
+only draws: on each frame it reads the latest snapshot and lays it out with `snapshot_view`.
+`debug_snapshot` is plain data shared by both. The `WindowBackend` trait between them lets the
+tests drive the state machine with a fake window and no display.
+
+## Modules
+
+### `src/egui_window/`
+
+`EframeBackend::run_window` calls `eframe::run_native` with `run_and_return`, so it returns when the
+window closes and eframe keeps its event loop in a thread-local for the next window. The first
+call builds that loop through the `event_loop_builder` hook with `with_x11()` and
+`with_any_thread(true)`. The app's `logic` sends `ViewportCommand::Close` as soon as the session
+says to close; its `ui` draws the latest snapshot in a central panel and asks for a repaint after
+500 ms. `show_snapshot` draws one `CollapsingHeader` per section (open by default, keyed by its
+title) over a striped `Grid`: two columns for key/value rows, a header row and the cells for a
+table, highlighted rows in the original's talking-client red.
+
+### `src/window_control/`
+
+```text
+request (plugin threads):  Hidden ⇄ Shown ──▶ ShutDown      (ShutDown is final)
+phase   (UI thread):       Hidden ──▶ Open ──▶ Hidden ... ──▶ Stopped
+
+UI thread: wait on the condition variable while request == Hidden
+           request == Shown    → phase Open, backend.run_window(session) blocks until it closes
+           window closed       → phase Hidden; a still-Shown request falls back to Hidden
+           request == ShutDown → drop the backend, phase Stopped
+```
+
+`show`, `hide` and `shutdown` set the request under the mutex, notify the condition variable and,
+with no lock held, call the waker the open window registered (eframe: `request_repaint`), so the
+window sees the request on its next frame and closes itself. `publish` stores the snapshot in an
+`ArcSwap` and wakes the window the same way. `shutdown` waits on the phase for at most
+`SHUTDOWN_TIMEOUT` and only then joins, so it never hangs on a stuck window. A window that fails to
+open leaves its reason for `take_window_error` and is not retried until the next `show`.
+
 ## Getting started
 
 Run from the repository root:
@@ -50,7 +81,7 @@ None: the crate reads no setting. `DISPLAY` must name an X11 display.
 - `DebugWindow::spawn`, and `DebugWindowHandle`: `show`, `hide`, `publish`, `is_open`,
   `take_window_error`, `shutdown` (dropping the handle shuts down too); `SHUTDOWN_TIMEOUT`.
 - `DebugSnapshot`, `DebugSection`, `SectionContent`, `KeyValueRow`, `DebugTable`, `TableRow`.
-- `Error`, `Result`, `CRATE_ROLE` and `prelude`.
+- `Error`, `Result` and `prelude`.
 
 ## Boundaries
 
@@ -67,7 +98,5 @@ None: the crate reads no setting. `DISPLAY` must name an X11 display.
 
 ## Related documentation
 
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports.
-- [Library survey](/documentation/program/research/library_survey.md) — the external crates chosen
-  for each need and why.

@@ -3,14 +3,6 @@
 The `tfar_web_requests` crate: the update check and the Piwik tracking calls, over blocking HTTP
 and HTTPS. Used by `tfar_plugin_0_9`, `tfar_plugin_1_0`.
 
-## Contents
-
-```text
-crates/services/tfar_web_requests/
-├── Cargo.toml  the `tfar_web_requests` package (lib): tier 0, workspace lints and dependencies
-└── src/        the HTTP client, the update check, the Piwik requests and their sender
-```
-
 ## How it works
 
 The plugins' outbound HTTP, each request on a short-lived named thread so no TeamSpeak callback
@@ -37,6 +29,55 @@ cancelled check never calls back); `join_timeout(budget)` waits for the worker u
 dropping the handle cancels and never blocks. A request already in flight is not interrupted; its
 `ureq` timeout ends it. `spawn_update_check` and `spawn_track` stay as they were, detached.
 
+`http_client` is the only module that talks to `ureq`: `HttpClient::new(timeout, proxy)` builds an
+agent with one timeout for the whole request, up to five redirects, the `TFAR` user agent and
+4xx/5xx as errors, and maps a `ureq` timeout to `Error::TimedOut` and anything else to
+`Error::Request`. `update_check` and `piwik_tracking` each start their own named thread with a
+client and return at once; their cancellable variants start it through
+`BackgroundRequest::spawn`, which shares a cancel flag with the worker and a channel that
+disconnects when the worker ends, so `join_timeout` can wait with a deadline. The tests give the client `ProxyChoice::Direct` and point it at
+`tests/local_responder.rs`, a `TcpListener` on 127.0.0.1 that plays one scripted reply per
+connection (a body, a slow body, a redirect, a 404 or silence) and records each request line.
+
+## Modules
+
+### `src/piwik_tracking/`
+
+```text
+0.9  TRACK\t<path>                         → http://nkey.piwik.pro/<path>
+1.0  TRACK\t<action>\t<uid>\t<customVars>  → http://<host>/piwik.php?idsite=2&rec=1&url="<site>"
+                                               &action_name=<action>&rand=<0..32767>&uid=<uid>
+                                               &cvar={"<id>":["<name>","<value>"],...}
+     host and site: piwik.dedmen.de for action "beta"; else nkey.piwik.pro and radio.task-force.ru
+spawn_track(url) → thread "tfar-piwik-track": GET (5 s), body read and dropped, failure logged
+spawn_cancellable_track(url) → BackgroundRequest: the same, never sent once cancelled before it
+```
+
+`parse_custom_variables` reads `[[1,"name","value"],...]` the way the original's character
+stream does: whitespace skipped everywhere, the id to the next comma parsed like `std::stoi`, the
+name to the next comma, the value to the next `]`, spaces and double quotes trimmed from both
+ends. An id `std::stoi` refuses, or text that ends inside a variable, voids the whole array, and an
+empty array means no request (`Error::NoCustomVariables`). Action, uid and variables go into the
+query unescaped, as in the original; `url`'s query setter then encodes only what a request line
+cannot carry (space, `"`, `#`, `<`, `>`, `'`, non-ASCII). Both hosts may no longer answer, so a
+failed request is a debug log line and nothing else.
+
+### `src/update_check/`
+
+```text
+spawn_update_check(current, on_update)
+  └─ thread "tfar-update-check": GET UPDATE_CHECK_URL (10 s, redirects followed)
+       ├─ body trims to a dotted version newer than current → on_update()
+       └─ same, older, garbage, empty, 4xx/5xx, timeout       → a debug log line only
+spawn_cancellable_update_check(current, on_update) → BackgroundRequest
+  └─ the same thread; cancelled before the GET → nothing sent; cancelled after → no on_update()
+```
+
+`fetch_latest_version` returns the body trimmed and unchecked; `is_update_available` decides. A
+version is one or more groups of ASCII digits joined by single dots; `version-compare` then
+compares component by component as numbers, every component counting. The plugin prints
+`UPDATE_AVAILABLE_MESSAGE` from its callback where the originals opened a message box.
+
 ## Getting started
 
 Run from the repository root:
@@ -60,7 +101,7 @@ None: the crate reads no setting. The timeouts are constants (`UPDATE_CHECK_TIME
   `Url` (re-exported from `url`).
 - `BackgroundRequest`: `cancel`, `is_cancelled`, `is_finished`, `join_timeout`; dropping it
   cancels without waiting.
-- `Error`, `Result`, `CRATE_ROLE` and `prelude`.
+- `Error`, `Result` and `prelude`.
 
 ## Boundaries
 
@@ -69,13 +110,13 @@ None: the crate reads no setting. The timeouts are constants (`UPDATE_CHECK_TIME
 - Used by: `tfar_plugin_0_9`, `tfar_plugin_1_0`.
 - Rules: no request runs on the caller's thread for `spawn_*`, and none on a TeamSpeak audio
   callback. Tests never reach the real network. Tier 0 in `crates/services`: every workspace
-  dependency has a lower tier and follows the edge matrix in `crates/README.md`
+  dependency has a lower tier and follows the category edge matrix
   (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports.
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports.
-- [Bug fixes](/documentation/program/bug_fixes.md) — the version comparison this crate corrects.
+- [Bug fixes](/documentation/architecture/bug_fixes.md) — the version comparison this crate corrects.

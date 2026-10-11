@@ -1,5 +1,3 @@
-**Status:** live
-
 # Glossary
 
 The terms these documents use, one heading each, in alphabetical order. Documents link a term's first

@@ -3,15 +3,6 @@
 The `tfar_extension_1_0` crate: the `task_force_radio_pipe` Arma extension for the 1.0 mod, a
 Windows x64 DLL run under Proton. Arma 3 loads it through `callExtension` under Proton.
 
-## Contents
-
-```text
-crates/version_1_0/tfar_extension_1_0/
-├── Cargo.toml  the `tfar_extension_1_0` package (cdylib + rlib): tier 2, workspace lints and dependencies
-├── src/        the exports, the process-wide link client, the focus watch and the call handling
-└── tests/      the call handling over the real client against a real server on an ephemeral port
-```
-
 ## How it works
 
 `src/extension_exports.rs` expands `arma_extension!`, so Arma's `RVExtension` reaches
@@ -36,6 +27,16 @@ A sync call whose session the plugin closes mid-call also answers `Not connected
 since no live session remains. The command name is the text up to the first TAB, so only `DFRAME`
 and `MISSIONEND` themselves get their special replies. `RVExtensionVersion` writes
 `tfar_extension_1_0 <version>`.
+
+`extension_exports.rs` expands `arma_extension!` with `answer_game_call` as the handler and
+`EXTENSION_VERSION` as the version. `answer_game_call` locks the process-wide `FocusWatch`, takes
+the process-wide `GameLinkClient` (made on the first call with
+`client_config(arma_command_line_contains("-tfdebug"))`) and calls `call_handling::answer_call`
+with `Instant::now()` and `foreground_window_is_arma`. `answer_call` is a pure function over the
+`GameLinkCalls` trait, which `GameLinkClient` implements, with the time and the focus read passed
+in, so `tests/call_handling.rs` checks every situation and the focus order with a fake, and
+`tests/focus_watch.rs` checks the 250 ms rule with chosen instants.
+Each module attaches its sibling test file under `tests/` with `#[path]`.
 
 ## Getting started
 
@@ -72,14 +73,14 @@ selects the plugin's debug port 47821 instead of 47820. Nothing else.
 - Rules: async calls reach the plugin in the order the game made them and never wait for it; each
   situation has the original's string (`src/tests/call_handling.rs`,
   `tests/game_link_round_trip.rs`). Tier 2 in `crates/version_1_0`: every workspace dependency has a lower tier
-  and follows the edge matrix in `crates/README.md` (`cargo xtask verify crate-tiers`). `unsafe` is
+  and follows the category edge matrix (`cargo xtask verify crate-tiers`). `unsafe` is
   allowed here for the export glue only (`cargo xtask verify unsafe-allowlist`).
 
 ## Related documentation
 
 - [Game link protocol](/documentation/architecture/game_link_protocol.md) — the 1.0 extension
   semantics, the focus rule and the game-facing strings this crate returns.
-- [Arma extensions](/documentation/program/behaviour_specs/extensions.md) — the original
+- [Arma extensions](/documentation/behaviour_specs/extensions.md) — the original
   `task_force_radio_pipe` extensions and the Arma ABI facts.
-- [Windows dependencies](/documentation/program/behaviour_specs/windows_dependencies.md) — the Win32
+- [Windows dependencies](/documentation/behaviour_specs/windows_dependencies.md) — the Win32
   objects the originals use and what replaces them.

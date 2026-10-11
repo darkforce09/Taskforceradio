@@ -5,14 +5,6 @@ TeamSpeak voice frame takes through the gates, the direct voice, the radio effec
 loudspeakers, the HRTF and the mix, plus the local player's own voice for loudspeakers and the
 positional remote push-to-talk sound. Used by `tfar_plugin_0_9`.
 
-## Contents
-
-```text
-crates/version_0_9/tfar_voice_pipeline_0_9/
-├── Cargo.toml  the `tfar_voice_pipeline_0_9` package (lib): tier 5, workspace lints and dependencies
-└── src/        the processor and its gates, the voice chain, the distance gain, the scratch, own voice
-```
-
 ## How it works
 
 The plugin owns one `VoiceProcessor` per server connection beside its `ServerRadioData`, both
@@ -134,6 +126,37 @@ source at the makeup gain (its latency cut off) or the simple ILD without a sphe
 `RemoteSoundPlan` says what to apply. It builds filters and an HRTF source per sound, so the
 plugin calls it while handling the incoming command, never on the audio thread.
 
+```text
+plugin ── VoiceFrameContext, &mut ServerRadioData, &mut StereoBuffer ──▶ VoiceProcessor
+   voice_processor: gates ──▶ PassThrough | Silenced | run the chain
+   voice_chain: plan_sender (read-only) ──▶ SenderPlan + routes in VoiceScratch
+                render_frame (sender's ClientDsp) ──▶ Processed
+own_voice: captured frame ──▶ same chain as the local player ──▶ block ──▶ PlaybackMixer stream
+remote_tangent_sound: WAV + RemoteSoundPlan (command thread) ──▶ Playback ──▶ PlaybackMixer
+```
+
+`voice_processor.rs` holds the gates of the stereo function and the plugin-enabled check, and runs
+the chain in two steps so that the read-only plan and the mutable render never borrow the state
+together; the sender's nickname and the receptions travel between them in `VoiceScratch`.
+`distance_gain.rs` and `voice_gains.rs` hold the numbers the plan uses. `own_voice.rs` adds the
+captured-voice path to the processor. `remote_tangent_sound.rs` shapes a remote push-to-talk sound
+off the audio thread with the same gains and filter designs. The tests share one synthetic scene
+(`tests/test_scene.rs`, compiled only for tests).
+
+## Modules
+
+### `src/voice_chain/`
+
+`sender_plan.rs` reads the server state once: the direct voice's branch and level, and per
+reception from `tfar_radio_routing_0_9::is_over_radio_into` (into the scratch reception list) its
+effect gain, its effect error and its loudspeaker stages, each with a `SoundPlacement` (the HRTF
+direction from the listener's view angle and the 0.9 ILD gains). `frame_render.rs` then runs the
+plan over the sender's `ClientDsp`: `direct_voice.rs` for the voice in range, one compressor pass
+over the copy, and `radio_reception.rs` for each reception on its own copy, mixed in with
+saturation. `sound_placement.rs` is the one panner both use: the direct voice renders through the
+HRTF at the makeup gain, a loudspeaker at unity. A step whose sound object is not made yet reports
+it and contributes silence.
+
 ## Getting started
 
 Run from the repository root:
@@ -163,7 +186,7 @@ distance, terrain coefficient) arrive in `ServerRadioData` from the game's `FREQ
 - The gain constants `CANT_SPEAK_GAIN`, `SPEAKER_GAIN`, `RADIO_EFFECT_GAIN`,
   `DIVER_RADIO_EFFECT_GAIN`, `PHONE_GAIN`, `VEHICLE_LOSS_EXPONENT`, `HRTF_MAKEUP_GAIN_DB`, with
   `hrtf_makeup_gain` and `vehicle_loss_gain`.
-- `Error`, `Result`, `CRATE_ROLE`, `prelude`.
+- `Error`, `Result`, `prelude`.
 
 ## Boundaries
 
@@ -182,13 +205,12 @@ distance, terrain coefficient) arrive in `ServerRadioData` from the game's `FREQ
   shared radio ids unchanged between frames); the compressor runs once per frame
   (`the_compressor_envelope_advances_once_per_frame_whatever_the_receptions`); a missing sound object
   silences its path (`a_frame_missing_a_needed_filter_silences_that_path_and_is_counted`). Tier 5 in
-  `crates/version_0_9`: every workspace dependency has a lower tier and follows the edge matrix in
-  `crates/README.md` (`cargo xtask verify crate-tiers`).
+  `crates/version_0_9`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
 - [Audio pipeline](/documentation/architecture/audio_pipeline.md) — the 0.9 voice chain and the
   building blocks.
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the
   original stereo function, section 3.
-- [Bug fixes](/documentation/program/bug_fixes.md) — the fixes the chain carries.
+- [Bug fixes](/documentation/architecture/bug_fixes.md) — the fixes the chain carries.

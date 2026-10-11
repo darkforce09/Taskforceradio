@@ -1,5 +1,3 @@
-**Status:** live
-
 # Workspace decisions
 
 What is built, in which language, where it lives, how it is named and laid out, how it is committed,
@@ -69,7 +67,7 @@ metadata, the crate anatomy, `cargo xtask verify` gates, cargo-deny and typos. M
 `roadmap.md` in the TBD-subtitles style; program records follow the Reforger restructure style.
 
 **Consequences:** The standards adapt those documents and drop everything particular to them. The
-conventions survey in `documentation/program/research/` maps what was adopted.
+conventions survey of the program records mapped what was adopted.
 
 **Supersedes:** none.
 
@@ -119,7 +117,7 @@ manual install runbook holds the copy steps.
 
 **Context:** Each milestone is too big for one session and splits into independent slices.
 
-**Decision:** Opus sub-agents work one slice each from briefs and prompts under `documentation/program/`;
+**Decision:** Opus sub-agents work one slice each from briefs and prompts in the program records;
 the orchestrator reviews and gates every slice, and `progress.md` holds the handoff.
 
 **Consequences:** Every brief follows the [agent brief template](/documentation/standards/README.md)

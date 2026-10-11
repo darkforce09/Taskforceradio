@@ -3,14 +3,6 @@
 The `tfar_arma_extension_abi` crate: the `RVExtension` exports and the Win32 calls an Arma extension
 DLL needs. Used by `tfar_extension_0_9`, `tfar_extension_1_0`.
 
-## Contents
-
-```text
-crates/game_link/tfar_arma_extension_abi/
-├── Cargo.toml  the `tfar_arma_extension_abi` package (lib): tier 0, `windows-sys` on Windows only
-└── src/        the export macro, the reply writer, the command-line and foreground-window queries
-```
-
 ## How it works
 
 An extension app expands `arma_extension!(handler: answer_game_call, version: "1.0.0")` once at its
@@ -28,6 +20,12 @@ build is supported.
 `foreground_window_is_arma` reads `GetForegroundWindow` and `GetClassNameW` and looks for `arma`,
 ignoring case (the test at `reference/tfar_1_0/ts/src/Teamspeak.cpp:207`). Off Windows the first
 reads `std::env::args` and the second answers `false`, so the crate builds and tests on Linux.
+
+`extension_exports.rs` holds every pointer check, so the exports the macro writes are one `unsafe`
+call each; `reply_buffer.rs` is the safe core both exports write through. The Win32 calls sit behind
+`#[cfg(windows)]` in `command_line.rs` and `foreground_window.rs`, each with a portable fallback.
+`tests/extension_exports.rs` expands the macro and calls the exports through raw function pointers
+with Rust-allocated buffers, as Arma calls them.
 
 ## Getting started
 
@@ -49,7 +47,7 @@ None: the crate reads no setting.
 - `write_reply`: writes a reply truncated to a buffer, always NUL-terminated when there is room.
 - `arma_command_line_contains`: whether the process command line contains a flag.
 - `foreground_window_is_arma`: whether the window in front is Arma's.
-- `CRATE_ROLE`, `Error`, `Result` and `prelude`.
+- `Error`, `Result` and `prelude`.
 
 ## Boundaries
 
@@ -58,14 +56,14 @@ None: the crate reads no setting.
 - Used by: `tfar_extension_0_9`, `tfar_extension_1_0`.
 - Rules: one of the unsafe-allow-listed crates; every `unsafe` block carries a `// SAFETY:`
   comment. A reply never writes past the buffer Arma passes. Tier 0 in `crates/game_link`: every
-  workspace dependency has a lower tier and follows the edge matrix in `crates/README.md`
+  workspace dependency has a lower tier and follows the category edge matrix
   (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [Arma extensions](/documentation/program/behaviour_specs/extensions.md) — the original
+- [Arma extensions](/documentation/behaviour_specs/extensions.md) — the original
   `task_force_radio_pipe` extensions and the Arma ABI facts.
 - [Game link protocol](/documentation/architecture/game_link_protocol.md) — the transport the
   extensions speak and the reply truncation rule.
-- [Windows dependencies](/documentation/program/behaviour_specs/windows_dependencies.md) — the Win32
+- [Windows dependencies](/documentation/behaviour_specs/windows_dependencies.md) — the Win32
   objects the originals use and what replaces them.

@@ -1,5 +1,3 @@
-**Status:** live
-
 # Game link protocol
 
 The localhost TCP link between an Arma extension (a Windows DLL running inside Proton) and a
@@ -7,7 +5,7 @@ TeamSpeak plugin (a native Linux `.so`). It replaces the 0.9.12 named pipe and t
 which live inside wineserver where a native plugin cannot reach them. The game-facing behaviour of
 `"task_force_radio_pipe" callExtension "<payload>"` stays byte-for-byte what the original extensions
 return; only the transport is new. The original behaviour is specified in the
-[extensions spec](/documentation/program/behaviour_specs/extensions.md).
+[extensions spec](/documentation/behaviour_specs/extensions.md).
 
 Crates: `tfar_game_link_protocol` (frames and codec), `tfar_game_link_server` (the plugin side),
 `tfar_game_link_client` (the extension side), `tfar_arma_extension_abi` (the `RVExtension` export).

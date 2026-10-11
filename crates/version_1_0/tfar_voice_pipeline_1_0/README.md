@@ -3,15 +3,6 @@
 The `tfar_voice_pipeline_1_0` crate: the 1.0 audio path: one TeamSpeak voice frame through routing,
 effects, compressor, HRTF and mixing. Used by `tfar_plugin_1_0`.
 
-## Contents
-
-```text
-crates/version_1_0/tfar_voice_pipeline_1_0/
-├── Cargo.toml  the `tfar_voice_pipeline_1_0` package (lib): tier 5, workspace lints and dependencies
-├── src/        the voice processor, the gates, direct speech, the radio paths and the DSP needs
-└── tests/      voice scenarios over synthetic sessions: gates, direct speech, radios, invariants
-```
-
 ## How it works
 
 The crate is `processVoiceData` of `reference/tfar_1_0/ts/src/plugin.cpp:455-743` for a frame the
@@ -88,6 +79,48 @@ the sender is within direct-speech range.
 | a speaker's muffling skipped when the sender shares the listener's vehicle | `a_speaker_outside_the_listeners_vehicle_is_muffled_even_when_the_sender_sits_inside` |
 | the intercom never ducks | `the_intercom_is_ducked_while_a_long_range_transmission_is_received` |
 
+`VoiceProcessor::process_sender` runs in two phases. With the session borrowed immutably,
+`sender_gate` decides pass-through, silence or processing, and `FramePlan::build` reads a `Scene`,
+plans direct speech (`direct_speech/`), lists the receptions with `is_over_radio_into` and plans
+each (`radio_paths/`). Then, with the sender's `ClientEffects` borrowed mutably, the frame gets the voice
+multiplier, is copied as the radio original, goes through direct speech (or is silenced when the
+sender is not heard directly, unless both spectate), and every reception's copy of the
+radio-compressed original goes through its path and is mixed in; the global volume comes last. All
+blocks live in `VoiceScratch`. `dsp_needs` runs the same planning off the audio thread and hands
+`ClientEffects::ensure_dsp` the objects the next frames will look up. `remote_tangent_sound.rs`
+shapes a remote tangent WAV into a playback on the command thread.
+
+## Modules
+
+### `src/direct_speech/`
+
+`plan_direct_speech` reads a `Scene` and decides, as `reference/tfar_1_0/ts/src/plugin.cpp:547-597`
+does, whether the sender is heard directly (not the local player, not a spectator, not kept away by
+the spectator rules, within the voice range plus 15 m with 2 m per object) and how: clear, behind
+objects (the object low-pass with a one-frame look-back), from another vehicle (the vehicle low-pass
+at `volumeAttenuation(d, …, 1 − loss) · (1 − loss)^1.2`) or muffled because one of the two cannot
+speak (the 100 Hz low-pass at `volumeAttenuation(d, false, …) · 14`). The placement's level is the
+X3DAudio replacement: the 25-point voice curve of `tfar_spatial_audio` at the straight distance,
+scaled by the sender's voice range, times the voice cone when `voiceCone` is on, with the original's
+swapped roles and negated facing so a sender facing the listener gets the inner volume.
+`render_direct_speech` runs that plan over the frame with the sender's DSP objects and ends with the
+direct-speech compressor.
+
+### `src/radio_paths/`
+
+`plan_routes` turns each `HeardVia` of `is_over_radio` into a `RoutePlan`, as the loop of
+`reference/tfar_1_0/ts/src/plugin.cpp:600-737` decides it. A carried radio plays at
+`((volume + 1) / 10)^4` (a tenth with `headsetLowered`) through the effect of the sender's subtype:
+`digital` the personal effect (the underwater effect when heard as a diver radio), `airborne` and
+`digital_lr` their effects, `phone` the phone band-pass at ×10, anything else nothing. The error is
+the routing crate's distance error capped by the antenna loss (`None` read as 7). A speaker radio
+gets the band-pass at ×4, its distance gain over `volume / 10 · speakerDistance` (or the vehicle
+low-pass when a vehicle stands between it and the listener), the 100 Hz low-pass at ×14 under
+water, the personal effect and its placement. The intercom plays the long-range effect at error 0
+and the `intercomVolume`, ducked by `intercomDucking` while a long-range transmission above volume
+2 is received. `render_route` runs a plan over the compressed copy of the frame and says whether to
+mix it in.
+
 ## Getting started
 
 Run from the repository root:
@@ -121,7 +154,7 @@ Read from `tfar_plugin_settings_1_0::PluginSettings` through `VoiceFrameContext`
 - `volume_attenuation`, `vehicle_volume_loss`, `vehicle_loss_gain`, `speaker_audible_distance`,
   `CANT_SPEAK_DISTANCE`, `CANT_SPEAK_GAIN`, `SPEAKER_GAIN`, `UNDERWATER_LEVEL`, `MAX_VEHICLE_LOSS`,
   `NO_VEHICLE_LOSS`; `HRTF_MAKEUP_GAIN_DB`, `hrtf_makeup_gain`.
-- `Error` (`Dsp`, `Mixer`, `RemoteTangentSound`), `Result`, `CRATE_ROLE` and `prelude`.
+- `Error` (`Dsp`, `Mixer`, `RemoteTangentSound`), `Result` and `prelude`.
 
 ## Boundaries
 
@@ -138,12 +171,11 @@ Read from `tfar_plugin_settings_1_0::PluginSettings` through `VoiceFrameContext`
   (`direct_speech_and_radio_each_advance_their_own_compressor_once_per_frame`); the scratch never
   grows and no reception outlives its frame
   (`a_thousand_frames_leave_every_scratch_capacity_unchanged`); nothing pans twice. Tier 5
-  in `crates/version_1_0`: every workspace dependency has a lower tier and follows the edge matrix
-  in `crates/README.md` (`cargo xtask verify crate-tiers`).
+  in `crates/version_1_0`: every workspace dependency has a lower tier and follows the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — the
+- [TFAR 1.0 plugin behaviour](/documentation/behaviour_specs/tfar_1_0_plugin.md) — the
   original 1.0 plugin this crate ports, §3 for the audio pipeline.
 - [Audio pipeline](/documentation/architecture/audio_pipeline.md) — the chain of both versions.
-- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs fixed here.
+- [Bug fixes](/documentation/architecture/bug_fixes.md) — the original bugs fixed here.

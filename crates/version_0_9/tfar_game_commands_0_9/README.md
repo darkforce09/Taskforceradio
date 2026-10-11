@@ -4,14 +4,6 @@ The `tfar_game_commands_0_9` crate: the 0.9.12 messages Arma sends the plugin, p
 commands, and the reply strings the plugin answers with. Used by `tfar_client_state_0_9`,
 `tfar_plugin_0_9`.
 
-## Contents
-
-```text
-crates/version_0_9/tfar_game_commands_0_9/
-├── Cargo.toml  the `tfar_game_commands_0_9` package (lib): tier 2, workspace lints and dependencies
-└── src/        the parser entry point, one parser per message, the replies and the error type
-```
-
 ## How it works
 
 `GameCommand::parse` splits a message at tabs with `std::getline` semantics (a trailing empty field
@@ -58,6 +50,33 @@ when it has one.
 - Game activity: every message but one starting with `VERSION` and longer than it counts
   (`message_counts_as_game_activity`, `GameCommand::counts_as_game_activity`).
 
+```text
+message ──split_fields(TAB)──▶ fields ──first field──▶ message_parsers::parse_* ──▶ GameCommand
+                                                            │ field_values (numbers, "true", counts)
+                                                            └─▶ Error (Malformed, WrongFieldCount, …)
+GameCommand ──reply_for_unhandled──▶ &'static str        Error::reply ──▶ "FAIL"
+```
+
+`game_command.rs` splits the message with `tfar_arma_values::split_fields` and matches the first
+field against `command_names.rs`; an unknown name is `GameCommand::Unknown` with the whole message.
+Each parser in `message_parsers/` takes its fields by slice pattern, so a wrong count is an error
+before any field is read, and reads its numbers through `field_values.rs`, which wraps
+`tfar_arma_values`' errors with the command and field names. `vehicle_descriptor.rs` reads the
+vehicle ids of `POS` and `SPEAKERS`. `replies.rs` maps a parsed command to the reply the original
+gives it.
+
+## Modules
+
+### `src/message_parsers/`
+
+`GameCommand::parse` hands each parser the message's fields, the command name first. A parser
+destructures them with a slice pattern of the exact count (`field_values::exact_fields`), so a
+short or long message is `Error::WrongFieldCount` before a field is read; `KILLED` takes 2 or
+more and `SPEAKERS` 1 or more. Numbers go through `field_values` (rounded like
+`parseArmaNumberToInt`, truncated like `std::stoi`, or plain), booleans are the exact text `true`,
+and the frequency lists, positions and vehicle ids go through `tfar_arma_values` and
+`VehicleDescriptor`. Every failure names the command and the field.
+
 ## Getting started
 
 Run from the repository root:
@@ -78,7 +97,7 @@ None: the crate reads no setting.
 - `replies` (`OK`, `FAIL`, `DONE`, `PONG`, `SPEAKING`, `NOT_SPEAKING`,
   `ERROR_GETTING_SERVER_NAME`, `NO_CHANNEL_NAME`) and `reply_for_unhandled`.
 - `command_names`, `IN_GAME_TRIGGER_EXEMPT_PREFIX`, `message_counts_as_game_activity`.
-- `Error` (with `Error::reply`), `Result`, `CRATE_ROLE`, `prelude`.
+- `Error` (with `Error::reply`), `Result`, `prelude`.
 
 ## Boundaries
 
@@ -89,10 +108,10 @@ None: the crate reads no setting.
   `reference/tfar_0_9_12/ts/src/plugin.cpp`, held by the tests in `src/tests/replies.rs` and
   `src/message_parsers/tests/`; every field access is length-checked, so a short message is an
   `Error`. Tier 2 in `crates/version_0_9`: every workspace dependency has a lower tier and follows
-  the edge matrix in `crates/README.md` (`cargo xtask verify crate-tiers`).
+  the category edge matrix (`cargo xtask verify crate-tiers`).
 
 ## Related documentation
 
-- [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
+- [TFAR 0.9.12 plugin behaviour](/documentation/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports; section 2 lists the game messages.
-- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs this crate fixes.
+- [Bug fixes](/documentation/architecture/bug_fixes.md) — the original bugs this crate fixes.

@@ -3,14 +3,6 @@
 The boundary to the TeamSpeak 3 client: the plugin SDK export layer and the reader of TeamSpeak's
 settings database.
 
-## Contents
-
-```text
-crates/teamspeak/
-├── tfar_ts3_host/         tier 0: the safe TeamSpeak export layer and function table
-└── tfar_ts3_settings_db/  tier 0: TeamSpeak settings lookups
-```
-
 ## How it works
 
 `tfar_ts3_host` owns every `ts3plugin_*` export and the host function table, so the plugin apps
@@ -40,4 +32,3 @@ cargo test \
 
 ## Related documentation
 
-- [Library survey](/documentation/program/research/library_survey.md) — the external crates chosen for each need.

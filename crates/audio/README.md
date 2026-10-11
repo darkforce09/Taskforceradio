@@ -3,18 +3,6 @@
 The audio building blocks both plugin versions share: the sample buffer, the filters, the
 compressor, the HRTF, the distance and cone gains and the radio sound mixer.
 
-## Contents
-
-```text
-crates/audio/
-├── tfar_dsp_filters/     tier 1: the Butterworth and RBJ filters
-├── tfar_dynamics/        tier 1: the compressor
-├── tfar_hrtf/            tier 1: binaural direction rendering
-├── tfar_playback_mixer/  tier 1: radio sound playback
-├── tfar_sample_buffer/   tier 0: the shared sample frame type and saturating gain
-└── tfar_spatial_audio/   tier 1: the distance curve and cone gains
-```
-
 ## How it works
 
 Every crate works on the `tfar_sample_buffer` frame type. `tfar_dsp_filters` and `tfar_dynamics`
@@ -51,4 +39,3 @@ cargo test \
 
 ## Related documentation
 
-- [Library survey](/documentation/program/research/library_survey.md) — the external crates chosen for each need.
