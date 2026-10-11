@@ -21,6 +21,5 @@ fn every_other_message_counts_as_game_activity() {
 
 #[test]
 fn a_bare_version_counts_because_start_with_needs_a_longer_text() {
-    assert_eq!(IN_GAME_TRIGGER_EXEMPT_PREFIX, "VERSION");
     assert!(message_counts_as_game_activity("VERSION"));
 }

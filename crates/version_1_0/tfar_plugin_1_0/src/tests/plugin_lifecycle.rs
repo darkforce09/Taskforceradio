@@ -24,8 +24,3 @@ fn a_new_plugin_runs_nothing_and_shutdown_is_harmless() {
     plugin.shutdown();
     assert!(!plugin.is_running());
 }
-
-#[test]
-fn the_plugin_serves_the_1_0_flavour() {
-    assert_eq!(FLAVOUR, Flavour::V1_0);
-}

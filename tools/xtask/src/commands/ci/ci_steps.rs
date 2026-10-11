@@ -1,7 +1,6 @@
 //! The steps of the `ci-local` lane, in order: the toolchain steps, then every repository gate.
 //!
-//! **Role:** the one table of what `cargo xtask ci ci-local` runs, mirroring the gate set in
-//! `documentation/program/laws_and_gates.md`.
+//! **Role:** the one table of what `cargo xtask ci ci-local` runs.
 //!
 //! **Position:** read by `ci_local`; names each gate through the verify gate table.
 //!

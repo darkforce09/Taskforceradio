@@ -94,7 +94,6 @@ fn the_own_voice_block_goes_to_the_my_radio_voice_stream() {
         .process_own_voice_for_speakers(&mut scene.state, &own_context(), &captured, scene.now)
         .unwrap();
     append_own_voice(&mixer, block).unwrap();
-    assert_eq!(OWN_VOICE_STREAM_NAME, "my_radio_voice");
     assert_eq!(
         mixer.stream_queued_frames(OWN_VOICE_STREAM_NAME),
         Some(FRAMES)

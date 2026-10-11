@@ -18,7 +18,7 @@ crates/audio/tfar_playback_mixer/
 `Arc<[i16]>`; anything but 48 kHz, 2-channel, 16-bit integer PCM is an `Error` naming the file and
 its format. A `Playback` copies a sound and runs the caller's processing (gain, filters, panning)
 on it at creation, off the audio thread, so the closure and the filters it owns are freed before
-the playback is queued (F-005); it is named by a `PlaybackId` from a counter, never `rand()`.
+the playback is queued; it is named by a `PlaybackId` from a counter, never `rand()`.
 `PlaybackMixer::add` queues it through an `rtrb` ring buffer. `PlaybackMixer::mix_into` is the
 mixed-playback callback: it zeroes channels 0 and 1 where the fill mask says TeamSpeak left them
 empty, adds every active playback and stream into them saturating (a mono block gets the average

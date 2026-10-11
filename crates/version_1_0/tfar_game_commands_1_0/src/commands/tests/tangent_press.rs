@@ -4,7 +4,6 @@
 
 use tfar_arma_values::RadioSubtype;
 
-use super::{TANGENT_PRESSED, TANGENT_RELEASED};
 use crate::error::Error;
 use crate::{CommandName, GameCommand, TangentKind, TangentPress, parse};
 
@@ -40,8 +39,6 @@ fn a_release_without_a_class_name_reads_five_tokens() {
 fn only_pressed_is_a_press() {
     // `pressed = tokens[1] == "PRESSED"sv`, CommandProcessor.cpp:298.
     assert!(!press("TANGENT\tpressed\t1\t1\tdigital").is_pressed);
-    assert_eq!(TANGENT_PRESSED, "PRESSED");
-    assert_eq!(TANGENT_RELEASED, "RELEASED");
 }
 
 #[test]

@@ -95,4 +95,4 @@ None: the crate reads no setting.
 
 - [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports; section 2 lists the game messages.
-- [Bug fixes](/documentation/program/bug_fixes.md) — F-003, F-020 and F-021, held by this crate.
+- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs this crate fixes.

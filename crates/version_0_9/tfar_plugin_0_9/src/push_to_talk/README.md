@@ -24,7 +24,7 @@ activation, switches the microphone off unless voice activation keeps it open, a
 release. The lock is held across those TeamSpeak calls so a press and a release never interleave;
 no audio callback and no TeamSpeak event takes it. A game end cancels a waiting release: voice
 activation and the microphone are restored at once and nothing is broadcast, so a plugin dormant
-again after its game sends no release (D25). On stop, a waiting release is sent at once.
+again after its game sends no release. On stop, a waiting release is sent at once.
 
 ## Boundaries
 

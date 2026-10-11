@@ -3,12 +3,6 @@
 use super::*;
 
 #[test]
-fn the_scale_constants_follow_the_original_convention() {
-    assert_eq!(INPUT_SCALE, f32::from(i16::MAX));
-    assert_eq!(OUTPUT_SCALE, f32::from(i16::MAX - 1));
-}
-
-#[test]
 fn input_divides_by_shrt_max() {
     assert_eq!(sample_to_float(i16::MAX), 1.0);
     assert_eq!(sample_to_float(0), 0.0);

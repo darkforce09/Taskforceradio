@@ -18,7 +18,7 @@ fn the_speaking_code_reports_talking_or_transmitting_and_receiving() {
     assert_eq!(&session.speaking_code("me"), b"11");
 }
 
-/// F-017: expiry happens in the sweep, which invalidates stale clients and names them.
+/// Expiry happens in the sweep, which invalidates stale clients and names them.
 #[test]
 fn the_sweep_expires_stale_clients_and_names_them() {
     let start = now();

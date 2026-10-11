@@ -156,7 +156,7 @@ impl PluginRuntime {
         (!self.is_dormant()).then_some(self.ts)
     }
 
-    /// No game message arrived since the plugin loaded or since its last game end (decision D25).
+    /// No game message arrived since the plugin loaded or since its last game end.
     pub fn is_dormant(&self) -> bool {
         !self.has_game_activity.load(Ordering::Acquire)
     }
@@ -167,7 +167,7 @@ impl PluginRuntime {
     }
 
     /// The game-end handling has finished: the plugin is dormant again until the next game
-    /// message (decision D25).
+    /// message.
     pub fn return_to_dormant(&self) {
         self.has_game_activity.store(false, Ordering::Release);
     }

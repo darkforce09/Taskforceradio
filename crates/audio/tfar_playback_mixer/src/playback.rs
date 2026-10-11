@@ -7,7 +7,7 @@
 //! and voice pipelines from a `WaveLibrary` sound and handed to `PlaybackMixer::add`. The
 //! specification is `playbackWavStereo` and `playbackWavProcessing` of
 //! `reference/tfar_1_0/ts/src/PlaybackHandler.cpp`, without their processing thread and without
-//! the `fileName + rand()` key (F-005).
+//! the `fileName + rand()` key.
 //!
 //! **Signals and state:** a playback is built on any thread but the audio thread: `Playback::new`
 //! copies the samples and runs the caller's processing there, so the gain, filters and panning

@@ -15,7 +15,7 @@
 //! **Invariants:** a game starts only on a connect while not in game and ends only on a
 //! disconnect while in game; the metadata is written only while the plugin is not dormant; once a
 //! disconnect's handling has run (mutes lifted, the `off` sound, channel and nickname back, the
-//! not-in-game metadata once) the plugin is dormant again until the next game message (D25); a
+//! not-in-game metadata once) the plugin is dormant again until the next game message; a
 //! connect always wakes it; once shutdown begins no transition runs and only the shutdown clears
 //! the metadata.
 
@@ -98,7 +98,7 @@ impl PluginRuntime {
         }
     }
 
-    /// After a disconnect's handling the plugin is dormant again (decision D25), unless a game
+    /// After a disconnect's handling the plugin is dormant again, unless a game
     /// message arrived meanwhile and the game counts as connected at `now`.
     fn return_to_dormant_unless_connected(&self, now: Instant) {
         let settings = self.settings();

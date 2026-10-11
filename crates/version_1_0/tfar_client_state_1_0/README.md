@@ -55,21 +55,21 @@ replaces a client's vehicle only when it changed.
 
 ### Fixed original bugs
 
-| Id | Test |
+| Original bug | Test |
 |---|---|
-| F-002 | the contract above: the state is plain data behind the app's lock |
-| F-008 | `nicknames_are_keyed_by_their_full_text_so_no_two_share_an_entry`, `a_rename_moves_the_entry_with_its_state` |
-| F-013 | `direct_speech_and_radio_each_own_a_compressor` |
-| F-015 | `a_repeated_pressed_plays_no_sound_and_changes_no_count` |
-| F-016 | `a_positive_plugin_check_expires_ten_seconds_after_the_metadata_was_read` |
-| F-017 | `is_alive_is_a_pure_query_and_never_changes_the_data_frame`, `the_sweep_expires_stale_clients_and_names_them` |
+| shared state read outside its lock | the contract above: the state is plain data behind the app's lock |
+| clients keyed by a nickname hash, first match on a collision | `nicknames_are_keyed_by_their_full_text_so_no_two_share_an_entry`, `a_rename_moves_the_entry_with_its_state` |
+| direct speech and radio share one compressor | `direct_speech_and_radio_each_own_a_compressor` |
+| a repeated PRESSED plays the end sound | `a_repeated_pressed_plays_no_sound_and_changes_no_count` |
+| the positive plugin check never expires | `a_positive_plugin_check_expires_ten_seconds_after_the_metadata_was_read` |
+| a liveness query invalidates the data frame | `is_alive_is_a_pure_query_and_never_changes_the_data_frame`, `the_sweep_expires_stale_clients_and_names_them` |
 | proposed: the receive count drifts from its frequency set | `two_senders_on_one_frequency_each_count_and_each_release_ends_its_own` |
 | proposed: `RELEASE_ALL_TANGENTS` leaves the reception counted | `release_all_tangents_stops_the_reception_it_ended` |
 | proposed: a tangent resets the extrapolation clock | `a_tangent_press_keeps_the_position_extrapolation_clock` |
 | proposed: one static object-interception strength for all clients | `every_client_redesigns_its_object_filters_when_the_strength_changes` |
 | proposed: a 0 Hz or negative object-interception cutoff | `an_object_cutoff_at_or_below_zero_is_silence` |
 | proposed: `rstflt` forgets the airborne effects | `resetting_radio_effects_drops_the_airborne_effects_too` |
-| F-081 | `release_all_tangents_clears_the_tangent_so_the_next_press_acts` |
+| `RELEASE_ALL_TANGENTS` leaves the tangent pressed | `release_all_tangents_clears_the_tangent_so_the_next_press_acts` |
 
 ## Getting started
 

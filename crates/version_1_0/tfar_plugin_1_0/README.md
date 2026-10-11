@@ -111,7 +111,7 @@ Cargo features, off by default: `tracy` (profiling zones to a Tracy viewer throu
 - Used by: TeamSpeak 3, which loads the shared library; `tools/tfar_ts3_mock` in the plugin test
   suites.
 - Rules: a plugin is dormant, making no side effect and passing audio through untouched, until
-  its first game message and again after each game end until the next one (decision D25,
+  its first game message and again after each game end until the next one (see the game-link decisions,
   `after_its_game_end_the_plugin_is_dormant_until_game_activity_resumes`); no TeamSpeak call
   while a server lock is held; the audio callbacks never block; `ts3plugin_shutdown` returns
   within 2 s and joins every thread it started, except a web request still waiting for the

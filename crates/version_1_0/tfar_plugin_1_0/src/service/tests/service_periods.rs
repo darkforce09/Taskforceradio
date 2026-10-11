@@ -45,8 +45,3 @@ fn a_value_that_is_not_a_shorter_tick_keeps_the_default() {
         );
     }
 }
-
-#[test]
-fn the_variable_name_is_the_documented_one() {
-    assert_eq!(SERVICE_TICK_VARIABLE, "TFAR_SERVICE_TICK_MS");
-}

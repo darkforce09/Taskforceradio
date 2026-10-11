@@ -55,7 +55,7 @@ fn effective_distance_adds_terrain_and_scales_by_the_receiving_multiplier() {
     assert!((distance - expected).abs() < 1e-9);
 }
 
-/// F-017: `is_alive` is a pure query; a stale client keeps its data frame until the sweep.
+/// `is_alive` is a pure query; a stale client keeps its data frame until the sweep.
 #[test]
 fn is_alive_is_a_pure_query_and_never_changes_the_data_frame() {
     let start = now();

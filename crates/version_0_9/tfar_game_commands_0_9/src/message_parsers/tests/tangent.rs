@@ -68,7 +68,7 @@ fn the_range_is_rounded_and_a_malformed_range_is_an_error() {
 
 #[test]
 fn a_tangent_with_an_empty_subtype_parses_as_an_unknown_subtype() {
-    // F-028: a radio with no `tf_subtype` sends an empty last field, which getline drops; the
+    // A radio with no `tf_subtype` sends an empty last field, which getline drops; the
     // original needs `tokens.size() == 5` (plugin.cpp:1812) and refuses the press.
     assert_eq!(
         GameCommand::parse("TANGENT\tPRESSED\t87.6\t5000\t").unwrap(),

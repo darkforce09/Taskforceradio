@@ -39,7 +39,7 @@ service thread   ──▶ game timeout, 4 s sweep and metadata, finished sounds
   plugin ends it (every mute lifted, the off sound, the channel and nickname given back, the
   metadata set to "not in game" once) and is dormant again until the next game activity, so the
   0.9 and 1.0 plugins can both stay installed
-  ([D25](/documentation/decisions/game_link.md#2026-10-03--a-plugin-returns-to-dormant-after-its-game-end-handling-d25)).
+  ([decision](/documentation/decisions/game_link.md#2026-10-03--a-plugin-returns-to-dormant-after-its-game-end-handling-d25)).
   The game link stays bound and answers while dormant.
 - **Plugin folder.** `init` loads `radio-sounds/` and `tfar_hrir/` from `Ts3::plugin_folder`:
   `getPluginPath` under the plugin ID TeamSpeak registered last (its "Reload" keeps the `.so`

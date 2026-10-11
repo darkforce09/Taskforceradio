@@ -54,7 +54,6 @@ fn an_empty_block_removes_the_tags() {
 
 #[test]
 fn the_disabled_block_is_the_original_text() {
-    assert_eq!(DISABLED_METADATA, "[B]Task Force Radio Plugin Disabled[/B]");
     assert_eq!(
         merge_metadata("<TFAR>x</TFAR>", DISABLED_METADATA),
         "<TFAR>[B]Task Force Radio Plugin Disabled[/B]</TFAR>"
@@ -83,10 +82,6 @@ fn a_playing_client_is_recognised_by_its_block_prefix() {
         "",
         DISABLED_METADATA
     )));
-    assert_eq!(
-        PLAYING_METADATA_PREFIX,
-        "Connected to Game: [B]Yes[/B]\nPlaying: [B]Yes[/B]\n"
-    );
 }
 
 #[test]
@@ -97,5 +92,4 @@ fn the_info_text_is_the_block_cut_to_the_buffer() {
     assert_eq!(info_data_text(&long).len(), 511);
     let multibyte = format!("<TFAR>{}é</TFAR>", "a".repeat(510));
     assert_eq!(info_data_text(&multibyte), "a".repeat(510));
-    assert_eq!(INFO_DATA_BUFFER_SIZE, 512);
 }

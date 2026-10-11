@@ -103,4 +103,4 @@ None: the crate reads no setting. `SETCFG` is parsed here and applied by
 
 - [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — §2.2 the
   command table, §5 the vehicle descriptor, §8 subtypes and nicknames.
-- [Bug fixes](/documentation/program/bug_fixes.md) — F-003 and F-010, held here.
+- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs this crate fixes.

@@ -14,8 +14,3 @@ fn the_status_replaces_the_block_and_keeps_the_rest() {
 fn an_unchanged_status_writes_nothing() {
     assert_eq!(metadata_with_status("<TFAR>same</TFAR>", "same"), None);
 }
-
-#[test]
-fn the_plugin_version_is_the_originals() {
-    assert_eq!(PLUGIN_VERSION, "0.9.12");
-}

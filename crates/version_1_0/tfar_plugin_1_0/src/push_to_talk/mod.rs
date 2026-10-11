@@ -175,7 +175,7 @@ impl PushToTalk {
     }
 
     /// The game ended: every release still waiting is cancelled, so none switches the microphone
-    /// or broadcasts after the plugin is dormant again (decision D25).
+    /// or broadcasts after the plugin is dormant again.
     pub fn cancel_pending_releases(&self) {
         self.gate.lock().cancel_releases();
     }

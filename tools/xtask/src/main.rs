@@ -5,7 +5,7 @@
 //! exit code.
 //!
 //! **Position:** `tools`, tier 0, depending on no workspace crate; run through the `cargo xtask`
-//! alias in `.cargo/config.toml` by developers, agents and the orchestrator.
+//! alias in `.cargo/config.toml` by developers and agents.
 //!
 //! **Signals and state:** none; single-threaded, one command per run.
 //!

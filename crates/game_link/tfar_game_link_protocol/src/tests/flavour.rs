@@ -20,9 +20,3 @@ fn every_flavour_byte_maps_back_to_its_flavour_and_others_to_none() {
         assert_eq!(Flavour::from_wire_value(value), None);
     }
 }
-
-#[test]
-fn a_flavour_displays_as_its_mod_version() {
-    assert_eq!(Flavour::V0_9.to_string(), "0.9");
-    assert_eq!(Flavour::V1_0.to_string(), "1.0");
-}

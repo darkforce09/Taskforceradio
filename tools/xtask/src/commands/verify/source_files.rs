@@ -3,8 +3,7 @@
 //! **Role:** lists the `.rs` files under crates and tools, tells test files from production
 //! files, finds a file's crate folder and says whether a file is a crate root.
 //!
-//! **Position:** shared by `unsafe-allowlist`, `file-length`, `test-placement`, `module-headers`
-//! and `crate-anatomy`.
+//! **Position:** shared by `unsafe-allowlist`, `file-length`, and `test-placement`.
 //!
 //! **Signals and state:** none; pure functions over the repository listing.
 //!

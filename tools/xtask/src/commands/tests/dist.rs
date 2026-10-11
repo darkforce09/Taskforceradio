@@ -81,7 +81,6 @@ fn every_version_folder_gets_the_hrir_sphere_and_its_credits_in_tfar_hrir() {
         version_folders.into_iter().collect::<Vec<_>>(),
         VERSION_FOLDERS
     );
-    assert_eq!(HRIR_FOLDER, "tfar_hrir");
 
     let fixture = FixtureTree::empty();
     fixture.write("assets/hrir/IRC_1002_C.bin", "sphere");

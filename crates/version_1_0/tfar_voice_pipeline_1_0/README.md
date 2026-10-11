@@ -81,12 +81,12 @@ the sender is within direct-speech range.
 
 ### Fixed original bugs
 
-| Id | Test |
+| Original bug | Test |
 |---|---|
-| F-013 | `direct_speech_and_radio_each_advance_their_own_compressor_once_per_frame` |
-| proposed F-061: the first frame behind objects reads an empty look-back buffer | `the_first_frame_behind_objects_has_no_look_back_and_is_filtered_once` |
-| proposed F-062: a speaker's muffling skipped when the sender shares the listener's vehicle | `a_speaker_outside_the_listeners_vehicle_is_muffled_even_when_the_sender_sits_inside` |
-| proposed F-063: the intercom never ducks | `the_intercom_is_ducked_while_a_long_range_transmission_is_received` |
+| direct speech and radio share one compressor | `direct_speech_and_radio_each_advance_their_own_compressor_once_per_frame` |
+| the first frame behind objects reads an empty look-back buffer | `the_first_frame_behind_objects_has_no_look_back_and_is_filtered_once` |
+| a speaker's muffling skipped when the sender shares the listener's vehicle | `a_speaker_outside_the_listeners_vehicle_is_muffled_even_when_the_sender_sits_inside` |
+| the intercom never ducks | `the_intercom_is_ducked_while_a_long_range_transmission_is_received` |
 
 ## Getting started
 

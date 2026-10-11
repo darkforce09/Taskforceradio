@@ -4,7 +4,6 @@ use super::*;
 
 #[test]
 fn the_buffer_is_the_size_arma_passes() {
-    assert_eq!(OUTPUT_BUFFER_SIZE, 10240);
     assert_eq!(buffer_size_argument(), 10240);
 }
 

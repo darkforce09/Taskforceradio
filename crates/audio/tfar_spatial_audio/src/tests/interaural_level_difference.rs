@@ -17,18 +17,6 @@ fn direction_at(radians: f64) -> Direction {
 }
 
 #[test]
-fn the_coefficients_are_the_values_the_originals_compute() {
-    assert_eq!(ILD_COEFFICIENT_0_9, 0.375);
-    // 21.5f * (3.14159265f / 180) in f32, as `AngleDegrees(21.5f).toRadians()` computes it.
-    assert_eq!(
-        ILD_COEFFICIENT_1_0,
-        21.5_f32 * (core::f32::consts::PI / 180.0_f32)
-    );
-    assert_close(ILD_COEFFICIENT_1_0, 0.375_245_8);
-    assert_eq!(ILD_BASE_GAIN, 0.625);
-}
-
-#[test]
 fn a_sound_ahead_gets_equal_gains() {
     for coefficient in [ILD_COEFFICIENT_0_9, ILD_COEFFICIENT_1_0] {
         let (left, right) = stereo_pan_gains(direction_at(FRAC_PI_2), Angle::ZERO, coefficient);

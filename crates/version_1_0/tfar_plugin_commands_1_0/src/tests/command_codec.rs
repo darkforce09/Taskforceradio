@@ -43,7 +43,7 @@ fn a_tangent_without_a_class_name_has_eight_tokens() {
 
 #[test]
 fn an_eight_token_tangent_reads_its_flags_from_tokens_five_and_six() {
-    // F-014: the original reads canUseSW from tokens[6] and canUseDD from tokens[7] in both forms
+    // The original reads canUseSW from tokens[6] and canUseDD from tokens[7] in both forms
     // (plugin.cpp:935-936), so the 8-token form takes dd as sw and the nickname as dd.
     let PluginCommand::Tangent(decoded) =
         decode("TANGENT\tRELEASED\t87.6\t3000\tdigital\t1\t0\tAlpha").unwrap()

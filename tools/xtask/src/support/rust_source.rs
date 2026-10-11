@@ -4,7 +4,7 @@
 //! a pattern such as an inline test module or an unsafe block matches only real code and never a
 //! comment or a string that happens to spell it.
 //!
-//! **Position:** used by `test-placement`, `unsafe-allowlist` and `crate-anatomy`; pure.
+//! **Position:** used by `test-placement`, and `unsafe-allowlist`; pure.
 //!
 //! **Signals and state:** none; pure functions.
 //!

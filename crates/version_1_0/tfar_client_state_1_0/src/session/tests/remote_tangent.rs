@@ -41,7 +41,7 @@ fn a_heard_press_plays_the_start_sound_and_counts_the_reception() {
     );
 }
 
-/// F-015: the original sets `playPressed` only on a flip, so a repeated PRESSED plays the
+/// The original sets `playPressed` only on a flip, so a repeated PRESSED plays the
 /// remote end sound and counts the reception out; here it changes no sound and no count.
 #[test]
 fn a_repeated_pressed_plays_no_sound_and_changes_no_count() {

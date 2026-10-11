@@ -31,7 +31,7 @@ fn command_names_match_case_sensitively() {
 
 #[test]
 fn killed_with_exactly_two_fields_is_parsed() {
-    // F-020: the original needs `tokens.size() > 2` (plugin.cpp:1775); Arma sends 2
+    // The original needs `tokens.size() > 2` (plugin.cpp:1775); Arma sends 2
     // (fn_sendPlayerKilled.sqf: `format["KILLED\t%1", name _this]`).
     assert_eq!(
         GameCommand::parse("KILLED\tAlpha 1-1").unwrap(),
@@ -105,7 +105,7 @@ fn version_carries_addon_channel_and_password() {
 
 #[test]
 fn version_with_an_empty_password_parses_although_getline_drops_it() {
-    // F-027: plugin.cpp:1789 needs 4 fields; "VERSION\tv\tname\t" splits into 3 and is refused.
+    // plugin.cpp:1789 needs 4 fields; "VERSION\tv\tname\t" splits into 3 and is refused.
     assert_eq!(
         GameCommand::parse("VERSION\t0.9.12\tTaskForceRadio\t").unwrap(),
         GameCommand::Version {

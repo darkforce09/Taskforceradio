@@ -14,7 +14,7 @@ crates/audio/tfar_hrtf/
 
 ## How it works
 
-D19 replaces clunk's ear delay (F-001) with real binaural rendering through the `hrtf` crate.
+The crate replaces clunk's ear delay with real binaural rendering through the `hrtf` crate.
 
 - **Loading.** `HrirLibrary::load` reads `assets/hrir/IRC_1002_C.bin`, refuses a malformed file
   (the `hrtf` crate would abort the process on a zero sample rate, a bad index or a short file),

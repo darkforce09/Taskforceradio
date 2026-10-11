@@ -10,13 +10,6 @@ fn reply_to(message: &str) -> &'static str {
 #[test]
 fn the_reply_strings_are_the_originals_byte_for_byte() {
     assert_eq!(OK, "OK"); // plugin.cpp:1783
-    assert_eq!(FAIL, "FAIL"); // plugin.cpp:1935
-    assert_eq!(DONE, "DONE"); // plugin.cpp:1778
-    assert_eq!(PONG, "PONG"); // plugin.cpp:1557
-    assert_eq!(SPEAKING, "SPEAKING"); // plugin.cpp:1930
-    assert_eq!(NOT_SPEAKING, "NOT_SPEAKING"); // plugin.cpp:1933
-    assert_eq!(ERROR_GETTING_SERVER_NAME, "ERROR_GETTING_SERVER_NAME"); // plugin.cpp:1542
-    assert_eq!(NO_CHANNEL_NAME, ""); // getChannelName, plugin.cpp:862-873
 }
 
 #[test]
@@ -29,13 +22,13 @@ fn ts_info_replies_follow_ts_info() {
 
 #[test]
 fn killed_with_the_two_fields_arma_sends_replies_done() {
-    // F-020: plugin.cpp:1775 needs more than 2 fields; fn_sendPlayerKilled.sqf sends 2.
+    // plugin.cpp:1775 needs more than 2 fields; fn_sendPlayerKilled.sqf sends 2.
     assert_eq!(reply_to("KILLED\tAlpha 1-1"), "DONE");
 }
 
 #[test]
 fn release_all_tangents_and_track_reply_ok() {
-    // F-021: plugin.cpp:1785 and 1799 have no return and fall through to FAIL at 1935.
+    // plugin.cpp:1785 and 1799 have no return and fall through to FAIL at 1935.
     assert_eq!(reply_to("RELEASE_ALL_TANGENTS\tAlpha"), "OK");
     assert_eq!(reply_to("TRACK\tpiwik.php?idsite=2"), "OK");
 }

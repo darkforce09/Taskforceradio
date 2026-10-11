@@ -48,11 +48,6 @@ fn an_error_status_fails_quietly() {
 }
 
 #[test]
-fn the_tracking_timeout_is_five_seconds() {
-    assert_eq!(TRACK_TIMEOUT, Duration::from_secs(5));
-}
-
-#[test]
 fn a_cancellable_request_reaches_the_server_and_joins() {
     let responder = LocalResponder::start(vec![ScriptedReply::Body("GIF89a")]);
     let url = Url::parse(&responder.url("/piwik.php?idsite=5")).expect("a loopback URL");

@@ -118,4 +118,4 @@ None: the crate reads no setting. The HRIR sphere reaches it as an optional `&Hr
 
 - [TFAR 0.9.12 plugin behaviour](/documentation/program/behaviour_specs/tfar_0_9_plugin.md) — the
   original 0.9.12 plugin this crate ports; sections 1, 2 and 4.
-- [Bug fixes](/documentation/program/bug_fixes.md) — F-002, F-022 and F-024, held by this crate.
+- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs this crate fixes.

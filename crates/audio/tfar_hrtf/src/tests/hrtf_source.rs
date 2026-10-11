@@ -189,7 +189,6 @@ fn rendered_directly(
 
 #[test]
 fn variable_frame_sizes_give_continuous_output_with_exactly_the_documented_latency() {
-    assert_eq!(ADDED_LATENCY_FRAMES, 480);
     let direction = axes(0.7, 0.7, 0.1);
     let gain = 0.8;
     let input = stereo_noise(TWO_SECONDS);

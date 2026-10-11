@@ -15,14 +15,14 @@ crates/audio/tfar_spatial_audio/
 ## How it works
 
 The 1.0 plugin got level and direction for direct speech from X3DAudio. Here `tfar_hrtf` gives
-direction (D20) and this crate gives level. `DistanceCurve` is X3DAudio's volume curve: sorted
+direction and this crate gives level. `DistanceCurve` is X3DAudio's volume curve: sorted
 `(normalised distance, gain)` points, read by dividing the distance by the emitter's scaler and
 interpolating linearly, holding the end values outside the points; `DistanceCurve::tfar_voice`
 builds the original 25-point voice curve from the version's `volumeAttenuation`. `EmitterCone` is
 X3DAudio's cone: inner volume within half the inner angle of the speaker's facing, outer volume
 beyond half the outer angle, linear between; `EmitterCone::TFAR_VOICE` is the 1.0 voice cone. The
 simple interaural level difference, `stereo_pan_gains`, gives `0.625 ∓ c·cos(dir)` with the 0.9 or
-the 1.0 coefficient, wrapping `dir` into (-π, π] (F-012), and `apply_pan` applies the pair. FAudio's
+the 1.0 coefficient, wrapping `dir` into (-π, π], and `apply_pan` applies the pair. FAudio's
 `F3DAudio.c` is the oracle the golden vectors compare the curve and cone against.
 
 ## Getting started

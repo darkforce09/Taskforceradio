@@ -75,7 +75,7 @@ fn ensure_creates_each_object_once_and_keeps_it() {
     assert!(effects.object_interception_buffer_mut().capacity_frames() >= 960);
 }
 
-/// F-013: direct speech and radio each own a compressor, so running one leaves the other's
+/// Direct speech and radio each own a compressor, so running one leaves the other's
 /// envelope at rest.
 #[test]
 fn direct_speech_and_radio_each_own_a_compressor() {

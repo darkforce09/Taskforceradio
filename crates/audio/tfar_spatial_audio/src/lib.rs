@@ -5,7 +5,7 @@
 //!
 //! **Position:** `crates/audio`, tier 1, depending on `tfar_geometry`, `tfar_sample_buffer`; used
 //! by `tfar_voice_pipeline_0_9`, `tfar_voice_pipeline_1_0`. Direction itself comes from
-//! `tfar_hrtf` (D20); this crate gives only level.
+//! `tfar_hrtf`; this crate gives only level.
 //!
 //! **Signals and state:** none; pure gain functions and `Copy` value types, callable from the
 //! TeamSpeak audio thread. Nothing allocates, construction included.

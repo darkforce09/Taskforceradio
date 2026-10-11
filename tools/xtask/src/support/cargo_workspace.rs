@@ -4,7 +4,7 @@
 //! **Role:** runs `cargo metadata --no-deps` once and turns each member into a [`Member`] with
 //! repository-relative paths and its `[package.metadata.layout]` table.
 //!
-//! **Position:** used by `crate-tiers`, `dependency-firewalls` and `new-crate`; calls cargo.
+//! **Position:** used by `crate-tiers`, and `dependency-firewalls`; calls cargo.
 //!
 //! **Signals and state:** none; one child process per call.
 //!

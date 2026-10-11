@@ -1,12 +1,11 @@
 //! The structural laws of the workspace as data: categories, the edge matrix, the firewalls, the
-//! unsafe allow-list, the feature rules and the folder lists the gates walk.
+//! unsafe allow-list, and the folder lists the gates walk.
 //!
 //! **Role:** the one place the gates read the laws from; it mirrors
-//! `documentation/program/laws_and_gates.md`, and when the two disagree that file is the spec and
-//! this module is fixed.
+//! `documentation/standards/crate_boundary_rules.md`, and the two change together.
 //!
-//! **Position:** tier 0 of `tools`; read by every gate under `commands/verify/` and by
-//! `new-crate`; it calls nothing.
+//! **Position:** tier 0 of `tools`; read by every gate under `commands/verify/`; it calls
+//! nothing.
 //!
 //! **Signals and state:** none; constants and pure functions.
 //!

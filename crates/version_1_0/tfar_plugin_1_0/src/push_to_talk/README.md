@@ -20,7 +20,7 @@ release skipped. A release marks itself waiting and hands a job to `tfar-tangent
 waits `push_to_talk_delay + tangentReleaseDelay` (cut short only by shutdown) and then, unless
 skipped, restores voice activation and the microphone and sends the broadcast. A game end cancels
 every release still waiting (the gate's release generation moves on, so a job from before it does
-nothing), and the plugin, dormant again after its game, never broadcasts a release (D25).
+nothing), and the plugin, dormant again after its game, never broadcasts a release.
 
 ## Boundaries
 

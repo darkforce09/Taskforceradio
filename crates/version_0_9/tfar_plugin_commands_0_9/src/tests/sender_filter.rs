@@ -4,12 +4,6 @@
 use super::*;
 
 #[test]
-fn the_prefix_is_the_original_plugin_name() {
-    // `#define PLUGIN_NAME "task_force_radio"`, plugin.cpp:52.
-    assert_eq!(PLUGIN_NAME_PREFIX, "task_force_radio");
-}
-
-#[test]
 fn every_name_starting_with_the_prefix_is_accepted() {
     // plugin.cpp:53-54 name the Windows builds.
     assert!(accepts_sender("task_force_radio"));

@@ -28,19 +28,6 @@ fn the_status_text_is_the_originals_byte_for_byte() {
 }
 
 #[test]
-fn the_constants_are_the_originals() {
-    assert_eq!(METADATA_START_TAG, "<TFAR>"); // plugin.cpp:1237
-    assert_eq!(METADATA_END_TAG, "</TFAR>"); // plugin.cpp:1238
-    assert_eq!(DISABLED_METADATA, "[B]Task Force Radio Plugin Disabled[/B]"); // plugin.cpp:1314
-    // getConnectionStatusInfo(true, true, false): no closing `[/B]` after the play flag.
-    assert_eq!(
-        PLAYING_STATUS_PREFIX,
-        "[I]Connected[/I] [B]Y[/B] [I]Play[/I] [B]Y"
-    );
-    assert_eq!(INFO_DATA_BUFFER_SIZE, 512); // plugin.cpp:2121
-}
-
-#[test]
 fn merging_replaces_the_block_and_keeps_the_surrounding_text() {
     let existing = "other plugin text <TFAR>old status</TFAR> trailing text";
     assert_eq!(

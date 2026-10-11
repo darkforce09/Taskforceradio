@@ -6,6 +6,7 @@ mod editorconfig;
 mod file_length;
 pub(crate) mod gate;
 pub(crate) mod gate_runner;
+mod history_residue;
 mod language_bans;
 mod link_check;
 mod reference_untouched;

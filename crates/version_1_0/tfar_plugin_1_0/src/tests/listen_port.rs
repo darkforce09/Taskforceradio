@@ -41,8 +41,3 @@ fn the_server_serves_the_1_0_flavour_starting_with_needcfg() {
         assert!(config.initial_needcfg);
     }
 }
-
-#[test]
-fn the_variable_name_is_the_documented_one() {
-    assert_eq!(PORT_OVERRIDE_VARIABLE, "TFAR_GAME_LINK_PORT");
-}

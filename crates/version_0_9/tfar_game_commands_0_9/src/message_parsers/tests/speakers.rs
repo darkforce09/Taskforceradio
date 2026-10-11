@@ -101,7 +101,7 @@ fn a_position_of_two_characters_or_fewer_is_none() {
 
 #[test]
 fn a_record_of_fewer_than_six_parts_is_an_error_where_the_original_reads_out_of_bounds() {
-    // F-003: plugin.cpp:1740-1753 indexes parts[0..5] without a count check.
+    // plugin.cpp:1740-1753 indexes parts[0..5] without a count check.
     let short = record(&["r", "60", "A", "[]", "5"]);
     assert_eq!(
         GameCommand::parse(&message(&[short])).unwrap_err(),

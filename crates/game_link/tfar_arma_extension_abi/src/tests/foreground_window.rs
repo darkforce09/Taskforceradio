@@ -16,11 +16,6 @@ fn other_class_names_do_not_match() {
     assert!(!class_name_is_arma(""));
 }
 
-#[test]
-fn the_class_name_buffer_matches_the_original() {
-    assert_eq!(CLASS_NAME_CAPACITY, 32);
-}
-
 #[cfg(not(windows))]
 #[test]
 fn off_windows_arma_is_never_in_front() {

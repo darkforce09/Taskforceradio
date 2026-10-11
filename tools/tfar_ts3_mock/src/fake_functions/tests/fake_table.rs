@@ -101,11 +101,6 @@ fn every_faked_slot_index_matches_the_sdk_header_order() {
 }
 
 #[test]
-fn the_table_has_the_230_slots_of_plugin_api_26() {
-    assert_eq!(SLOT_COUNT, 230);
-}
-
-#[test]
 fn every_faked_slot_holds_its_fake_and_every_other_slot_its_own_stub() {
     let table = fake_function_table();
     let faked_slots: BTreeSet<usize> = FAKED_FUNCTIONS

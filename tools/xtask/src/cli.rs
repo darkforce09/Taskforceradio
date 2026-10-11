@@ -6,8 +6,8 @@
 //!
 //! **Signals and state:** none.
 //!
-//! **Invariants:** the subcommand and gate names are stable: the standards, CLAUDE.md and the
-//! briefs cite them.
+//! **Invariants:** the subcommand and gate names are stable: CLAUDE.md and the standards cite
+//! them.
 
 use clap::{Parser, Subcommand};
 

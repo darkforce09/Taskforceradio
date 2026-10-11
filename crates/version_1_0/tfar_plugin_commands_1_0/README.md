@@ -82,4 +82,4 @@ None: the crate reads no setting.
 
 - [TFAR 1.0 plugin behaviour](/documentation/program/behaviour_specs/tfar_1_0_plugin.md) — §4 the
   client-to-client protocol and the metadata.
-- [Bug fixes](/documentation/program/bug_fixes.md) — F-014, held here.
+- [Bug fixes](/documentation/program/bug_fixes.md) — the original bugs this crate fixes.

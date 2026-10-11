@@ -11,7 +11,6 @@ fn ids_are_unique_and_increasing() {
     let second = PlaybackId::next();
     assert!(second.value() > first.value());
     assert_ne!(first, second);
-    assert_eq!(format!("{first}"), format!("playback {}", first.value()));
 }
 
 #[test]

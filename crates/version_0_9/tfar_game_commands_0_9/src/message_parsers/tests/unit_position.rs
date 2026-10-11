@@ -47,7 +47,7 @@ fn a_boolean_other_than_true_is_false() {
 
 #[test]
 fn a_malformed_coordinate_is_an_error_where_stof_would_throw() {
-    // F-003: plugin.cpp:1806 `std::stof` throws on a malformed number and takes TeamSpeak down.
+    // plugin.cpp:1806 `std::stof` throws on a malformed number and takes TeamSpeak down.
     let message = POSITION_MESSAGE.replace("\t12.5\t", "\tnorth\t");
     assert!(matches!(
         GameCommand::parse(&message),

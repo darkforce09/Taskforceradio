@@ -8,7 +8,7 @@
 //! preload the `radio-sounds` folder and by whoever builds a `Playback` from a sound. The
 //! specification is `getWavFileFromPath` and `playbackWavStereo::construct` of
 //! `reference/tfar_1_0/ts/src/PlaybackHandler.cpp`, without their leak of the decoder and its file
-//! on a wrong format (F-005).
+//! on a wrong format.
 //!
 //! **Signals and state:** the cache, behind a short `parking_lot` lock that is never held while a
 //! file is read; callable from any thread but the audio thread, since loading reads the disk.

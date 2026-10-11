@@ -4,7 +4,7 @@ use super::*;
 
 const OWN: TeamspeakClientId = TeamspeakClientId(1);
 
-/// F-008: the original indexes clients by a hash of the nickname and returns the first entry
+/// The original indexes clients by a hash of the nickname and returns the first entry
 /// of a colliding hash. Here the full nickname is the key: across many similar names, each
 /// lookup finds exactly its own client.
 #[test]
@@ -32,7 +32,7 @@ fn nicknames_are_keyed_by_their_full_text_so_no_two_share_an_entry() {
     }
 }
 
-/// F-008: a rename moves the entry with its state; the old name finds nothing.
+/// A rename moves the entry with its state; the old name finds nothing.
 #[test]
 fn a_rename_moves_the_entry_with_its_state() {
     let mut directory = ClientDirectory::new();

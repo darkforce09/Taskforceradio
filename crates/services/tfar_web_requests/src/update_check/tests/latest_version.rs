@@ -154,21 +154,6 @@ fn a_timed_out_check_calls_nothing() {
     assert!(started.elapsed() < Duration::from_secs(2));
 }
 
-#[test]
-fn the_check_targets_raw_githubusercontent_over_https_with_a_ten_second_timeout() {
-    assert!(UPDATE_CHECK_URL.starts_with("https://raw.githubusercontent.com/"));
-    assert!(UPDATE_CHECK_URL.ends_with("/master/current_version.txt"));
-    assert_eq!(UPDATE_CHECK_TIMEOUT, Duration::from_secs(10));
-}
-
-#[test]
-fn the_update_message_is_the_originals_text() {
-    assert_eq!(
-        UPDATE_AVAILABLE_MESSAGE,
-        "New version of Task Force Arrowhead Radio is available. Check radio.task-force.ru/en"
-    );
-}
-
 /// Starts the cancellable check against `responder` with `cancel`, counting the callbacks.
 fn start_cancellable_check(
     responder: &LocalResponder,

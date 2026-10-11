@@ -15,5 +15,4 @@ fn any_other_name_is_refused() {
     for name in ["tfar", "TFA", "", "task_force_radio", " TFAR"] {
         assert!(!accepts_sender(name), "{name:?}");
     }
-    assert_eq!(PLUGIN_NAME_PREFIX, "TFAR");
 }

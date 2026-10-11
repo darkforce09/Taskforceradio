@@ -59,7 +59,7 @@ fn alive_is_true_only_for_the_text_true() {
 
 #[test]
 fn a_frequency_list_that_is_not_an_array_is_an_error() {
-    // F-003: `substr(1, length - 2)` of an empty list throws in the original (plugin.cpp:1517).
+    // `substr(1, length - 2)` of an empty list throws in the original (plugin.cpp:1517).
     let message = FREQUENCY_MESSAGE.replace("[\"30|9|2\"]", "");
     assert!(matches!(
         GameCommand::parse(&message),

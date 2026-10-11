@@ -8,7 +8,7 @@
 //!
 //! **Signals and state:** none; the table is constant.
 //!
-//! **Invariants:** gate names are stable (the standards, CLAUDE.md and the briefs cite them);
+//! **Invariants:** gate names are stable (CLAUDE.md and the standards cite them);
 //! [`Gate::ALL`] lists every gate once, in the order of the laws.
 
 use anyhow::Result;
@@ -16,8 +16,8 @@ use anyhow::Result;
 use crate::support::repository::Repository;
 
 use super::{
-    crate_tiers, dependency_firewalls, editorconfig, file_length, language_bans, link_check,
-    reference_untouched, test_placement, unsafe_allowlist,
+    crate_tiers, dependency_firewalls, editorconfig, file_length, history_residue, language_bans,
+    link_check, reference_untouched, test_placement, unsafe_allowlist,
 };
 
 /// One problem a gate found.
@@ -55,6 +55,8 @@ pub(crate) enum Gate {
     FileLength,
     /// Sibling test files only.
     TestPlacement,
+    /// No program ids (bug, decision, milestone) in code or code READMEs.
+    HistoryResidue,
     /// Repository-root links, anchors and backticked paths exist.
     LinkCheck,
     /// Final newline, LF, trailing whitespace and indentation.
@@ -67,12 +69,13 @@ pub(crate) enum Gate {
 
 impl Gate {
     /// Every gate, in the order of the laws.
-    pub(crate) const ALL: [Self; 9] = [
+    pub(crate) const ALL: [Self; 10] = [
         Self::CrateTiers,
         Self::DependencyFirewalls,
         Self::UnsafeAllowlist,
         Self::FileLength,
         Self::TestPlacement,
+        Self::HistoryResidue,
         Self::LinkCheck,
         Self::Editorconfig,
         Self::LanguageBans,
@@ -87,6 +90,7 @@ impl Gate {
             Self::UnsafeAllowlist => "unsafe-allowlist",
             Self::FileLength => "file-length",
             Self::TestPlacement => "test-placement",
+            Self::HistoryResidue => "history-residue",
             Self::LinkCheck => "link-check",
             Self::Editorconfig => "editorconfig",
             Self::LanguageBans => "language-bans",
@@ -107,6 +111,7 @@ impl Gate {
             Self::UnsafeAllowlist => unsafe_allowlist::check(repository),
             Self::FileLength => file_length::check(repository),
             Self::TestPlacement => test_placement::check(repository),
+            Self::HistoryResidue => history_residue::check(repository),
             Self::LinkCheck => link_check::check(repository),
             Self::Editorconfig => editorconfig::check(repository),
             Self::LanguageBans => language_bans::check(repository),

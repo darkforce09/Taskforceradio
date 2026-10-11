@@ -6,7 +6,7 @@ mod tests;
 
 /// The class-name buffer length of the original test, in UTF-16 units including the NUL
 /// (`reference/tfar_1_0/ts/src/Teamspeak.cpp:210`).
-#[cfg(any(windows, test))]
+#[cfg(windows)]
 const CLASS_NAME_CAPACITY: usize = 32;
 
 /// Whether the foreground window's class name contains `arma`, ignoring case.

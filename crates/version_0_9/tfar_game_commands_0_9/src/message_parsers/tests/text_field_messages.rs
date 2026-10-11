@@ -6,7 +6,7 @@ use super::*;
 
 #[test]
 fn killed_accepts_two_fields_and_ignores_extra_ones() {
-    // F-020: Arma sends exactly 2; the original's `> 2` rule accepted only more.
+    // Arma sends exactly 2; the original's `> 2` rule accepted only more.
     assert_eq!(
         parse_killed(&["KILLED", "Alpha"]).unwrap(),
         GameCommand::Killed {

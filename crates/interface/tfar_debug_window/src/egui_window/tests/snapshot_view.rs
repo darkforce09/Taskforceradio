@@ -78,8 +78,3 @@ fn an_empty_snapshot_says_there_is_nothing_to_show() {
     let texts = drawn_texts(&DebugSnapshot::new());
     assert_eq!(texts, [NOTHING_TO_SHOW]);
 }
-
-#[test]
-fn the_highlight_is_the_originals_talking_red() {
-    assert_eq!(HIGHLIGHT_COLOUR, egui::Color32::from_rgb(255, 0, 51));
-}

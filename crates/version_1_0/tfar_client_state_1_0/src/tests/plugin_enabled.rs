@@ -9,7 +9,7 @@ const PLAYING: &str =
     "<TFAR>Connected to Game: [B]Yes[/B]\nPlaying: [B]Yes[/B]\nPlugin version: [B]1[/B]\n</TFAR>";
 const NOT_PLAYING: &str = "<TFAR>Connected to Game: [B]No[/B]\nPlaying: [B]No[/B]\n</TFAR>";
 
-/// F-016: the original refreshes the cache time on every call, so a positive answer never
+/// The original refreshes the cache time on every call, so a positive answer never
 /// expires; here it expires ten seconds after the metadata was read.
 #[test]
 fn a_positive_plugin_check_expires_ten_seconds_after_the_metadata_was_read() {
