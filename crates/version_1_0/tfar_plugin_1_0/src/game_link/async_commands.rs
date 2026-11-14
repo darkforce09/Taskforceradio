@@ -13,9 +13,10 @@
 //! under its lock, both taken through `PluginRuntime::lock_game_and_server`; `DFRAME` and the
 //! radio towers take the game lock alone; the settings snapshot.
 //!
-//! **Invariants:** every message is dropped while no current server has a state, as the original
-//! returns without a client directory (`CommandProcessor.cpp:234-236`), the game-wide ones
-//! (`DFRAME`, the towers) included; the DSP objects a change needs are built here, off the audio
+//! **Invariants:** every message but the radio towers is dropped while no current server has a
+//! state, as the original returns without a client directory (`CommandProcessor.cpp:234-236`),
+//! `DFRAME` included; the towers, which the game sends only once, are kept in the game state with
+//! or without a server, so a tower placed before TeamSpeak connects is not lost; the DSP objects a change needs are built here, off the audio
 //! thread.
 
 use std::time::Instant;
@@ -63,10 +64,8 @@ pub fn apply_async_message(runtime: &PluginRuntime, text: &str, command: GameCom
         GameCommand::SetConfig(assignment) => apply_set_config(runtime, &assignment),
         GameCommand::RadioTowerAdd(records) => add_towers(runtime, &records),
         GameCommand::RadioTowerRemove(ids) => {
-            if runtime.current_server().is_some() {
-                let ids = ids.iter().map(|id| NetId::new(id.creator, id.object));
-                runtime.game.lock().antennas.remove(ids);
-            }
+            let ids = ids.iter().map(|id| NetId::new(id.creator, id.object));
+            runtime.game.lock().antennas.remove(ids);
         }
         GameCommand::Track(event) => {
             let custom_variables = text
@@ -193,11 +192,8 @@ fn apply_killed(runtime: &PluginRuntime, nickname: &str) {
     runtime.send_mute_matrix(server, &changes);
 }
 
-/// `RadioTwrAdd`: the towers are added, replacing towers of the same id.
+/// `RadioTwrAdd`: the towers are added, replacing towers of the same id, with or without a server.
 fn add_towers(runtime: &PluginRuntime, records: &[TowerRecord]) {
-    if runtime.current_server().is_none() {
-        return;
-    }
     let antennas: Vec<Antenna> = records
         .iter()
         .filter_map(|record| {

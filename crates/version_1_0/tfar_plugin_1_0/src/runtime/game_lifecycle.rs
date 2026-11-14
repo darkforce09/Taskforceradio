@@ -205,7 +205,17 @@ impl PluginRuntime {
         let Some(path) = self.sounds.sound_path(sound) else {
             return;
         };
-        ts.play_wave_file(ts.current_server(), &path);
+        // TeamSpeak plays a file on a connection's playback device; without a connection there
+        // is none, and `playWaveFile` fails.
+        let server = ts.current_server();
+        if !ts.is_connected(server) {
+            tracing::debug!(
+                sound,
+                "no server is connected: the game sound is not played"
+            );
+            return;
+        }
+        ts.play_wave_file(server, &path);
     }
 }
 

@@ -40,10 +40,10 @@ mod tests;
 /// The HRIR sphere, relative to the plugins folder (the `cargo xtask dist` layout).
 pub const HRIR_SPHERE: &str = "tfar_hrir/IRC_1002_C.bin";
 
-/// Every sound the plugin plays, relative to the plugins folder and without `.wav`.
-pub const RADIO_SOUNDS: [&str; 14] = [
-    "radio-sounds/on",
-    "radio-sounds/off",
+/// Every sound the plugin mixes itself, relative to the plugins folder and without `.wav`: the
+/// tangent sounds. The game `on` and `off` sounds are not among them: TeamSpeak plays those files
+/// itself, at whatever rate they have.
+pub const MIXED_SOUNDS: [&str; 12] = [
     "radio-sounds/sw/local_start",
     "radio-sounds/sw/local_end",
     "radio-sounds/sw/remote_start",
@@ -91,7 +91,7 @@ impl RadioSounds {
         let mut problems = Vec::new();
         let mut hrir = None;
         if let Some(folder) = plugin_path.as_deref() {
-            for error in waves.preload(RADIO_SOUNDS.iter().map(|sound| wave_path(folder, sound))) {
+            for error in preload_mixed_sounds(&waves, folder) {
                 tracing::warn!(%error, "a radio sound could not be loaded");
             }
             let sphere = folder.join(HRIR_SPHERE);
@@ -190,4 +190,12 @@ impl RadioSounds {
     pub fn release_finished(&self) -> usize {
         self.mixer.release_finished()
     }
+}
+
+/// Decodes every [`MIXED_SOUNDS`] file under `folder` into `waves`; the files that failed.
+fn preload_mixed_sounds(
+    waves: &WaveLibrary,
+    folder: &Path,
+) -> Vec<tfar_audio::playback_mixer::Error> {
+    waves.preload(MIXED_SOUNDS.iter().map(|sound| wave_path(folder, sound)))
 }

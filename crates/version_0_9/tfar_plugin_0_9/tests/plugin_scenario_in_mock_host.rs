@@ -269,6 +269,74 @@ mod scenarios {
     }
 
     #[test]
+    fn a_server_connected_after_the_game_started_unmutes_a_player_who_speaks_in_range() {
+        run_in_child(
+            "scenarios::a_server_connected_after_the_game_started_unmutes_a_player_who_speaks_in_range",
+            server_after_game_start_scenario,
+        );
+    }
+
+    /// The game starts before TeamSpeak connects to a server: no sound is played without one, and
+    /// once connected, a player within voice range who speaks is unmuted, as on a server connected
+    /// before the game.
+    fn server_after_game_start_scenario() {
+        let folder = plugin_folder();
+        let mut host = load_plugin(&folder);
+        let link = game_link();
+        assert_eq!(send(&link, "TS_INFO\tPING"), "PONG");
+        let before_server = host.calls();
+        assert!(
+            !before_server
+                .iter()
+                .any(|call| matches!(call, HostCall::PlayWaveFile { .. })),
+            "no sound is played without a server: {before_server:#?}"
+        );
+        let server = connect(&host);
+        let players = populate(&host);
+        assert_eq!(send(&link, "VERSION\t0.9.12\tSerious\tpw"), "OK");
+        assert_eq!(send(&link, FREQ), "OK");
+        for client in [ME, players.alpha] {
+            host.client_moves(client, SERIOUS).unwrap();
+        }
+        for message in [
+            "POS\tSgt Mock\t0\t0\t0\t0\ttrue\ttrue\ttrue\tfalse\tno\t0\t1\t0",
+            "POS\tAlpha\t3\t4\t0\t0\ttrue\ttrue\ttrue\tfalse\tno\t0\t1\t0",
+        ] {
+            assert_eq!(send(&link, message), "NOT_SPEAKING");
+        }
+        let is_alpha_muted = |calls: &[HostCall]| {
+            calls.iter().fold(None, |muted, call| match call {
+                HostCall::RequestMuteClients {
+                    server: on,
+                    clients,
+                } if *on == server && clients.contains(&players.alpha) => Some(true),
+                HostCall::RequestUnmuteClients {
+                    server: on,
+                    clients,
+                } if *on == server && clients.contains(&players.alpha) => Some(false),
+                _ => muted,
+            })
+        };
+        assert_eq!(
+            is_alpha_muted(&host.calls()),
+            Some(true),
+            "silent Alpha is muted"
+        );
+        host.set_talking(players.alpha, true).unwrap();
+        host.deliver_plugin_command(players.alpha, TFAR_PLUGIN_NAME, "VOLUME\tAlpha\t40\ttrue")
+            .unwrap();
+        host.talk_status_change(players.alpha, true).unwrap();
+        let calls = host.calls();
+        assert_eq!(
+            is_alpha_muted(&calls),
+            Some(false),
+            "Alpha speaks 5 m away and is unmuted: {calls:#?}"
+        );
+        host.shutdown();
+        let _ = std::fs::remove_dir_all(folder);
+    }
+
+    #[test]
     fn without_game_activity_the_plugin_stays_dormant() {
         run_in_child(
             "scenarios::without_game_activity_the_plugin_stays_dormant",

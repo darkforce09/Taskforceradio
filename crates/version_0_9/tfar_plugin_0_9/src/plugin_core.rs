@@ -338,6 +338,12 @@ impl PluginCore {
 
     /// Plays the WAV file at `path` through TeamSpeak, logging a failure.
     pub fn play_sound(&self, server: ServerConnectionHandlerId, path: &Path) {
+        // TeamSpeak plays a file on a connection's playback device; without a connection there
+        // is none, and `playWaveFile` fails.
+        if !self.team_speak().is_connected(server) {
+            tracing::debug!(path = %path.display(), "no server is connected: the sound is not played");
+            return;
+        }
         if let Err(error) = self.team_speak().play_wave_file(server, path) {
             tracing::warn!(%error, path = %path.display(), "a radio sound could not be played");
         }

@@ -24,11 +24,13 @@ The TeamSpeak plugin for the 1.0 mod, wiring the 1.0 library crates to TeamSpeak
   nothing takes the game lock while holding a server lock. Apply functions run under the locks;
   TeamSpeak is called after they are released.
 - **Game lifecycle.** The game counts as connected while its last message is younger than
-  `pluginTimeout`; the connect plays `radio-sounds/on`, starts the game data at its first frame
+  `pluginTimeout`; the connect plays `radio-sounds/on` (TeamSpeak plays the file, so only on a
+  connected server), starts the game data at its first frame
   (with or without a server, so a server connected later joins the running game) and moves into
   the serious channel; the disconnect ends the game data, lifts every mute, plays `off`, restores
   channel, nickname and voice activation and sets needcfg. Async game messages are dropped while
-  no current server has a state, as the original (`CommandProcessor.cpp:234-236`).
+  no current server has a state, as the original (`CommandProcessor.cpp:234-236`), except the
+  radio towers: the game sends each once, so they are kept with or without a server.
 - **Audio.** The post-process callback runs `tfar_plugin_logic_1_0::voice_pipeline`, the captured callback feeds
   speaker radios through the mixer's own-voice `StreamProducer`, the mixed-playback callback adds
   the radio sounds. The voice callbacks wait for the game lock and then the server lock, as the
@@ -78,7 +80,9 @@ the result back; no game, a dormant plugin or an unknown sender leaves the block
 `VoiceProcessor::process_own_voice_for_speakers` and pushes the result through the mixer's
 `StreamProducer` for the stream `my_radio_voice`, which never blocks or allocates. The
 mixed-playback callback adds the mixer's playbacks and streams into channels 0 and 1 of the
-server in front. `RadioSounds` preloads `radio-sounds/` at init; a local tangent sound is queued
+server in front. `RadioSounds` preloads the tangent sounds of `radio-sounds/` at init (48 kHz
+stereo, as the mixer plays them); `on` and `off` are left to TeamSpeak's `playWaveFile`, which
+takes the upstream 44.1 kHz files as they are. A local tangent sound is queued
 at its gain into its ear, a remote one is shaped by `render_remote_tangent_sound` of
 `tfar_plugin_logic_1_0::voice_pipeline` (gain, ear, vehicle and loudspeaker filters, under-water muffling,
 simple ILD) on the calling thread before the mixer gets it.

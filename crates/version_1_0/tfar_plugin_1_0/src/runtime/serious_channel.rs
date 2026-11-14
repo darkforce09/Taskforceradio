@@ -39,14 +39,18 @@ pub fn serious_channel(state: &ServerState, configured_name: &str) -> Option<Cha
 }
 
 impl PluginRuntime {
-    /// Reads `server`'s channels and the own channel into the cache, then re-checks serious mode.
+    /// Reads `server`'s channels and the own channel into the cache, then re-checks serious mode;
+    /// a server with no state (none connected) is not asked.
     pub fn refresh_channels(&self, server: ServerConnectionHandlerId) {
+        let Some(state) = self.servers.get(server) else {
+            return;
+        };
         let ts = self.ts();
         let channels = ts.channels(server);
         let own_channel = ts
             .own_client_id(server)
             .and_then(|own| ts.channel_of_client(server, own));
-        if let Some(state) = self.servers.get(server) {
+        {
             let mut state = state.lock();
             state.channels = channels;
             state.own_channel = own_channel;

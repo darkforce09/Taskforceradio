@@ -44,6 +44,7 @@ Every bug in the original C++ that the Rust port fixes on purpose ([bug policy](
 | F-063 | `reference/tfar_1_0/ts/src/plugin.cpp:720` | The intercom ducks only for a long-range reception of its own sender, but the intercom is listed only for a sender holding no tangent and a long-range reception only for one holding a tangent, so it never ducks | The intercom is ducked by `intercomDucking` while the listener receives any long-range transmission above volume 2 | `tfar_plugin_logic_1_0::voice_pipeline` | `the_intercom_is_ducked_while_a_long_range_transmission_is_received` |
 | F-081 | `reference/tfar_1_0/ts/src/CommandProcessor.cpp:377`, `reference/tfar_1_0/ts/src/CommandProcessor.cpp:303` | `RELEASE_ALL_TANGENTS` releases the push-to-talk but leaves `tangentPressed` set, so the next press is no change and does not transmit | `RELEASE_ALL_TANGENTS` also clears the own tangent, so the next press transmits again | `tfar_plugin_1_0` | `the_full_game_scenario_mutes_renames_transmits_and_processes_radio_voice` (step `release_all_tangents_frees_the_next_press`) |
 | F-082 | `reference/tfar_1_0/ts/src/Teamspeak.cpp:255` | Every rename to the game name saves the current nickname as the original when it differs from the saved one, so after a second rename the "original" is the first game name | The original nickname is saved once per game, at the first rename, and restored at game end | `tfar_plugin_1_0` | `the_full_game_scenario_mutes_renames_transmits_and_processes_radio_voice` (step `rename_twice`) |
+| F-092 | `reference/tfar_1_0/ts/src/CommandProcessor.cpp:234`, `reference/tfar_1_0/addons/antennas/functions/fnc_pluginAddRadioTower.sqf:35` | Every async message is dropped while the current server has no client directory, `RadioTwrAdd` included; the game sends each tower once, so a tower placed before TeamSpeak connects is lost for the mission | Radio tower adds and removes go into the plugin-wide game state with or without a server; the other async messages are still dropped without one | `tfar_plugin_1_0` | `a_server_connected_after_the_game_started_hears_a_positioned_player_alive` |
 
 ## 0.9 only
 
@@ -82,6 +83,6 @@ leaves every plugin file relative to TeamSpeak's working directory.
 | Group | Entries |
 |---|---|
 | Both versions | 6 (F-001–F-006) |
-| 1.0 only | 27 (F-007–F-018, F-029–F-031, F-041–F-047, F-061–F-063, F-081, F-082) |
+| 1.0 only | 28 (F-007–F-018, F-029–F-031, F-041–F-047, F-061–F-063, F-081, F-082, F-092) |
 | 0.9 only | 15 (F-019–F-028, F-032, F-033, F-051, F-071, F-091) |
 | Found in live runs | 2 (F-101, F-102) |

@@ -22,7 +22,7 @@ mod scenarios {
 
     use tfar_game_link::client::prelude::GameLinkClient;
     use tfar_ts3_host::{ChannelId, ClientId, ClientProperty};
-    use tfar_ts3_mock::{HostCall, MockHost, ServerSetup};
+    use tfar_ts3_mock::{HostCall, HostQuery, MockHost, ServerSetup};
 
     use crate::support::{
         EFFECT_TIMEOUT, REMOTE_PLUGIN_NAME, connect_three_clients, game_client, load_plugin,
@@ -71,21 +71,40 @@ mod scenarios {
         host.client_moves(own, ChannelId(2)).unwrap();
     }
 
-    /// The game starts before TeamSpeak connects to a server: the server joins the running game,
-    /// and a player positioned within voice range is alive and unmuted.
+    /// The game starts before TeamSpeak connects to a server: without a server the plugin plays no
+    /// sound and asks TeamSpeak nothing about channels, the radio tower the game sent is kept, the
+    /// server joins the running game, and a player positioned within voice range is alive and
+    /// unmuted.
     pub(crate) fn server_after_game_start() {
         let (host, folder) = load_plugin("late_server");
         let client = game_client();
         client.send_focus(true).unwrap();
-        wait_for(&host, "the game start sound without a server", |calls| {
-            played(calls, &folder, "radio-sounds/on")
+        wait_for(&host, "the game start without a server", |calls| {
+            calls.iter().any(|call| {
+                matches!(call, HostCall::LogMessage { text, .. }
+                    if text.contains("the game connected is_game_start=true"))
+            })
         });
+        send(&client, "RadioTwrAdd\t2:51;30000;[100,200,50]");
         send(
             &client,
             "SETCFG\tserious_channelName\tTaskForceRadio\tSTRING",
         );
         send(&client, "SETCFG\tserious_channelPassword\t123\tSTRING");
         wait_until("needcfg cleared", || !client.needcfg());
+        let calls = host.calls();
+        assert!(
+            !calls
+                .iter()
+                .any(|call| matches!(call, HostCall::PlayWaveFile { .. })),
+            "no sound is played without a server: {calls:#?}"
+        );
+        assert!(
+            !calls
+                .iter()
+                .any(|call| matches!(call, HostCall::Query(HostQuery::ChannelList(_)))),
+            "no channel list is read without a server: {calls:#?}"
+        );
 
         let (own, bravo, _) = connect_three_clients(&host);
         wait_for(&host, "the move into the serious channel", |calls| {
@@ -109,6 +128,17 @@ mod scenarios {
         wait_for(&host, "Bravo unmuted within voice range", |calls| {
             !is_muted(calls, bravo)
         });
+        host.take_calls();
+        host.process_command("diag").unwrap();
+        let diag = host.calls().into_iter().find_map(|call| match call {
+            HostCall::PrintMessageToCurrentTab { text } => Some(text),
+            _ => None,
+        });
+        assert!(
+            diag.as_deref()
+                .is_some_and(|text| text.contains("radio towers: 1")),
+            "the tower sent before the server connected is kept: {diag:?}"
+        );
         let _ = std::fs::remove_dir_all(folder);
     }
 
