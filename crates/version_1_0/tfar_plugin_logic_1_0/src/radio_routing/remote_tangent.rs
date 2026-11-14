@@ -3,7 +3,7 @@
 use std::time::Instant;
 
 use crate::antennas::AntennaManager;
-use crate::client_state::prelude::{SessionState, TangentBroadcast, TangentEffects};
+use crate::client_state::prelude::{GameData, SessionState, TangentBroadcast, TangentEffects};
 use crate::plugin_settings::PluginSettings;
 
 use crate::radio_routing::reception::is_over_radio;
@@ -18,14 +18,16 @@ mod tests;
 /// sounds, the reception count and the heard list follow the reception rules.
 pub fn apply_remote_tangent(
     session: &mut SessionState,
+    game: &GameData,
     settings: &PluginSettings,
     antennas: &AntennaManager,
     tangent: &TangentBroadcast,
     now: Instant,
 ) -> Option<TangentEffects> {
-    session.apply_remote_tangent(tangent, now, |session, sender, ignore| {
+    session.apply_remote_tangent(game, tangent, now, |session, sender, ignore| {
         let context = RoutingContext {
             session,
+            game,
             settings,
             antennas,
             now,

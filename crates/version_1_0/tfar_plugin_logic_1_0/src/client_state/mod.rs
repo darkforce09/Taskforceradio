@@ -11,8 +11,9 @@
 //! `tfar_audio::sample_buffer`; used by `tfar_plugin_1_0`, `tfar_plugin_logic_1_0::radio_routing`,
 //! `tfar_plugin_logic_1_0::voice_pipeline`.
 //!
-//! **Signals and state:** a [`SessionState`] per server connection, kept by the plugin app behind
-//! one lock; no lock and no thread of its own. Time comes in as `now`.
+//! **Signals and state:** a [`SessionState`] per server connection and one [`GameData`] for the
+//! plugin, each kept by the plugin app behind its own lock; no lock and no thread of its own.
+//! Time comes in as `now`, and the game data as an argument of the session's functions.
 //!
 //! **Invariants:** effect state is only reached while its session's lock is held; queries are
 //! pure; DSP objects are created only by [`ClientEffects::ensure_dsp`] and the audio path borrows

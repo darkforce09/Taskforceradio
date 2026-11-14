@@ -1,14 +1,16 @@
 //! `GameData`: what the game reports about the local player, and the speaker radios.
 //!
 //! **Role:** hold the local player's radios, voice range, liveness, environment values, the
-//! loudspeaker radios, the data-frame counter and the local push-to-talk state, as `gameData`
+//! loudspeaker radios, the data-frame counter and the local tangent state, as `gameData`
 //! (`reference/tfar_1_0/ts/src/task_force_radio.hpp:44-93`).
 //!
-//! **Position:** a module of `tfar_plugin_logic_1_0::client_state`; part of [`crate::client_state::SessionState`]; written by
-//! the session's `FREQ`, `SPEAKERS`, `DFRAME` and `KILLED` handling and by the plugin app's PTT
-//! code; read by the routing crate and the voice pipeline.
+//! **Position:** a module of `tfar_plugin_logic_1_0::client_state`; one per plugin, kept by the
+//! plugin app beside every [`crate::client_state::SessionState`], as the original keeps one
+//! `m_gameData` (`task_force_radio.hpp:143`); written by the session's `FREQ`, `SPEAKERS`,
+//! `KILLED` and tangent handling, by `DFRAME` and by the game start and end; read by the
+//! routing crate and the voice pipeline.
 //!
-//! **Signals and state:** plain data behind the caller's session lock; the game link worker
+//! **Signals and state:** plain data behind the plugin app's game lock; the game link worker
 //! writes it, the audio thread reads it.
 //!
 //! **Invariants:** the defaults are the original's (`myVoiceVolume` 0, not alive, waves 0,
@@ -17,7 +19,6 @@
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::game_commands::{FrequencyReport, VehicleDescriptor};
 use crate::plugin_commands::TeamspeakClientId;
@@ -78,8 +79,6 @@ pub struct GameData {
     pub current_transmitting_radio: Option<String>,
     /// The player holds a radio tangent.
     pub is_tangent_pressed: bool,
-    /// TeamSpeak's push-to-talk release delay, read once from its settings database.
-    pub push_to_talk_delay: Duration,
 }
 
 impl Default for GameData {
@@ -98,7 +97,6 @@ impl Default for GameData {
             current_data_frame: DataFrame::INVALID,
             current_transmitting_radio: None,
             is_tangent_pressed: false,
-            push_to_talk_delay: Duration::ZERO,
         }
     }
 }

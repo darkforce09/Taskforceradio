@@ -147,7 +147,8 @@ fn sweep(runtime: &PluginRuntime, now: Instant) {
         }
     }
     if let Some(state) = runtime.servers.get(server) {
-        let expired = state.lock().session.sweep_expired(now);
+        let current_frame = runtime.game.lock().game.current_data_frame;
+        let expired = state.lock().session.sweep_expired(current_frame, now);
         if !expired.is_empty() {
             tracing::debug!(count = expired.len(), "clients expired");
         }
@@ -155,7 +156,8 @@ fn sweep(runtime: &PluginRuntime, now: Instant) {
     runtime.refresh_every_mute(server);
     runtime.refresh_client_metadata(server);
     if let Some(state) = runtime.servers.get(server) {
-        runtime.ensure_every_sender_dsp(&mut state.lock(), &settings);
+        let (game, mut state) = runtime.lock_game_and_server(&state);
+        runtime.ensure_every_sender_dsp(&game, &mut state, &settings);
     }
     runtime.update_own_metadata();
 }

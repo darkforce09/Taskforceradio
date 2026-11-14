@@ -10,7 +10,7 @@
 //! `tfar_plugin_1_0`, `tfar_plugin_logic_1_0::voice_pipeline`.
 //!
 //! **Signals and state:** none but [`MuteTracker`], which the plugin app keeps beside its session
-//! state; the rules read a [`RoutingContext`] built under the session lock.
+//! state; the rules read a [`RoutingContext`] built under the game lock and the session lock.
 //!
 //! **Invariants:** routing reads client state and never changes it; the local player is never
 //! muted and never hears itself over its own radio.

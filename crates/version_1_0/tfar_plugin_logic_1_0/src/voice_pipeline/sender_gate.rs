@@ -7,8 +7,9 @@
 //! **Position:** a module of `tfar_plugin_logic_1_0::voice_pipeline`; called by the voice processor first,
 //! and by the DSP needs for the spectator view.
 //!
-//! **Signals and state:** none of its own; it reads the session and refreshes the sender's
-//! plugin-enabled cache through `SessionState::plugin_enabled_for`.
+//! **Signals and state:** none of its own; it reads the session and the game data of the frame
+//! context and refreshes the sender's plugin-enabled cache through
+//! `SessionState::plugin_enabled_for`.
 //!
 //! **Invariants:** a sender the session does not know passes through; the local player without
 //! TFAR is silence, never heard raw.
@@ -105,8 +106,8 @@ pub(crate) fn judge_sender(
         return GateVerdict::Silence;
     }
     let view = SpectatorView::of(listener, sender_data, settings);
-    let is_listener_alive = session.game.is_alive;
-    let is_sender_alive = sender_data.is_alive(context.now, session.game.current_data_frame);
+    let is_listener_alive = context.game.is_alive;
+    let is_sender_alive = sender_data.is_alive(context.now, context.game.current_data_frame);
     if !view.is_hearable() && context.is_serious_mode && (!is_listener_alive || !is_sender_alive) {
         return GateVerdict::Silence;
     }

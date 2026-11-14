@@ -12,7 +12,7 @@ use crate::radio_routing::routing_context::RoutingContext;
 /// transmits on a short-range radio it can use (tangent or flag) or a long-range one; a speaker
 /// on the exact frequency plays it unless it is the sender's own radio, its position is unknown,
 /// or it is under water (height below 0). Every speaker carries `antenna_loss`. The receptions
-/// are appended to `out` and share their radio ids and vehicles with the session.
+/// are appended to `out` and share their radio ids and vehicles with the game data.
 pub(crate) fn speaker_receptions(
     context: &RoutingContext<'_>,
     sender: &ClientData,
@@ -37,7 +37,6 @@ pub(crate) fn speaker_receptions(
     };
     let clients = &context.session.clients;
     let heard = context
-        .session
         .game
         .speakers_on(frequency)
         .iter()

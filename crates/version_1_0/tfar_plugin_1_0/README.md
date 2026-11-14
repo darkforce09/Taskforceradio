@@ -15,19 +15,27 @@ The TeamSpeak plugin for the 1.0 mod, wiring the 1.0 library crates to TeamSpeak
   `SPEAKERS`, the tangents, `SETCFG`, `MISSIONEND`, `RadioTwrAdd`/`RadioTwrDel`, `TRACK`,
   `collectDebugInfo`) run in arrival order on the async worker. `SETCFG` goes through
   `tfar_plugin_logic_1_0::plugin_settings` and pushes needcfg.
-- **State.** One `ServerState` per connection behind a `parking_lot` mutex: the 1.0 session, the
-  mute tracker, the radio towers, the voice processor and its scratch. Apply functions run under
-  the lock; TeamSpeak is called after it is released.
+- **State.** One `GameState` for the whole plugin behind a `parking_lot` mutex: the game data
+  (radios, liveness, data frame, speakers, tangent) and the radio towers, as the original keeps
+  one `m_gameData` and one antenna manager. One `ServerState` per connection behind its own
+  mutex: the 1.0 session (the clients), the mute tracker, the voice processor and its scratch.
+  The lock order is the server registry (only to clone a state out), then the game lock, then
+  one server lock; `PluginRuntime::lock_game_and_server` is the only place both are taken, and
+  nothing takes the game lock while holding a server lock. Apply functions run under the locks;
+  TeamSpeak is called after they are released.
 - **Game lifecycle.** The game counts as connected while its last message is younger than
-  `pluginTimeout`; the connect plays `radio-sounds/on` and moves into the serious channel, the
-  disconnect lifts every mute, plays `off`, restores channel, nickname and voice activation and
-  sets needcfg.
+  `pluginTimeout`; the connect plays `radio-sounds/on`, starts the game data at its first frame
+  (with or without a server, so a server connected later joins the running game) and moves into
+  the serious channel; the disconnect ends the game data, lifts every mute, plays `off`, restores
+  channel, nickname and voice activation and sets needcfg. Async game messages are dropped while
+  no current server has a state, as the original (`CommandProcessor.cpp:234-236`).
 - **Audio.** The post-process callback runs `tfar_plugin_logic_1_0::voice_pipeline`, the captured callback feeds
   speaker radios through the mixer's own-voice `StreamProducer`, the mixed-playback callback adds
-  the radio sounds. The voice callbacks wait for the server lock, as the original waits on its
-  critical section, since a block passed through unprocessed is an audible jump; no holder calls
-  TeamSpeak or takes another lock under it, and the waits are logged at debug level once a second
-  when any occurred. A remote tangent sound is shaped by `render_remote_tangent_sound`. An HRTF
+  the radio sounds. The voice callbacks wait for the game lock and then the server lock, as the
+  original waits on its critical section, since a block passed through unprocessed is an audible
+  jump; no holder calls TeamSpeak under either, and the waits are logged at debug level once a
+  second when any occurred. The captured callback returns before the server lock when there are
+  no speakers or the player is dead. A remote tangent sound is shaped by `render_remote_tangent_sound`. An HRTF
   direction source restarts itself after 200 ms without input (`tfar_audio::hrtf`), so an utterance
   never replays the last one's tail and no other thread cuts into a running one.
 - **Plugin folder.** `init` loads `radio-sounds/` and `tfar_hrir/` from `Ts3::plugin_folder`:
@@ -53,7 +61,8 @@ loads the radio sounds and the HRIR sphere, reads TeamSpeak's push-to-talk delay
 `PluginRuntime`, starts the `GameLinkServer` on both ports with a `LinkHandler`, the service
 thread and the cancellable update check, and publishes the runtime in an `ArcSwapOption`. Every
 callback loads it: the event callbacks call runtime methods, the audio callbacks the functions of
-`audio::voice_callbacks`, which wait only for a server lock whose holders never call TeamSpeak. All TeamSpeak traffic goes through `TeamSpeakActions`; side effects only
+`audio::voice_callbacks`, which wait only for the game lock and a server lock, whose holders
+never call TeamSpeak. All TeamSpeak traffic goes through `TeamSpeakActions`; side effects only
 through `PluginRuntime::act`, which is `None` while the plugin is dormant. `TfarPlugin::shutdown`
 takes the runtime out, runs `PluginRuntime::shut_down` (web requests cancelled, game end, metadata
 cleared, mutes lifted, link server, service, release thread and debug window stopped and joined,
@@ -63,8 +72,8 @@ web requests joined within 1 s) and drops the log forwarder last, all within 2 s
 
 ### `src/audio/`
 
-The post-process callback waits for the server state (counting the wait in the runtime's
-`AudioDiagnostics`), copies the block to stereo, runs `VoiceProcessor::process_sender` and writes
+The post-process callback waits for the game state and then the server state (counting each
+wait in the runtime's `AudioDiagnostics`), copies the block to stereo, runs `VoiceProcessor::process_sender` and writes
 the result back; no game, a dormant plugin or an unknown sender leaves the block untouched. The captured callback runs
 `VoiceProcessor::process_own_voice_for_speakers` and pushes the result through the mixer's
 `StreamProducer` for the stream `my_radio_voice`, which never blocks or allocates. The
@@ -76,7 +85,8 @@ simple ILD) on the calling thread before the mixer gets it.
 
 ### `src/diagnostics/`
 
-Every report reads the runtime under short locks and calls no TeamSpeak function meanwhile. The
+Every report reads the runtime under short locks (the game values are copied out and the game
+lock released before a server lock is taken) and calls no TeamSpeak function meanwhile. The
 dump writes `diag.log`, `pos.log`, `settings.log` and `game_messages.log` into a folder named by
 the UTC time under TeamSpeak's config path. `/tfar debug` starts the debug window's UI thread on
 first use; without an X11 display it prints the reason in the chat tab instead.
@@ -85,7 +95,7 @@ first use; without an X11 display it prints the reason in the chat tab instead.
 
 `plugin_command_received` accepts only commands of the server in front from a plugin whose name
 starts with `TFAR`, decodes them with `tfar_plugin_logic_1_0::plugin_commands::decode` and applies them under the
-server lock: a remote tangent through `tfar_plugin_logic_1_0::radio_routing::apply_remote_tangent`, which yields
+game lock and the server lock: a remote tangent through `tfar_plugin_logic_1_0::radio_routing::apply_remote_tangent`, which yields
 the remote sounds, the reception count and the heard list. The sounds are shaped and queued and the mute sent after the lock is released.
 `own_variable_changed` sends `VOLUME` to the channel when the own talking flag changes in game.
 
@@ -114,12 +124,16 @@ nothing), and the plugin, dormant again after its game, never broadcasts a relea
 
 ### `src/runtime/`
 
-`PluginRuntime` holds a `ServerRegistry` of `parking_lot::Mutex<ServerState>`, one per established
-connection; a `ServerState` bundles the `SessionState`, the `MuteTracker`, the `AntennaManager`, the
-`VoiceProcessor` with its stereo scratch, the metadata cache the voice gate reads, the channel
-cache and the nickname and channel to restore. Every handler takes the lock, runs the apply
-function of a library crate, collects what TeamSpeak must do, releases the lock and only then
-calls `TeamSpeakActions`. `PluginRuntime::act` answers `None` while the plugin is dormant, so no
+`PluginRuntime` holds one `parking_lot::Mutex<GameState>` (the `GameData` and the
+`AntennaManager`) and a `ServerRegistry` of `parking_lot::Mutex<ServerState>`, one per established
+connection; a `ServerState` bundles the `SessionState`, the `MuteTracker`, the `VoiceProcessor`
+with its stereo scratch, the metadata cache the voice gate reads, the channel cache and the
+nickname and channel to restore. A connection established mid-game gets a fresh `ServerState`
+and reads the running game from `GameState`. Every handler clones the server state out of the
+registry, takes the game lock and then the server lock through `lock_game_and_server` (or one of
+them alone), runs the apply function of a library crate, collects what TeamSpeak must do,
+releases the locks and only then calls `TeamSpeakActions`; a function handed the guards takes no
+lock, and no path takes the game lock while it holds a server lock. `PluginRuntime::act` answers `None` while the plugin is dormant, so no
 side effect reaches TeamSpeak before the first game message, nor after a game end (once its
 handling ran) until the next one. The web requests live in `BackgroundRequests` until shutdown
 cancels them and joins them within one budget. The game link state lives in its own leaf lock;
@@ -192,7 +206,7 @@ Cargo features, off by default: `tracy` (profiling zones to a Tracy viewer throu
 - Rules: a plugin is dormant, making no side effect and passing audio through untouched, until
   its first game message and again after each game end until the next one (see the game-link decisions,
   `after_its_game_end_the_plugin_is_dormant_until_game_activity_resumes`); no TeamSpeak call
-  while a server lock is held; the audio callbacks never block; `ts3plugin_shutdown` returns
+  while the game lock or a server lock is held; the game lock comes before a server lock; the audio callbacks never block; `ts3plugin_shutdown` returns
   within 2 s and joins every thread it started, except a web request still waiting for the
   network after its 1 s join budget (`shutdown_joins_every_thread_the_plugin_started_within_two_seconds`
   in `tests/game_scenarios.rs`). `unsafe` is allowed here for the export glue only

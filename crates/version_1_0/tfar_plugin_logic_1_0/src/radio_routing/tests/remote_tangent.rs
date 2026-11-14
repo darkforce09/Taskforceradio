@@ -26,6 +26,7 @@ fn a_press_in_range_is_heard_and_its_release_ends_the_reception() {
     let now = world.now;
     let pressed = apply_remote_tangent(
         &mut world.session,
+        &world.game,
         &world.settings,
         &world.antennas,
         &broadcast(true),
@@ -44,6 +45,7 @@ fn a_press_in_range_is_heard_and_its_release_ends_the_reception() {
     );
     let released = apply_remote_tangent(
         &mut world.session,
+        &world.game,
         &world.settings,
         &world.antennas,
         &broadcast(false),
@@ -69,6 +71,7 @@ fn a_press_out_of_range_plays_nothing_and_counts_nothing() {
     let now = world.now;
     let pressed = apply_remote_tangent(
         &mut world.session,
+        &world.game,
         &world.settings,
         &world.antennas,
         &broadcast(true),

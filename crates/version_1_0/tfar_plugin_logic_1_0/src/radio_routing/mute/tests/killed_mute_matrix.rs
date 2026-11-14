@@ -11,7 +11,7 @@ const CHANNEL: [TeamspeakClientId; 4] = [OWN, ALPHA, BRAVO, GHOST];
 fn world(is_player_alive: bool) -> World {
     let mut world = World::new();
     world.client("bravo").data_frame = DataFrame::INVALID;
-    world.session.game.is_alive = is_player_alive;
+    world.game.is_alive = is_player_alive;
     world
 }
 
@@ -52,6 +52,6 @@ fn disabling_automatic_mute_leaves_mutes_alone_in_serious_mode() {
     let mut world = world(true);
     world.set_setting("disableAutomaticMute", "true");
     assert_eq!(matrix(&world, true), MuteChanges::default());
-    world.session.game.is_alive = false;
+    world.game.is_alive = false;
     assert_eq!(matrix(&world, false).unmute, [ALPHA, BRAVO, GHOST]);
 }

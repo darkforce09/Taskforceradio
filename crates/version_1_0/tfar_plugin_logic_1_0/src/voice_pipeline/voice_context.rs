@@ -3,18 +3,22 @@
 use std::time::Instant;
 
 use crate::antennas::AntennaManager;
+use crate::client_state::GameData;
 use crate::plugin_settings::PluginSettings;
 
-/// What the plugin app hands the voice processor with one frame: the settings, the radio
-/// towers, the TeamSpeak-side answers the pipeline cannot read itself, and the time.
+/// What the plugin app hands the voice processor with one frame: the local player's game data,
+/// the settings, the radio towers, the TeamSpeak-side answers the pipeline cannot read itself,
+/// and the time.
 ///
-/// The app fills it under its server lock: `is_in_game` from its game link state,
+/// The app fills it under its game lock and server lock: `is_in_game` from its game link state,
 /// `is_serious_mode` from its serious channel cache (`isSeriousModeEnabled`: the sender is in
 /// the serious channel), and `sender_metadata` only when
-/// `SessionState::needs_plugin_metadata` says the 10 s cache has expired, read with the lock
+/// `SessionState::needs_plugin_metadata` says the 10 s cache has expired, read with the locks
 /// released.
 #[derive(Clone, Copy, Debug)]
 pub struct VoiceFrameContext<'a> {
+    /// What the game reports about the local player: radios, liveness, data frame, speakers.
+    pub game: &'a GameData,
     /// The plugin settings (`voiceCone`, `intercomVolume`, the spectator rules, …).
     pub settings: &'a PluginSettings,
     /// The radio towers.

@@ -44,10 +44,13 @@ Rules for every step:
 A dormant plugin (see the [game link protocol](/documentation/architecture/game_link_protocol.md#dormant-plugin))
 passes every callback through untouched.
 
-The post-process and captured voice callbacks wait for the connection's state lock, as the
-originals wait on their critical section. A block passed through unprocessed between processed ones
-would be an audible jump: full level, no effect, no HRTF delay. The lock's holders never call
-TeamSpeak or take another lock, and they keep their work short. The voice reset of a mute clears
+The post-process and captured voice callbacks wait for the locks they need, as the originals wait
+on their critical section: in 1.0 the plugin-wide game lock (game data and radio towers) and then
+the connection's state lock, the order every other holder keeps; in 0.9 the connection's state
+lock. A block passed through unprocessed between processed ones would be an audible jump: full
+level, no effect, no HRTF delay. The locks' holders never call TeamSpeak, take no lock but the
+next one in that order, and keep their work short. The 1.0 captured callback returns before the
+connection's lock when no speaker plays or the player is dead. The voice reset of a mute clears
 filter memory and frees nothing, and expired 0.9 entries are freed after the lock is released.
 Only the server map is taken with `try_read`; a block passes through while a connection is added or
 removed. Each voice block runs with flush-to-zero and denormals-are-zero set, as in the originals,

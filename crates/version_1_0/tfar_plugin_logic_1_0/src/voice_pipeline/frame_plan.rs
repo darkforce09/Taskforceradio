@@ -1,16 +1,16 @@
 //! `FramePlan`: everything decided about one sender's frame before any sample is touched.
 //!
-//! **Role:** run the planning phase of `processVoiceData` while the session is borrowed
-//! immutably: the direct-speech plan, the receptions from `is_over_radio_into` and a plan per
-//! reception, and the voice and global gains, so the audio phase can borrow the sender's
-//! effects mutably.
+//! **Role:** run the planning phase of `processVoiceData` while the session and the game data
+//! are borrowed immutably: the direct-speech plan, the receptions from `is_over_radio_into` and
+//! a plan per reception, and the voice and global gains, so the audio phase can borrow the
+//! sender's effects mutably.
 //!
 //! **Position:** a module of `tfar_plugin_logic_1_0::voice_pipeline`; built by the voice processor and the
 //! DSP needs.
 //!
 //! **Signals and state:** none of its own; the receptions and the route plans go into the
 //! caller's reusable lists, the receptions sharing their radio ids and vehicles with the
-//! session.
+//! session or the game data.
 //!
 //! **Invariants:** a spectating sender is heard on no radio; the route plans match the
 //! receptions one to one, in order; lists that hold every reception are refilled without
@@ -19,7 +19,9 @@
 use std::time::Instant;
 
 use crate::antennas::AntennaManager;
-use crate::client_state::prelude::{HeardVia, IgnoreTangents, SessionState, TeamspeakClientId};
+use crate::client_state::prelude::{
+    GameData, HeardVia, IgnoreTangents, SessionState, TeamspeakClientId,
+};
 use crate::plugin_settings::PluginSettings;
 use crate::radio_routing::{RoutingContext, is_over_radio_into};
 
@@ -45,6 +47,8 @@ pub(crate) struct FramePlan {
 /// The inputs of the planning phase besides the session.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct PlanInputs<'a> {
+    /// The local player's game data.
+    pub(crate) game: &'a GameData,
     /// The plugin settings.
     pub(crate) settings: &'a PluginSettings,
     /// The radio towers.
@@ -71,10 +75,17 @@ impl FramePlan {
     ) -> Option<Self> {
         routes.clear();
         route_plans.clear();
-        let scene = Scene::of(session, inputs.settings, inputs.sender, inputs.now)?;
+        let scene = Scene::of(
+            session,
+            inputs.game,
+            inputs.settings,
+            inputs.sender,
+            inputs.now,
+        )?;
         if !scene.sender.is_spectating {
             let context = RoutingContext {
                 session,
+                game: inputs.game,
                 settings: inputs.settings,
                 antennas: inputs.antennas,
                 now: inputs.now,

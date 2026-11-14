@@ -62,6 +62,7 @@ pub fn apply_set_config(runtime: &PluginRuntime, assignment: &ConfigAssignment) 
         ts.print_to_current_tab(MINIMUM_VERSION_WARNING);
     }
     if let Some((_, state)) = runtime.current_server() {
-        runtime.ensure_every_sender_dsp(&mut state.lock(), &settings);
+        let (game, mut state) = runtime.lock_game_and_server(&state);
+        runtime.ensure_every_sender_dsp(&game, &mut state, &settings);
     }
 }

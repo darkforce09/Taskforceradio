@@ -36,7 +36,7 @@ pub fn killed_mute_matrix(
         .iter()
         .copied()
         .filter(|client| Some(*client) != own);
-    let is_player_alive = session.game.is_alive;
+    let is_player_alive = context.game.is_alive;
     if !is_serious_mode && !is_player_alive {
         return MuteChanges {
             mute: Vec::new(),
@@ -48,7 +48,8 @@ pub fn killed_mute_matrix(
     }
     let mut changes = MuteChanges::default();
     for client in others {
-        let is_client_alive = session.is_client_alive(client, context.now);
+        let is_client_alive =
+            session.is_client_alive(client, context.game.current_data_frame, context.now);
         let mute = is_serious_mode && is_client_alive != is_player_alive;
         if mute {
             changes.mute.push(client);

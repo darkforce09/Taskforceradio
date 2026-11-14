@@ -8,12 +8,12 @@
 //! frame, by the mute decision and by `apply_remote_tangent`; combines the intercom,
 //! carried-radio and speaker rules.
 //!
-//! **Signals and state:** none; reads the session through a [`RoutingContext`].
+//! **Signals and state:** none; reads the session and the game data through a [`RoutingContext`].
 //!
 //! **Invariants:** the intercom comes first; without range, or beyond it without a tower, only
 //! the intercom is heard; the listener never hears itself on a carried radio; a list with room
 //! for every reception is refilled without allocating, each reception sharing its radio id and
-//! vehicle with the session.
+//! vehicle with the session or the game data.
 
 use crate::antennas::AntennaConnection;
 use crate::client_state::prelude::{ClientData, HeardVia, IgnoreTangents};
@@ -51,7 +51,7 @@ pub fn is_over_radio(
 
 /// [`is_over_radio`] into `out`, which is cleared first and keeps its capacity: with room for
 /// every reception it allocates nothing, since each reception shares its radio id and vehicle
-/// with the session.
+/// with the session or the game data.
 pub fn is_over_radio_into(
     context: &RoutingContext<'_>,
     sender: &ClientData,
@@ -59,8 +59,7 @@ pub fn is_over_radio_into(
     out: &mut Vec<HeardVia>,
 ) {
     out.clear();
-    let session = context.session;
-    let Some(listener) = session.clients.own() else {
+    let Some(listener) = context.session.clients.own() else {
         return;
     };
     out.extend(intercom_reception(
@@ -90,7 +89,7 @@ pub fn is_over_radio_into(
             antenna.as_ref(),
         ));
     }
-    let effective_distance = listener.effective_distance_to(sender, &session.game, context.now);
+    let effective_distance = listener.effective_distance_to(sender, context.game, context.now);
     if effective_distance > range && antenna.is_none() {
         return;
     }

@@ -8,8 +8,9 @@
 //!
 //! **Position:** called by `TfarPlugin` on TeamSpeak's main thread.
 //!
-//! **Signals and state:** the server state under its lock; the remote radio sounds are shaped and
-//! queued after it is released.
+//! **Signals and state:** the game state and the server state under the game lock and the server
+//! lock, or the server lock alone with a game value read before it; the remote radio sounds are
+//! shaped and queued after the locks are released.
 //!
 //! **Invariants:** only commands of the server in front from a plugin whose name starts with
 //! `TFAR` count; a sender starting a transmission gets fresh direction sources.
@@ -54,23 +55,26 @@ pub fn plugin_command_received(
     match command {
         PluginCommand::Tangent(tangent) => {
             let (effects, mute, listener, speaker_distance) = {
-                let mut state = state.lock();
-                let crate::runtime::ServerState {
-                    session, antennas, ..
-                } = &mut *state;
-                let Some(effects) =
-                    apply_remote_tangent(session, &settings, antennas, &tangent, now)
-                else {
+                let (game, mut state) = runtime.lock_game_and_server(&state);
+                let Some(effects) = apply_remote_tangent(
+                    &mut state.session,
+                    &game.game,
+                    &settings,
+                    &game.antennas,
+                    &tangent,
+                    now,
+                ) else {
                     return;
                 };
                 let heard = Some(!effects.heard.is_empty());
-                let mute = decide_client_mute(&mut state, &settings, effects.client_id, heard, now);
-                runtime.ensure_sender_dsp(&mut state, &settings, effects.client_id);
+                let mute =
+                    decide_client_mute(&game, &mut state, &settings, effects.client_id, heard, now);
+                runtime.ensure_sender_dsp(&game, &mut state, &settings, effects.client_id);
                 let listener = state.session.clients.own().map(|own| RemoteSoundListener {
                     position: own.client_position(now),
                     view: own.view_direction,
                 });
-                (effects, mute, listener, state.session.game.speaker_distance)
+                (effects, mute, listener, game.game.speaker_distance)
             };
             // A dormant plugin mixes nothing, so its sounds would only wait to play stale.
             if !runtime.is_dormant() {
@@ -92,7 +96,7 @@ pub fn plugin_command_received(
             is_talking,
         } => {
             let mute = {
-                let mut state = state.lock();
+                let (game, mut state) = runtime.lock_game_and_server(&state);
                 let Some(applied) =
                     state
                         .session
@@ -102,19 +106,27 @@ pub fn plugin_command_received(
                 };
                 (!applied.is_own_client)
                     .then(|| {
-                        decide_client_mute(&mut state, &settings, applied.client_id, None, now)
+                        decide_client_mute(
+                            &game,
+                            &mut state,
+                            &settings,
+                            applied.client_id,
+                            None,
+                            now,
+                        )
                     })
                     .flatten()
             };
             runtime.send_mute_changes(server, mute);
         }
         PluginCommand::RequestVolume { client_id } => {
+            let voice_volume = runtime.game.lock().game.voice_volume;
             let reply = {
                 let state = state.lock();
                 state.session.clients.own().map(|own| {
                     encode(&PluginCommand::Volume {
                         nickname: own.nickname().to_owned(),
-                        voice_volume: state.session.game.voice_volume,
+                        voice_volume,
                         is_talking: own.is_talking_now,
                     })
                 })
@@ -160,9 +172,9 @@ pub fn own_variable_changed(
     let Some(state) = runtime.servers.get(server) else {
         return;
     };
+    let voice_volume = runtime.game.lock().game.voice_volume;
     let command = {
         let mut state = state.lock();
-        let voice_volume = state.session.game.voice_volume;
         let Some(own) = state.session.clients.own_mut() else {
             return;
         };

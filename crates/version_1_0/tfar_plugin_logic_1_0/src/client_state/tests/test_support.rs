@@ -8,6 +8,7 @@ use crate::plugin_commands::{TangentBroadcast, TangentKind, TeamspeakClientId};
 use tfar_foundation::arma_values::{FrequencyEntry, RadioSubtype, StereoMode};
 use tfar_foundation::geometry::{Direction, Position};
 
+use crate::client_state::game_data::GameData;
 use crate::client_state::reception::{HeardVia, ReceivedOn, SendingRadio};
 use crate::client_state::session::SessionState;
 
@@ -19,15 +20,21 @@ pub(crate) fn at(x: f64, y: f64, z: f64) -> Position {
     Position::from_array([x, y, z]).unwrap()
 }
 
-/// A session with the local player `me` and the clients `alpha` and `bravo`, in a game.
+/// A session with the local player `me` and the clients `alpha` and `bravo`.
 pub(crate) fn session() -> SessionState {
     let mut session = SessionState::new();
     session.clients.set_own_client(OWN, "me");
     session.clients.client_joined(ALPHA, "alpha");
     session.clients.client_joined(BRAVO, "bravo");
-    session.start_game();
-    session.game.is_alive = true;
     session
+}
+
+/// The game data of a started game with the local player alive.
+pub(crate) fn game() -> GameData {
+    let mut game = GameData::default();
+    game.start_game();
+    game.is_alive = true;
+    game
 }
 
 pub(crate) fn position_update(nickname: &str, position: Position) -> PositionUpdate {

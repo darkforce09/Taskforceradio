@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::*;
-use crate::client_state::test_support::{ALPHA, BRAVO, at, heard_on, now, session, tangent};
+use crate::client_state::test_support::{ALPHA, BRAVO, at, game, heard_on, now, session, tangent};
 
 /// A route that hears every sender on one carried short-range radio.
 fn heard_on_radio(_: &SessionState, _: &ClientData, _: IgnoreTangents) -> Vec<HeardVia> {
@@ -15,8 +15,9 @@ fn heard_on_radio(_: &SessionState, _: &ClientData, _: IgnoreTangents) -> Vec<He
 #[test]
 fn a_heard_press_plays_the_start_sound_and_counts_the_reception() {
     let mut session = session();
+    let game = game();
     let effects = session
-        .apply_remote_tangent(&tangent("alpha", true, "100"), now(), heard_on_radio)
+        .apply_remote_tangent(&game, &tangent("alpha", true, "100"), now(), heard_on_radio)
         .unwrap();
     assert_eq!(effects.transition, TangentTransition::Pressed);
     let start = effects.play_start.unwrap();
@@ -46,9 +47,10 @@ fn a_heard_press_plays_the_start_sound_and_counts_the_reception() {
 #[test]
 fn a_repeated_pressed_plays_no_sound_and_changes_no_count() {
     let mut session = session();
-    session.apply_remote_tangent(&tangent("alpha", true, "100"), now(), heard_on_radio);
+    let game = game();
+    session.apply_remote_tangent(&game, &tangent("alpha", true, "100"), now(), heard_on_radio);
     let effects = session
-        .apply_remote_tangent(&tangent("alpha", true, "100"), now(), heard_on_radio)
+        .apply_remote_tangent(&game, &tangent("alpha", true, "100"), now(), heard_on_radio)
         .unwrap();
     assert_eq!(effects.transition, TangentTransition::RepeatedPress);
     assert!(effects.play_start.is_none());
@@ -67,11 +69,13 @@ fn a_repeated_pressed_plays_no_sound_and_changes_no_count() {
 #[test]
 fn a_release_is_routed_before_the_reset_with_the_senders_abilities() {
     let mut session = session();
-    session.apply_remote_tangent(&tangent("alpha", true, "100"), now(), heard_on_radio);
+    let game = game();
+    session.apply_remote_tangent(&game, &tangent("alpha", true, "100"), now(), heard_on_radio);
     session.clients.get_mut("alpha").unwrap().can_use_lr_radio = true;
     let seen = Cell::new(None);
     let effects = session
         .apply_remote_tangent(
+            &game,
             &tangent("alpha", false, "100"),
             now(),
             |_, sender, ignore| {
@@ -106,11 +110,17 @@ fn a_release_is_routed_before_the_reset_with_the_senders_abilities() {
 #[test]
 fn a_press_is_routed_after_the_update() {
     let mut session = session();
+    let game = game();
     let seen = Cell::new(None);
-    session.apply_remote_tangent(&tangent("alpha", true, "100"), now(), |_, sender, _| {
-        seen.set(Some((sender.range, sender.is_transmitting())));
-        Vec::new()
-    });
+    session.apply_remote_tangent(
+        &game,
+        &tangent("alpha", true, "100"),
+        now(),
+        |_, sender, _| {
+            seen.set(Some((sender.range, sender.is_transmitting())));
+            Vec::new()
+        },
+    );
     assert_eq!(seen.get(), Some((3000, true)));
 }
 
@@ -120,23 +130,38 @@ fn a_press_is_routed_after_the_update() {
 #[test]
 fn two_senders_on_one_frequency_each_count_and_each_release_ends_its_own() {
     let mut session = session();
-    session.apply_remote_tangent(&tangent("alpha", true, "100"), now(), heard_on_radio);
-    session.apply_remote_tangent(&tangent("bravo", true, "100"), now(), heard_on_radio);
+    let game = game();
+    session.apply_remote_tangent(&game, &tangent("alpha", true, "100"), now(), heard_on_radio);
+    session.apply_remote_tangent(&game, &tangent("bravo", true, "100"), now(), heard_on_radio);
     let own = session.clients.own().unwrap();
     assert_eq!(own.receiving_transmission_count(), 2);
-    session.apply_remote_tangent(&tangent("alpha", false, "100"), now(), heard_on_radio);
+    session.apply_remote_tangent(
+        &game,
+        &tangent("alpha", false, "100"),
+        now(),
+        heard_on_radio,
+    );
     let own = session.clients.own().unwrap();
     assert_eq!(own.receiving_senders().collect::<Vec<_>>(), [BRAVO]);
-    session.apply_remote_tangent(&tangent("bravo", false, "100"), now(), heard_on_radio);
+    session.apply_remote_tangent(
+        &game,
+        &tangent("bravo", false, "100"),
+        now(),
+        heard_on_radio,
+    );
     assert!(!session.clients.own().unwrap().is_receiving_transmission());
 }
 
 #[test]
 fn a_dead_player_hears_no_sound_and_counts_nothing() {
     let mut session = session();
-    session.game.is_alive = false;
+    let game = game();
+    let game = GameData {
+        is_alive: false,
+        ..game
+    };
     let effects = session
-        .apply_remote_tangent(&tangent("alpha", true, "100"), now(), heard_on_radio)
+        .apply_remote_tangent(&game, &tangent("alpha", true, "100"), now(), heard_on_radio)
         .unwrap();
     assert!(effects.play_start.is_none());
     assert!(!effects.is_receiving_changed);
@@ -146,8 +171,9 @@ fn a_dead_player_hears_no_sound_and_counts_nothing() {
 #[test]
 fn the_intercom_plays_no_radio_sound() {
     let mut session = session();
+    let game = game();
     let effects = session
-        .apply_remote_tangent(&tangent("alpha", true, "100"), now(), |_, _, _| {
+        .apply_remote_tangent(&game, &tangent("alpha", true, "100"), now(), |_, _, _| {
             vec![heard_on(ReceivedOn::Intercom)]
         })
         .unwrap();
@@ -158,9 +184,10 @@ fn the_intercom_plays_no_radio_sound() {
 #[test]
 fn a_speaker_sound_carries_its_place_vehicle_loss_and_water() {
     let mut session = session();
+    let game = game();
     Arc::make_mut(&mut session.clients.own_mut().unwrap().vehicle).isolation = 0.3;
     let effects = session
-        .apply_remote_tangent(&tangent("alpha", true, "100"), now(), |_, _, _| {
+        .apply_remote_tangent(&game, &tangent("alpha", true, "100"), now(), |_, _, _| {
             let mut via = heard_on(ReceivedOn::Ground);
             via.position = Some(at(1.0, 2.0, -3.0));
             via.wave_z = -2.0;
@@ -182,11 +209,12 @@ fn a_speaker_sound_carries_its_place_vehicle_loss_and_water() {
 fn a_tangent_press_keeps_the_position_extrapolation_clock() {
     let start = now();
     let mut session = session();
+    let game = game();
     let alpha = session.clients.get_mut("alpha").unwrap();
     alpha.position_updated_at = Some(start);
     Arc::make_mut(&mut alpha.vehicle).velocity = [10.0, 0.0, 0.0];
     let later = start + Duration::from_secs(1);
-    session.apply_remote_tangent(&tangent("alpha", true, "100"), later, heard_on_radio);
+    session.apply_remote_tangent(&game, &tangent("alpha", true, "100"), later, heard_on_radio);
     let alpha = session.clients.get("alpha").unwrap();
     assert_eq!(alpha.position_updated_at, Some(start));
     assert_eq!(alpha.last_activity_at, Some(later));
@@ -196,11 +224,12 @@ fn a_tangent_press_keeps_the_position_extrapolation_clock() {
 #[test]
 fn a_long_range_press_marks_the_sender_long_range_capable() {
     let mut session = session();
+    let game = game();
     let mut press = tangent("alpha", true, "40");
     press.kind = TangentKind::LongRange;
     press.subtype = tfar_foundation::arma_values::RadioSubtype::DigitalLongRange;
     let effects = session
-        .apply_remote_tangent(&press, now(), heard_on_radio)
+        .apply_remote_tangent(&game, &press, now(), heard_on_radio)
         .unwrap();
     assert_eq!(
         effects.play_start.unwrap().sound,
@@ -214,14 +243,15 @@ fn a_long_range_press_marks_the_sender_long_range_capable() {
 #[test]
 fn own_and_unknown_broadcasts_are_ignored() {
     let mut session = session();
+    let game = game();
     assert!(
         session
-            .apply_remote_tangent(&tangent("me", true, "100"), now(), heard_on_radio)
+            .apply_remote_tangent(&game, &tangent("me", true, "100"), now(), heard_on_radio)
             .is_none()
     );
     assert!(
         session
-            .apply_remote_tangent(&tangent("ghost", true, "100"), now(), heard_on_radio)
+            .apply_remote_tangent(&game, &tangent("ghost", true, "100"), now(), heard_on_radio)
             .is_none()
     );
     assert_eq!(session.clients.get("alpha").unwrap().client_id(), ALPHA);

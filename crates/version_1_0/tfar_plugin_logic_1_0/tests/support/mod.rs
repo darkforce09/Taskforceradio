@@ -1,5 +1,5 @@
-//! The world the voice scenarios run in: a session, its settings and towers, a processor, and
-//! the signal helpers that measure what comes out.
+//! The world the voice scenarios run in: a session, the game data, the settings and towers, a
+//! processor, and the signal helpers that measure what comes out.
 
 #![allow(
     dead_code,
@@ -21,8 +21,8 @@ use tfar_audio::sample_buffer::StereoBuffer;
 use tfar_foundation::geometry::{Direction, Position};
 use tfar_plugin_logic_1_0::antennas::{Antenna, AntennaManager, NetId};
 use tfar_plugin_logic_1_0::client_state::prelude::{
-    ClientData, DataFrame, DspContext, FrequencyEntry, RadioSubtype, SessionState, Speaker,
-    StereoMode, TangentRadio, TeamspeakClientId, VehicleDescriptor,
+    ClientData, DataFrame, DspContext, FrequencyEntry, GameData, RadioSubtype, SessionState,
+    Speaker, StereoMode, TangentRadio, TeamspeakClientId, VehicleDescriptor,
 };
 use tfar_plugin_logic_1_0::plugin_settings::{PluginSettings, TypeTag};
 use tfar_plugin_logic_1_0::voice_pipeline::{
@@ -73,10 +73,11 @@ fn entry(frequency: &str, volume: f64) -> (String, FrequencyEntry) {
     )
 }
 
-/// One listener (`me`), two senders (`alpha`, `bravo`), the settings, the towers and a
-/// processor.
+/// One listener (`me`), two senders (`alpha`, `bravo`), the game data, the settings, the towers
+/// and a processor.
 pub(crate) struct World {
     pub(crate) session: SessionState,
+    pub(crate) game: GameData,
     pub(crate) settings: PluginSettings,
     pub(crate) antennas: AntennaManager,
     pub(crate) processor: VoiceProcessor,
@@ -95,10 +96,11 @@ impl World {
         session.clients.set_own_client(OWN, "me");
         session.clients.client_joined(ALPHA, "alpha");
         session.clients.client_joined(BRAVO, "bravo");
-        session.start_game();
-        session.game.is_alive = true;
-        session.game.sw_frequencies = [entry(SW_FREQUENCY, 7.0)].into_iter().collect();
-        session.game.lr_frequencies = [entry(LR_FREQUENCY, 5.0)].into_iter().collect();
+        let mut game = GameData::default();
+        game.start_game();
+        game.is_alive = true;
+        game.sw_frequencies = [entry(SW_FREQUENCY, 7.0)].into_iter().collect();
+        game.lr_frequencies = [entry(LR_FREQUENCY, 5.0)].into_iter().collect();
         for client in session.clients.iter_mut() {
             client.data_frame = DataFrame::FIRST;
             client.last_activity_at = Some(now);
@@ -111,6 +113,7 @@ impl World {
         own.view_direction = facing(0.0, 1.0, 0.0);
         let mut world = Self {
             session,
+            game,
             settings: PluginSettings::default(),
             antennas: AntennaManager::new(),
             processor: VoiceProcessor::new(FRAMES),
@@ -177,8 +180,7 @@ impl World {
         volume: f64,
         wave_z: f64,
     ) {
-        self.session
-            .game
+        self.game
             .speakers
             .entry(frequency.to_owned())
             .or_default()
@@ -207,6 +209,7 @@ impl World {
         };
         ensure_sender_dsp(
             &mut self.session,
+            &self.game,
             &self.settings,
             &self.antennas,
             sender,
@@ -224,6 +227,7 @@ impl World {
     ) -> (VoiceOutcome, StereoBuffer) {
         let mut samples = input.clone();
         let context = VoiceFrameContext {
+            game: &self.game,
             settings: &self.settings,
             antennas: &self.antennas,
             is_in_game: true,

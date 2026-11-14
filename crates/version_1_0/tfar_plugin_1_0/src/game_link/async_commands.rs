@@ -2,17 +2,20 @@
 //! speakers, tangents, settings, radio towers, tracking and the diagnostics dump.
 //!
 //! **Role:** `CommandProcessor::processAsynchronousCommand` (`reference/tfar_1_0/ts/src/
-//! CommandProcessor.cpp:224-457`): each parsed message goes into the current server's state
-//! through the apply functions of `tfar_plugin_logic_1_0::client_state`, and what they return is carried out in
-//! TeamSpeak after the lock is released.
+//! CommandProcessor.cpp:224-457`): each parsed message goes into the game state and the current
+//! server's state through the apply functions of `tfar_plugin_logic_1_0::client_state`, and what
+//! they return is carried out in TeamSpeak after the locks are released.
 //!
 //! **Position:** called by `LinkHandler::async_message` on the link's async worker, which also
 //! runs the sync `POS` calls the sync path queues there.
 //!
-//! **Signals and state:** the current server's state under its lock; the settings snapshot.
+//! **Signals and state:** the game state under the game lock and the current server's state
+//! under its lock, both taken through `PluginRuntime::lock_game_and_server`; `DFRAME` and the
+//! radio towers take the game lock alone; the settings snapshot.
 //!
-//! **Invariants:** a message for a server with no state is dropped, as the original returns
-//! without a client directory; the DSP objects a change needs are built here, off the audio
+//! **Invariants:** every message is dropped while no current server has a state, as the original
+//! returns without a client directory (`CommandProcessor.cpp:234-236`), the game-wide ones
+//! (`DFRAME`, the towers) included; the DSP objects a change needs are built here, off the audio
 //! thread.
 
 use std::time::Instant;
@@ -43,16 +46,16 @@ pub fn apply_async_message(runtime: &PluginRuntime, text: &str, command: GameCom
         GameCommand::Frequencies(report) => apply_frequencies(runtime, &report),
         GameCommand::Killed { nickname } => apply_killed(runtime, &nickname),
         GameCommand::DataFrame => {
-            if let Some((_, state)) = runtime.current_server() {
-                state.lock().session.next_data_frame();
+            if runtime.current_server().is_some() {
+                runtime.game.lock().game.next_data_frame();
             }
         }
         GameCommand::Speakers(records) => {
             if let Some((_, state)) = runtime.current_server() {
                 let settings = runtime.settings();
-                let mut state = state.lock();
-                state.session.apply_speakers(&records);
-                runtime.ensure_every_sender_dsp(&mut state, &settings);
+                let (mut game, mut state) = runtime.lock_game_and_server(&state);
+                state.session.apply_speakers(&mut game.game, &records);
+                runtime.ensure_every_sender_dsp(&game, &mut state, &settings);
             }
         }
         GameCommand::Tangent(press) => apply_local_tangent(runtime, &press),
@@ -60,9 +63,9 @@ pub fn apply_async_message(runtime: &PluginRuntime, text: &str, command: GameCom
         GameCommand::SetConfig(assignment) => apply_set_config(runtime, &assignment),
         GameCommand::RadioTowerAdd(records) => add_towers(runtime, &records),
         GameCommand::RadioTowerRemove(ids) => {
-            if let Some((_, state)) = runtime.current_server() {
+            if runtime.current_server().is_some() {
                 let ids = ids.iter().map(|id| NetId::new(id.creator, id.object));
-                state.lock().antennas.remove(ids);
+                runtime.game.lock().antennas.remove(ids);
             }
         }
         GameCommand::Track(event) => {
@@ -96,16 +99,17 @@ fn apply_position(runtime: &PluginRuntime, update: &PositionUpdate) {
     let settings = runtime.settings();
     let now = Instant::now();
     let (applied, mute) = {
-        let mut state = state.lock();
-        let Some(applied) = state.session.apply_position(update, now) else {
+        let (game, mut state) = runtime.lock_game_and_server(&state);
+        let Some(applied) = state.session.apply_position(&game.game, update, now) else {
             return;
         };
         if applied.is_own_client {
-            runtime.ensure_every_sender_dsp(&mut state, &settings);
+            runtime.ensure_every_sender_dsp(&game, &mut state, &settings);
             (applied, None)
         } else {
-            let mute = decide_client_mute(&mut state, &settings, applied.client_id, None, now);
-            runtime.ensure_sender_dsp(&mut state, &settings, applied.client_id);
+            let mute =
+                decide_client_mute(&game, &mut state, &settings, applied.client_id, None, now);
+            runtime.ensure_sender_dsp(&game, &mut state, &settings, applied.client_id);
             (applied, mute)
         }
     };
@@ -126,8 +130,8 @@ fn apply_frequencies(runtime: &PluginRuntime, report: &FrequencyReport) {
         return;
     };
     let rename = {
-        let mut state = state.lock();
-        let rename = state.session.apply_frequencies(report);
+        let (mut game, mut state) = runtime.lock_game_and_server(&state);
+        let rename = state.session.apply_frequencies(&mut game.game, report);
         if rename.is_some() && state.original_nickname.is_none() {
             state.original_nickname = state
                 .session
@@ -176,18 +180,24 @@ fn apply_killed(runtime: &PluginRuntime, nickname: &str) {
         .unwrap_or_default();
     let settings = runtime.settings();
     let changes = {
-        let mut state = state.lock();
-        state.session.apply_killed(nickname);
-        decide_killed_mutes(&mut state, &settings, &channel_clients, Instant::now())
+        let (mut game, mut state) = runtime.lock_game_and_server(&state);
+        state.session.apply_killed(&mut game.game, nickname);
+        decide_killed_mutes(
+            &game,
+            &mut state,
+            &settings,
+            &channel_clients,
+            Instant::now(),
+        )
     };
     runtime.send_mute_matrix(server, &changes);
 }
 
 /// `RadioTwrAdd`: the towers are added, replacing towers of the same id.
 fn add_towers(runtime: &PluginRuntime, records: &[TowerRecord]) {
-    let Some((_, state)) = runtime.current_server() else {
+    if runtime.current_server().is_none() {
         return;
-    };
+    }
     let antennas: Vec<Antenna> = records
         .iter()
         .filter_map(|record| {
@@ -197,5 +207,5 @@ fn add_towers(runtime: &PluginRuntime, records: &[TowerRecord]) {
                 .ok()
         })
         .collect();
-    state.lock().antennas.add(antennas);
+    runtime.game.lock().antennas.add(antennas);
 }

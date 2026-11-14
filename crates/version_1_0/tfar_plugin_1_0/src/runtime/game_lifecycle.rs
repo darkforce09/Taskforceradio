@@ -10,11 +10,12 @@
 //! message and by the service thread every 100 ms.
 //!
 //! **Signals and state:** the game link state lock is held only for the poll; the transition is
-//! acted on after it is released.
+//! acted on after it is released. The game lock is taken alone, to start or end the game data.
 //!
 //! **Invariants:** a game starts only on a connect while not in game and ends only on a
-//! disconnect while in game; the metadata is written only while the plugin is not dormant; once a
-//! disconnect's handling has run (mutes lifted, the `off` sound, channel and nickname back, the
+//! disconnect while in game; the game data starts and ends with the game whether or not a server
+//! is connected, so a server connected later joins the running game; the metadata is written
+//! only while the plugin is not dormant; once a disconnect's handling has run (mutes lifted, the `off` sound, channel and nickname back, the
 //! not-in-game metadata once) the plugin is dormant again until the next game message; a
 //! connect always wakes it; once shutdown begins no transition runs and only the shutdown clears
 //! the metadata.
@@ -68,10 +69,12 @@ impl PluginRuntime {
                 // between that message and this poll put it back to sleep.
                 self.mark_game_activity();
                 if is_game_start {
+                    // The game data is the plugin's, so the game starts with or without a
+                    // server, as `onGameConnected` (`task_force_radio.cpp:35`).
+                    self.game.lock().game.start_game();
                     self.set_in_game(true);
                     self.play_lifecycle_sound(GAME_ON_SOUND);
-                    if let Some((server, state)) = self.current_server() {
-                        state.lock().session.start_game();
+                    if let Some((server, _)) = self.current_server() {
                         self.move_to_serious_channel(server, true);
                     }
                     self.update_own_metadata();
@@ -90,9 +93,7 @@ impl PluginRuntime {
                     self.set_needcfg(true);
                 }
                 self.set_in_game(false);
-                if let Some((_, state)) = self.current_server() {
-                    state.lock().session.end_game();
-                }
+                self.game.lock().game.end_game();
                 self.update_own_metadata();
                 self.return_to_dormant_unless_connected(now);
             }

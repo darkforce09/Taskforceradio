@@ -319,6 +319,7 @@ fn bravo_on_long_range(world: &mut World) {
     };
     let effects = apply_remote_tangent(
         &mut world.session,
+        &world.game,
         &world.settings,
         &world.antennas,
         &tangent,
@@ -389,6 +390,7 @@ fn the_captured_voice_plays_on_a_speaker_radio_the_listener_stands_by() {
     for index in 0..16 {
         let captured = sine(2000.0, 8000.0, index);
         let context = VoiceFrameContext {
+            game: &world.game,
             settings: &world.settings,
             antennas: &world.antennas,
             is_in_game: true,
@@ -410,6 +412,7 @@ fn without_speakers_the_captured_voice_is_not_played() {
     let mut world = World::new();
     let captured = sine(2000.0, 8000.0, 0);
     let context = VoiceFrameContext {
+        game: &world.game,
         settings: &world.settings,
         antennas: &world.antennas,
         is_in_game: true,
@@ -441,6 +444,7 @@ fn the_captured_voice_skips_the_intercom_and_direct_speech() {
     for index in 0..8 {
         let captured = sine(1000.0, 8000.0, index);
         let context = VoiceFrameContext {
+            game: &world.game,
             settings: &world.settings,
             antennas: &world.antennas,
             is_in_game: true,

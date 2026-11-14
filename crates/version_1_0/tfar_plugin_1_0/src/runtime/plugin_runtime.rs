@@ -1,30 +1,33 @@
 //! [`PluginRuntime`]: the running 1.0 plugin, created in `ts3plugin_init` and stopped in
 //! `ts3plugin_shutdown`.
 //!
-//! **Role:** own every piece of plugin state (the server states, the settings snapshot, the game
-//! link state, the radio sounds and the HRIR sphere, the push-to-talk state, the link server, the
-//! service thread, the debug window, the web requests, the game message log) and the helpers the
-//! handlers share.
+//! **Role:** own every piece of plugin state (the game state, the server states, the settings
+//! snapshot, the game link state, the radio sounds and the HRIR sphere, the push-to-talk state,
+//! the link server, the service thread, the debug window, the web requests, the game message log)
+//! and the helpers the handlers share.
 //!
 //! **Position:** one per load, behind an `Arc` the plugin static publishes through an `ArcSwap`;
 //! the game link handler and the service thread keep it alive until shutdown joins them.
 //!
 //! **Signals and state:** see the fields. The lock order is: the server registry (only to clone
-//! a state out), then one server lock; every other lock (game link state, link server, service,
-//! debug window, web requests, message log, warnings) is a leaf that is never held while a server
-//! lock is taken. The push-to-talk lock is held across TeamSpeak calls, which is allowed because
-//! no audio callback and no TeamSpeak callback takes it.
+//! a state out), then the game lock, then one server lock. Only
+//! [`PluginRuntime::lock_game_and_server`] takes both; a function handed the guards takes no lock,
+//! and nothing takes the game lock while a server lock is held. Every other lock (game link
+//! state, link server, service, debug window, web requests, message log, warnings) is a leaf that
+//! is never held while the game lock or a server lock is taken. The push-to-talk lock is held
+//! across TeamSpeak calls, which is allowed because no audio callback and no TeamSpeak callback
+//! takes it.
 //!
-//! **Invariants:** no TeamSpeak call while a server lock is held; nothing but queries reaches
-//! TeamSpeak while the plugin is dormant ([`PluginRuntime::act`] answers `None`): before its first
-//! game message and again after each game end.
+//! **Invariants:** no TeamSpeak call while the game lock or a server lock is held; nothing but
+//! queries reaches TeamSpeak while the plugin is dormant ([`PluginRuntime::act`] answers
+//! `None`): before its first game message and again after each game end.
 
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
 use arc_swap::ArcSwap;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, MutexGuard};
 use tfar_debug_window::prelude::DebugWindowHandle;
 use tfar_game_link::server::prelude::GameLinkServer;
 use tfar_plugin_logic_1_0::client_state::prelude::{DspContext, GameLinkState, TeamspeakClientId};
@@ -36,6 +39,7 @@ use crate::audio::radio_sounds::RadioSounds;
 use crate::diagnostics::message_ring::MessageRing;
 use crate::push_to_talk::PushToTalk;
 use crate::runtime::background_requests::BackgroundRequests;
+use crate::runtime::game_state::GameState;
 use crate::runtime::server_state::{
     MAX_BLOCK_FRAMES, ServerRegistry, ServerState, SharedServerState,
 };
@@ -54,6 +58,9 @@ pub const WEB_REQUEST_JOIN_BUDGET: Duration = Duration::from_secs(1);
 pub struct PluginRuntime {
     /// TeamSpeak.
     ts: &'static dyn TeamSpeakActions,
+    /// The game data and the radio towers, once for every connection; locked before any server
+    /// lock, together with one only through [`PluginRuntime::lock_game_and_server`].
+    pub game: Mutex<GameState>,
     /// The state of every established connection.
     pub servers: ServerRegistry,
     /// The settings, replaced whole on every `SETCFG`, read without a lock.
@@ -121,6 +128,7 @@ impl PluginRuntime {
     ) -> Arc<Self> {
         Arc::new(Self {
             ts,
+            game: Mutex::new(GameState::new()),
             servers: ServerRegistry::new(),
             settings: ArcSwap::from_pointee(PluginSettings::default()),
             settings_writer: Mutex::new(()),
@@ -240,8 +248,18 @@ impl PluginRuntime {
 
     /// The state of `server`, created when it is new.
     pub fn server_state(&self, server: ServerConnectionHandlerId) -> SharedServerState {
-        self.servers
-            .get_or_insert(server, || ServerState::new(self.push_to_talk_delay))
+        self.servers.get_or_insert(server, ServerState::new)
+    }
+
+    /// The game lock, then the lock of `shared`: the only place both are taken, in the lock
+    /// order of the module header. `shared` is a state already cloned out of the registry.
+    pub fn lock_game_and_server<'a>(
+        &'a self,
+        shared: &'a SharedServerState,
+    ) -> (MutexGuard<'a, GameState>, MutexGuard<'a, ServerState>) {
+        let game = self.game.lock();
+        let state = shared.lock();
+        (game, state)
     }
 
     /// Publishes the needcfg flag to the extension.
@@ -290,33 +308,46 @@ impl PluginRuntime {
         }
     }
 
-    /// Creates the DSP objects `sender`'s next frames need (off the audio thread, lock held).
+    /// Creates the DSP objects `sender`'s next frames need, off the audio thread, with the game
+    /// lock and the server lock held by the caller.
     pub fn ensure_sender_dsp(
         &self,
+        game: &GameState,
         state: &mut ServerState,
         settings: &PluginSettings,
         sender: TeamspeakClientId,
     ) {
         let dsp = self.dsp_context(settings);
-        let ServerState {
-            session, antennas, ..
-        } = state;
-        if let Err(error) =
-            ensure_sender_dsp(session, settings, antennas, sender, &dsp, Instant::now())
-        {
+        if let Err(error) = ensure_sender_dsp(
+            &mut state.session,
+            &game.game,
+            settings,
+            &game.antennas,
+            sender,
+            &dsp,
+            Instant::now(),
+        ) {
             tracing::warn!(%error, "a DSP object of a sender could not be built");
         }
     }
 
-    /// Creates the DSP objects every client's next frames need (lock held).
-    pub fn ensure_every_sender_dsp(&self, state: &mut ServerState, settings: &PluginSettings) {
+    /// Creates the DSP objects every client's next frames need, with the game lock and the
+    /// server lock held by the caller.
+    pub fn ensure_every_sender_dsp(
+        &self,
+        game: &GameState,
+        state: &mut ServerState,
+        settings: &PluginSettings,
+    ) {
         let dsp = self.dsp_context(settings);
-        let ServerState {
-            session, antennas, ..
-        } = state;
-        if let Err(error) =
-            ensure_every_sender_dsp(session, settings, antennas, &dsp, Instant::now())
-        {
+        if let Err(error) = ensure_every_sender_dsp(
+            &mut state.session,
+            &game.game,
+            settings,
+            &game.antennas,
+            &dsp,
+            Instant::now(),
+        ) {
             tracing::warn!(%error, "a DSP object could not be built");
         }
     }

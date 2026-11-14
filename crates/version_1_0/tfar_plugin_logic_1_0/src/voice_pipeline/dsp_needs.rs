@@ -6,7 +6,7 @@
 //!
 //! **Position:** a module of `tfar_plugin_logic_1_0::voice_pipeline`; called by the plugin app off the audio
 //! thread (after `POS`, a tangent, `SPEAKERS`, a settings change, or from the service loop),
-//! under the server lock.
+//! under the game lock and the server lock.
 //!
 //! **Signals and state:** none of its own; it writes the sender's `ClientEffects`.
 //!
@@ -18,8 +18,8 @@ use std::time::Instant;
 
 use crate::antennas::AntennaManager;
 use crate::client_state::prelude::{
-    CANT_SPEAK_FILTER_KEY, ClientData, DspContext, DspRequirement, HeardVia, INTERCOM_RADIO_ID,
-    SessionState, TeamspeakClientId, VEHICLE_FILTER_KEY, VOICE_HRTF_KEY,
+    CANT_SPEAK_FILTER_KEY, ClientData, DspContext, DspRequirement, GameData, HeardVia,
+    INTERCOM_RADIO_ID, SessionState, TeamspeakClientId, VEHICLE_FILTER_KEY, VOICE_HRTF_KEY,
 };
 use crate::plugin_settings::PluginSettings;
 
@@ -32,15 +32,16 @@ use crate::voice_pipeline::radio_paths::{
 use crate::voice_pipeline::scene::Scene;
 use crate::voice_pipeline::sender_gate::SpectatorView;
 
-/// Creates every DSP object the frames of `sender` need at `now` and does not have yet; returns
-/// how many it created. Allocates and designs filters: call it off the audio thread. An unknown
-/// sender, or no local player, needs nothing.
+/// Creates every DSP object the frames of `sender` need at `now`, with the local player's `game`
+/// data, and does not have yet; returns how many it created. Allocates and designs filters: call
+/// it off the audio thread. An unknown sender, or no local player, needs nothing.
 ///
 /// # Errors
 ///
 /// [`crate::voice_pipeline::Error::Dsp`] with the first refused design; the other objects are still created.
 pub fn ensure_sender_dsp(
     session: &mut SessionState,
+    game: &GameData,
     settings: &PluginSettings,
     antennas: &AntennaManager,
     sender: TeamspeakClientId,
@@ -48,9 +49,15 @@ pub fn ensure_sender_dsp(
     now: Instant,
 ) -> Result<usize> {
     let mut route_plans = Vec::new();
-    let Some(needs) =
-        SenderDspNeeds::plan(session, settings, antennas, sender, now, &mut route_plans)
-    else {
+    let Some(needs) = SenderDspNeeds::plan(
+        session,
+        game,
+        settings,
+        antennas,
+        sender,
+        now,
+        &mut route_plans,
+    ) else {
         return Ok(0);
     };
     let requirements = needs.requirements(&route_plans, dsp.hrir_library.is_some());
@@ -68,6 +75,7 @@ pub fn ensure_sender_dsp(
 /// [`crate::voice_pipeline::Error::Dsp`] with the first refused design; every client is still visited.
 pub fn ensure_every_sender_dsp(
     session: &mut SessionState,
+    game: &GameData,
     settings: &PluginSettings,
     antennas: &AntennaManager,
     dsp: &DspContext<'_>,
@@ -78,7 +86,7 @@ pub fn ensure_every_sender_dsp(
     let mut created = 0_usize;
     let mut first_error = None;
     for sender in senders {
-        match ensure_sender_dsp(session, settings, antennas, sender, dsp, now) {
+        match ensure_sender_dsp(session, game, settings, antennas, sender, dsp, now) {
             Ok(count) => created = created.saturating_add(count),
             Err(error) => {
                 first_error.get_or_insert(error);
@@ -103,17 +111,19 @@ struct SenderDspNeeds {
 }
 
 impl SenderDspNeeds {
-    /// Plans `sender` in `session` at `now`, filling `route_plans`.
+    /// Plans `sender` in `session` with `game` at `now`, filling `route_plans`.
     fn plan(
         session: &SessionState,
+        game: &GameData,
         settings: &PluginSettings,
         antennas: &AntennaManager,
         sender: TeamspeakClientId,
         now: Instant,
         route_plans: &mut Vec<RoutePlan>,
     ) -> Option<Self> {
-        let scene = Scene::of(session, settings, sender, now)?;
+        let scene = Scene::of(session, game, settings, sender, now)?;
         let inputs = PlanInputs {
+            game,
             settings,
             antennas,
             sender,

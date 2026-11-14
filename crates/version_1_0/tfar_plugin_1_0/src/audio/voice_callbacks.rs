@@ -8,40 +8,42 @@
 //! **Position:** called by `TfarPlugin` on TeamSpeak's audio threads with the runtime loaded
 //! from its `ArcSwap`.
 //!
-//! **Signals and state:** reads the settings snapshot and the server state; the server registry
-//! is taken with `try_read` (a block passes through while a connection is added or removed), the
-//! server lock is waited for, as the original waits on its critical section, because a block
-//! passed through unprocessed between processed ones is an audible jump. Each wait and skipped
-//! block is counted in the runtime's `AudioDiagnostics`.
+//! **Signals and state:** reads the settings snapshot, the game state and the server state; the
+//! server registry is taken with `try_read` (a block passes through while a connection is added
+//! or removed), the game lock and then the server lock are waited for, as the original waits on
+//! its critical section, because a block passed through unprocessed between processed ones is an
+//! audible jump. Each wait and skipped block is counted in the runtime's `AudioDiagnostics`.
 //!
 //! **Invariants:** no callback calls TeamSpeak or allocates once the scratch fits the block, and
-//! the only wait is for a server lock, whose holders never call TeamSpeak or take another lock; a
-//! dormant plugin, no game or an unknown sender passes the block through untouched, as the
-//! original does when its data is missing; metadata comes from the cache the
+//! the only waits are for the game lock and a server lock, in that order, whose holders never
+//! call TeamSpeak; a dormant plugin, no game or an unknown sender passes the block through
+//! untouched, as the original does when its data is missing; metadata comes from the cache the
 //! event handlers and the service thread fill.
 
 use std::time::Instant;
 
+use parking_lot::{Mutex, MutexGuard};
 use tfar_audio::sample_buffer::{copy_to_stereo, write_back_from_stereo};
 use tfar_plugin_logic_1_0::voice_pipeline::prelude::{VoiceFrameContext, VoiceOutcome};
 use tfar_ts3_host::{CapturedVoiceData, MixedPlaybackVoiceData, PostProcessVoiceData};
 
 use crate::runtime::PluginRuntime;
-use crate::runtime::server_state::{ServerState, SharedServerState, state_client_id};
+use crate::runtime::server_state::{ServerState, state_client_id};
 
 /// The `edited` bit TeamSpeak sets while the captured block is going to be sent.
 const CAPTURE_IS_SENT: i32 = 2;
 
-/// `shared` for a voice callback: taken at once when free, else waited for and counted. The
-/// holders never call TeamSpeak or take another lock under it, so the wait is one short
-/// decision; a block passed through unprocessed instead would be an audible jump.
-fn lock_for_audio<'state>(
+/// `lock` for a voice callback: taken at once when free, else waited for and counted. The
+/// holders never call TeamSpeak under it, so the wait is one short decision; a block passed
+/// through unprocessed instead would be an audible jump. The callbacks take the game lock before
+/// a server lock, the order every other holder keeps.
+fn lock_for_audio<'lock, T>(
     runtime: &PluginRuntime,
-    shared: &'state SharedServerState,
-) -> parking_lot::MutexGuard<'state, ServerState> {
-    shared.try_lock().unwrap_or_else(|| {
+    lock: &'lock Mutex<T>,
+) -> MutexGuard<'lock, T> {
+    lock.try_lock().unwrap_or_else(|| {
         runtime.audio_diagnostics.record_contended_state_lock();
-        shared.lock()
+        lock.lock()
     })
 }
 
@@ -58,7 +60,8 @@ pub fn post_process_voice(runtime: &PluginRuntime, data: &mut PostProcessVoiceDa
     else {
         return;
     };
-    let mut state = lock_for_audio(runtime, &shared);
+    let game = lock_for_audio(runtime, &runtime.game);
+    let mut state = lock_for_audio(runtime, shared.as_ref());
     let settings = runtime.settings_snapshot();
     let now = Instant::now();
     let sender = state_client_id(data.client);
@@ -67,7 +70,6 @@ pub fn post_process_voice(runtime: &PluginRuntime, data: &mut PostProcessVoiceDa
         voice,
         playback_stereo,
         client_metadata,
-        antennas,
         is_serious_mode,
         ..
     } = &mut *state;
@@ -79,8 +81,9 @@ pub fn post_process_voice(runtime: &PluginRuntime, data: &mut PostProcessVoiceDa
         .then(|| client_metadata.get(&sender).map(String::as_str))
         .flatten();
     let context = VoiceFrameContext {
+        game: &game.game,
         settings: &settings,
-        antennas,
+        antennas: &game.antennas,
         is_in_game: true,
         is_serious_mode: *is_serious_mode,
         sender_metadata,
@@ -113,7 +116,12 @@ pub fn captured_voice(runtime: &PluginRuntime, data: &mut CapturedVoiceData<'_>)
     else {
         return;
     };
-    let mut state = lock_for_audio(runtime, &shared);
+    let game = lock_for_audio(runtime, &runtime.game);
+    // Without speakers or alive the chain appends nothing: the server lock is not needed.
+    if game.game.speakers.is_empty() || !game.game.is_alive {
+        return;
+    }
+    let mut state = lock_for_audio(runtime, shared.as_ref());
     let settings = runtime.settings_snapshot();
     let now = Instant::now();
     let ServerState {
@@ -121,13 +129,9 @@ pub fn captured_voice(runtime: &PluginRuntime, data: &mut CapturedVoiceData<'_>)
         voice,
         captured_stereo,
         client_metadata,
-        antennas,
         is_serious_mode,
         ..
     } = &mut *state;
-    if session.game.speakers.is_empty() {
-        return;
-    }
     let Some(own) = session.clients.own_client_id() else {
         return;
     };
@@ -139,8 +143,9 @@ pub fn captured_voice(runtime: &PluginRuntime, data: &mut CapturedVoiceData<'_>)
         .then(|| client_metadata.get(&own).map(String::as_str))
         .flatten();
     let context = VoiceFrameContext {
+        game: &game.game,
         settings: &settings,
-        antennas,
+        antennas: &game.antennas,
         is_in_game: true,
         is_serious_mode: *is_serious_mode,
         sender_metadata,

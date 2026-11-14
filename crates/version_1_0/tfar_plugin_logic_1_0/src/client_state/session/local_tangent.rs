@@ -7,11 +7,11 @@
 //! app plays and sends once the lock is released.
 //!
 //! **Position:** a module of the crate's `session`; called by the plugin app's async game
-//! message path with the session lock held. The push-to-talk and VAD handling stay in the app,
-//! which acts on the returned decisions.
+//! message path with the game lock and the session lock held. The push-to-talk and VAD handling
+//! stay in the app, which acts on the returned decisions.
 //!
-//! **Signals and state:** changes the game data's tangent flag and transmitting radio and the
-//! local player's subtype, range, tangent and frequency.
+//! **Signals and state:** changes the tangent flag and transmitting radio of the game data passed
+//! in and the local player's subtype, range, tangent and frequency.
 //!
 //! **Invariants:** only a change of the tangent flag acts, as the original; `TANGENT_DD`
 //! transmits as a short-range radio; a release-all clears the tangent flag and the own transmit
@@ -23,6 +23,7 @@ use crate::plugin_commands::{TangentBroadcast, TangentKind};
 use crate::plugin_settings::PluginSettings;
 use tfar_foundation::arma_values::{RadioSubtype, StereoMode};
 
+use crate::client_state::game_data::GameData;
 use crate::client_state::radio_volume::{local_radio_sound, radio_volume_gain};
 use crate::client_state::reception::TangentRadio;
 use crate::client_state::session::session_state::SessionState;
@@ -69,17 +70,17 @@ pub struct LocalReleaseAllApplied {
 impl SessionState {
     /// Takes the local player's tangent press or release from the game under `settings`.
     ///
-    /// `None` when there is no local player or the tangent flag does not change, as the
+    /// `None` when there is no local player or `game`'s tangent flag does not change, as the
     /// original returns early. Otherwise the flag, the local player's subtype and transmit
     /// state (range, radio, frequency; `prev_` + frequency after a release) and, in half-duplex
-    /// mode, the transmitting radio are written: a press with a radio class name sets it, a
+    /// mode, `game`'s transmitting radio are written: a press with a radio class name sets it, a
     /// release clears it.
     pub fn apply_local_tangent(
         &mut self,
+        game: &mut GameData,
         press: &TangentPress,
         settings: &PluginSettings,
     ) -> Option<LocalTangentApplied> {
-        let game = &mut self.game;
         let own = self.clients.own_mut()?;
         if game.is_tangent_pressed == press.is_pressed {
             return None;
@@ -145,14 +146,17 @@ impl SessionState {
         })
     }
 
-    /// Takes the game's `RELEASE_ALL_TANGENTS` for the local player: the tangent flag clears,
-    /// the local player holds no radio (range 0, no tangent) and no radio is being transmitted
-    /// on, so the next press is a change and the half-duplex radio hears again. The app then
-    /// releases push-to-talk at once and broadcasts the release.
-    pub fn apply_local_release_all_tangents(&mut self) -> LocalReleaseAllApplied {
-        let was_tangent_pressed = self.game.is_tangent_pressed;
-        self.game.is_tangent_pressed = false;
-        self.game.current_transmitting_radio = None;
+    /// Takes the game's `RELEASE_ALL_TANGENTS` for the local player: `game`'s tangent flag
+    /// clears, the local player holds no radio (range 0, no tangent) and no radio is being
+    /// transmitted on, so the next press is a change and the half-duplex radio hears again. The
+    /// app then releases push-to-talk at once and broadcasts the release.
+    pub fn apply_local_release_all_tangents(
+        &mut self,
+        game: &mut GameData,
+    ) -> LocalReleaseAllApplied {
+        let was_tangent_pressed = game.is_tangent_pressed;
+        game.is_tangent_pressed = false;
+        game.current_transmitting_radio = None;
         if let Some(own) = self.clients.own_mut() {
             own.range = 0;
             own.transmitting_over = None;

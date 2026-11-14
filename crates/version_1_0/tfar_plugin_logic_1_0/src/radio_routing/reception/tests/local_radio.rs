@@ -139,7 +139,7 @@ const CASES: &[Case] = &[
         sender_at: Position::ORIGIN,
         prepare: |world| {
             world.set_setting("full_duplex", "false");
-            world.session.game.current_transmitting_radio = Some(SW_CLASSNAME.to_owned());
+            world.game.current_transmitting_radio = Some(SW_CLASSNAME.to_owned());
         },
         expected: None,
     },
@@ -151,7 +151,7 @@ const CASES: &[Case] = &[
         sender_at: Position::ORIGIN,
         prepare: |world| {
             world.set_setting("full_duplex", "false");
-            world.session.game.current_transmitting_radio = Some("tf_rt1523g".to_owned());
+            world.game.current_transmitting_radio = Some("tf_rt1523g".to_owned());
         },
         expected: Some((SendingRadio::ShortRange, ReceivedOn::ShortRange)),
     },
@@ -162,7 +162,7 @@ const CASES: &[Case] = &[
         range: 3000,
         sender_at: Position::ORIGIN,
         prepare: |world| {
-            world.session.game.current_transmitting_radio = Some(SW_CLASSNAME.to_owned());
+            world.game.current_transmitting_radio = Some(SW_CLASSNAME.to_owned());
         },
         expected: Some((SendingRadio::ShortRange, ReceivedOn::ShortRange)),
     },

@@ -6,7 +6,7 @@
 //! tower carries it, and on which of the listener's radios it plays.
 //!
 //! **Position:** a module of the crate's `reception`; called by `is_over_radio` for every
-//! sender but the listener; reads the session through a [`RoutingContext`].
+//! sender but the listener; reads the session and the game data through a [`RoutingContext`].
 //!
 //! **Signals and state:** none; a pure function of the context.
 //!
@@ -68,9 +68,8 @@ pub fn is_over_local_radio(
     ignore: IgnoreTangents,
     antenna: Option<&AntennaConnection>,
 ) -> Option<HeardVia> {
-    let session = context.session;
-    let game = &session.game;
-    let listener = session.clients.own()?;
+    let game = context.game;
+    let listener = context.session.clients.own()?;
     let listener_position = listener.client_position(context.now);
     let sender_position = sender.client_position(context.now);
     // Under water with a usable short-range radio means inside a vehicle.

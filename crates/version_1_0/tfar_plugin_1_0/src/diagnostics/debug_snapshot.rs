@@ -19,8 +19,8 @@ pub fn debug_snapshot(runtime: &PluginRuntime) -> DebugSnapshot {
     let mut clients = DebugTable::new(["nickname", "id", "alive", "talking", "transmitting"]);
     if let Some((_, state)) = runtime.current_server() {
         let now = std::time::Instant::now();
+        let frame = runtime.game.lock().game.current_data_frame;
         let state = state.lock();
-        let frame = state.session.game.current_data_frame;
         for client in state.session.clients.iter() {
             clients.push_row([
                 client.nickname().to_owned(),

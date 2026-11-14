@@ -1,16 +1,18 @@
 //! [`ServerState`]: everything the plugin keeps for one TeamSpeak server connection, and
 //! [`ServerRegistry`], the map of them.
 //!
-//! **Role:** bundle the 1.0 session (game data and clients), the mute tracker, the radio towers,
-//! the voice processor with its stereo scratch, the client metadata the voice gate reads, the
-//! channel cache and the nickname and channel to restore, so one lock guards all of it.
+//! **Role:** bundle the 1.0 session (the clients), the mute tracker, the voice processor with its
+//! stereo scratch, the client metadata the voice gate reads, the channel cache and the nickname
+//! and channel to restore, so one lock guards all of it. The game data and the radio towers are
+//! not per connection: they live once in `runtime::GameState`.
 //!
 //! **Position:** owned by `runtime::PluginRuntime`; locked by the game link threads, TeamSpeak's
 //! main thread, the service thread and the audio callbacks, which wait for it as the original
 //! waits on its critical section.
 //!
 //! **Signals and state:** one `parking_lot::Mutex<ServerState>` per connection inside an `Arc`, in
-//! a `parking_lot::RwLock` map written only when a connection is established or closed.
+//! a `parking_lot::RwLock` map written only when a connection is established or closed. A server
+//! lock is taken after the game lock, never before it.
 //!
 //! **Invariants:** no TeamSpeak call happens, and no other lock is taken, while a server lock is
 //! held, so an audio callback waiting for it waits only for a short decision; the audio callbacks
@@ -18,11 +20,9 @@
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::time::Duration;
 
 use parking_lot::{Mutex, RwLock};
 use tfar_audio::sample_buffer::StereoBuffer;
-use tfar_plugin_logic_1_0::antennas::AntennaManager;
 use tfar_plugin_logic_1_0::client_state::prelude::{SessionState, TeamspeakClientId};
 use tfar_plugin_logic_1_0::radio_routing::MuteTracker;
 use tfar_plugin_logic_1_0::voice_pipeline::VoiceProcessor;
@@ -35,12 +35,10 @@ pub const MAX_BLOCK_FRAMES: usize = 4_800;
 /// The plugin's state for one server connection; see the module header.
 #[derive(Debug)]
 pub struct ServerState {
-    /// The game data and the clients of this connection.
+    /// The clients of this connection.
     pub session: SessionState,
     /// The clients this plugin muted.
     pub mutes: MuteTracker,
-    /// The radio towers the game reported.
-    pub antennas: AntennaManager,
     /// The 1.0 voice chain and its scratch.
     pub voice: VoiceProcessor,
     /// The post-process callback's stereo copy of a block.
@@ -62,15 +60,12 @@ pub struct ServerState {
 }
 
 impl ServerState {
-    /// An empty state whose game data carries the push-to-talk delay read at init. Allocates
-    /// every scratch buffer: call it off the audio thread.
-    pub fn new(push_to_talk_delay: Duration) -> Self {
-        let mut session = SessionState::new();
-        session.game.push_to_talk_delay = push_to_talk_delay;
+    /// An empty state: no client, no mute, no channel. Allocates every scratch buffer: call it
+    /// off the audio thread.
+    pub fn new() -> Self {
         Self {
-            session,
+            session: SessionState::new(),
             mutes: MuteTracker::new(),
-            antennas: AntennaManager::new(),
             voice: VoiceProcessor::new(MAX_BLOCK_FRAMES),
             playback_stereo: StereoBuffer::with_frames(MAX_BLOCK_FRAMES),
             captured_stereo: StereoBuffer::with_frames(MAX_BLOCK_FRAMES),
@@ -81,6 +76,12 @@ impl ServerState {
             original_nickname: None,
             is_serious_mode: false,
         }
+    }
+}
+
+impl Default for ServerState {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

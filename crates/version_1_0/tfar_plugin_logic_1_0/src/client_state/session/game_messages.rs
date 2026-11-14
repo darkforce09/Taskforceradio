@@ -6,8 +6,8 @@
 //! **Position:** a module of the crate's `session`; called by the plugin app's game link
 //! handler with the payloads of `tfar_plugin_logic_1_0::game_commands`.
 //!
-//! **Signals and state:** changes the session's game data and clients; the game link worker
-//! calls it under the session lock.
+//! **Signals and state:** changes the game data passed in and the session's clients; the game
+//! link worker calls it under the game lock and the session lock.
 //!
 //! **Invariants:** the fields go where `reference/tfar_1_0/ts/src/CommandProcessor.cpp` puts
 //! them; an unknown nickname changes no client.
@@ -20,7 +20,7 @@ use crate::plugin_commands::TeamspeakClientId;
 
 use crate::client_state::client_data::ClientData;
 use crate::client_state::data_frame::DataFrame;
-use crate::client_state::game_data::Speaker;
+use crate::client_state::game_data::{GameData, Speaker};
 use crate::client_state::session::session_state::SessionState;
 
 #[cfg(test)]
@@ -60,15 +60,17 @@ pub struct KilledApplied {
 }
 
 impl SessionState {
-    /// Takes a `POS` message at `now` (`clientData::updatePosition`, `clientData.cpp:76-102`).
-    /// The radio abilities are taken from the local player's own message only, as the others'
-    /// do not say whether they carry that radio. `None` for an unknown nickname.
+    /// Takes a `POS` message at `now`, stamped with `game`'s data frame
+    /// (`clientData::updatePosition`, `clientData.cpp:76-102`). The radio abilities are taken
+    /// from the local player's own message only, as the others' do not say whether they carry
+    /// that radio. `None` for an unknown nickname.
     pub fn apply_position(
         &mut self,
+        game: &GameData,
         update: &PositionUpdate,
         now: Instant,
     ) -> Option<PositionApplied> {
-        let current_frame = self.game.current_data_frame;
+        let current_frame = game.current_data_frame;
         let own_client_id = self.clients.own_client_id();
         let client = self.clients.get_mut(&update.nickname)?;
         let is_own_client = own_client_id == Some(client.client_id());
@@ -97,11 +99,15 @@ impl SessionState {
         })
     }
 
-    /// Takes a `FREQ` message (`CommandProcessor.cpp:236-260`) and returns the rename it asks
-    /// for: the game name when it is not one the plugin never adopts, differs from the local
-    /// player's nickname and that nickname is known and not empty.
-    pub fn apply_frequencies(&mut self, report: &FrequencyReport) -> Option<RenameRequest> {
-        self.game.apply_frequency_report(report);
+    /// Takes a `FREQ` message into `game` (`CommandProcessor.cpp:236-260`) and returns the
+    /// rename it asks for: the game name when it is not one the plugin never adopts, differs
+    /// from the local player's nickname and that nickname is known and not empty.
+    pub fn apply_frequencies(
+        &self,
+        game: &mut GameData,
+        report: &FrequencyReport,
+    ) -> Option<RenameRequest> {
+        game.apply_frequency_report(report);
         let own = self.clients.own()?;
         let nickname = report.nickname_to_adopt()?;
         if own.nickname().is_empty() || own.nickname() == nickname {
@@ -114,9 +120,9 @@ impl SessionState {
     }
 
     /// Takes a `KILLED` message (`processUnitKilled`, `CommandProcessor.cpp:531-551`): the
-    /// client's data frame becomes invalid, and the local player is dead when its own frame is
-    /// invalid.
-    pub fn apply_killed(&mut self, nickname: &str) -> KilledApplied {
+    /// client's data frame becomes invalid, and the local player is dead in `game` when its own
+    /// frame is invalid.
+    pub fn apply_killed(&mut self, game: &mut GameData, nickname: &str) -> KilledApplied {
         let killed = self.clients.get_mut(nickname).map(|client| {
             client.data_frame = DataFrame::INVALID;
             client.client_id()
@@ -126,19 +132,19 @@ impl SessionState {
             .own()
             .is_some_and(|own| !own.data_frame.is_valid())
         {
-            self.game.is_alive = false;
+            game.is_alive = false;
         }
         KilledApplied {
             killed,
-            is_player_alive: self.game.is_alive,
+            is_player_alive: game.is_alive,
         }
     }
 
-    /// Takes a `SPEAKERS` message (`processSpeakers`, `CommandProcessor.cpp:493-529`): the
-    /// speakers are replaced, each listed under every frequency it plays, with its owner found
-    /// by nickname now.
-    pub fn apply_speakers(&mut self, records: &[SpeakerRecord]) {
-        self.game.speakers.clear();
+    /// Takes a `SPEAKERS` message into `game` (`processSpeakers`,
+    /// `CommandProcessor.cpp:493-529`): the speakers are replaced, each listed under every
+    /// frequency it plays, with its owner found by nickname in this session now.
+    pub fn apply_speakers(&self, game: &mut GameData, records: &[SpeakerRecord]) {
+        game.speakers.clear();
         for record in records {
             let speaker = Speaker {
                 radio_id: Arc::from(record.radio_id.as_str()),
@@ -152,8 +158,7 @@ impl SessionState {
                 wave_z: record.wave_z,
             };
             for frequency in &record.frequencies {
-                self.game
-                    .speakers
+                game.speakers
                     .entry(frequency.clone())
                     .or_default()
                     .push(speaker.clone());

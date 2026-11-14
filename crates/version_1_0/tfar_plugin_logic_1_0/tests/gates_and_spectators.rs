@@ -38,6 +38,7 @@ fn a_sender_whose_metadata_says_not_playing_passes_through() {
     let input = sine(1000.0, 8000.0, 0);
     let mut samples = input.clone();
     let context = VoiceFrameContext {
+        game: &world.game,
         settings: &world.settings,
         antennas: &world.antennas,
         is_in_game: true,
@@ -68,6 +69,7 @@ fn outside_a_game_every_frame_passes_through() {
     let input = sine(1000.0, 8000.0, 0);
     let mut samples = input.clone();
     let context = VoiceFrameContext {
+        game: &world.game,
         settings: &world.settings,
         antennas: &world.antennas,
         is_in_game: false,
@@ -104,7 +106,7 @@ fn spectating_listener_with_an_enemy_sender(world: &mut World) {
 fn a_dead_listener_in_serious_mode_is_silenced_for_a_sender_kept_from_spectators() {
     let mut world = World::new();
     spectating_listener_with_an_enemy_sender(&mut world);
-    world.session.game.is_alive = false;
+    world.game.is_alive = false;
     world.is_serious_mode = true;
     let (outcome, output) = world.process(ALPHA, &sine(1000.0, 8000.0, 0));
     assert_eq!(outcome, VoiceOutcome::Silenced);
@@ -115,7 +117,7 @@ fn a_dead_listener_in_serious_mode_is_silenced_for_a_sender_kept_from_spectators
 fn outside_serious_mode_a_sender_kept_from_spectators_is_processed_to_silence() {
     let mut world = World::new();
     spectating_listener_with_an_enemy_sender(&mut world);
-    world.session.game.is_alive = false;
+    world.game.is_alive = false;
     let output = world.play_sine(ALPHA, 1000.0, 8000.0, 3);
     assert!(is_silent(&output));
 }
@@ -187,7 +189,7 @@ fn the_voice_volume_multiplier_and_the_global_volume_both_scale_the_voice() {
     let mut scaled = World::new();
     scaled.client(ALPHA).position = at(0.0, 5.0, 0.0);
     scaled.client(ALPHA).voice_volume_multiplier = 0.5;
-    scaled.session.game.global_volume = 0.5;
+    scaled.game.global_volume = 0.5;
     let scaled_rms = rms(&scaled.play_sine(ALPHA, 1000.0, 8000.0, 3));
     let ratio = scaled_rms / reference_rms;
     assert!((ratio - 0.25).abs() < 0.01, "{ratio}");

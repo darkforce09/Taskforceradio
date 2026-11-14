@@ -10,8 +10,9 @@
 //!
 //! **Position:** called by the async message path on the link's async worker.
 //!
-//! **Signals and state:** the current server's session under its lock, only for the apply; the
-//! push-to-talk state of the runtime after it is released.
+//! **Signals and state:** the game state and the current server's session under the game lock
+//! and the server lock, only for the apply; the push-to-talk state of the runtime after both are
+//! released.
 //!
 //! **Invariants:** only a change of the tangent state acts; `RELEASE_ALL_TANGENTS` also clears the
 //! own tangent and the half-duplex radio, so the next press is a change again.
@@ -27,7 +28,13 @@ pub fn apply_local_tangent(runtime: &PluginRuntime, press: &TangentPress) {
         return;
     };
     let settings = runtime.settings();
-    let Some(applied) = state.lock().session.apply_local_tangent(press, &settings) else {
+    let applied = {
+        let (mut game, mut state) = runtime.lock_game_and_server(&state);
+        state
+            .session
+            .apply_local_tangent(&mut game.game, press, &settings)
+    };
+    let Some(applied) = applied else {
         return;
     };
     if let Some(sound) = &applied.sound {
@@ -54,7 +61,12 @@ pub fn release_all_tangents(runtime: &PluginRuntime, nickname: &str) {
     let Some((server, state)) = runtime.current_server() else {
         return;
     };
-    state.lock().session.apply_local_release_all_tangents();
+    {
+        let (mut game, mut state) = runtime.lock_game_and_server(&state);
+        state
+            .session
+            .apply_local_release_all_tangents(&mut game.game);
+    }
     let broadcast = encode(&PluginCommand::ReleaseAllTangents {
         nickname: nickname.to_owned(),
     });

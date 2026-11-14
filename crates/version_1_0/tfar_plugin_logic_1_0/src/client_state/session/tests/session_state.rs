@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use super::*;
-use crate::client_state::test_support::{ALPHA, BRAVO, at, now, position_update, session};
+use crate::client_state::test_support::{ALPHA, BRAVO, at, game, now, position_update, session};
 
 #[test]
 fn the_speaking_code_reports_talking_or_transmitting_and_receiving() {
@@ -23,24 +23,31 @@ fn the_speaking_code_reports_talking_or_transmitting_and_receiving() {
 fn the_sweep_expires_stale_clients_and_names_them() {
     let start = now();
     let mut session = session();
-    session.apply_position(&position_update("alpha", at(1.0, 0.0, 0.0)), start);
-    session.apply_position(&position_update("bravo", at(2.0, 0.0, 0.0)), start);
-    session.next_data_frame();
-    session.next_data_frame();
-    session.apply_position(&position_update("bravo", at(2.0, 0.0, 0.0)), start);
-    assert!(!session.is_client_alive(ALPHA, start));
+    let mut game = game();
+    session.apply_position(&game, &position_update("alpha", at(1.0, 0.0, 0.0)), start);
+    session.apply_position(&game, &position_update("bravo", at(2.0, 0.0, 0.0)), start);
+    game.next_data_frame();
+    game.next_data_frame();
+    session.apply_position(&game, &position_update("bravo", at(2.0, 0.0, 0.0)), start);
+    assert!(!session.is_client_alive(ALPHA, game.current_data_frame, start));
     assert_eq!(
         session.clients.get("alpha").unwrap().data_frame,
         DataFrame::FIRST
     );
-    assert_eq!(session.sweep_expired(start), vec![ALPHA]);
+    assert_eq!(
+        session.sweep_expired(game.current_data_frame, start),
+        vec![ALPHA]
+    );
     assert_eq!(
         session.clients.get("alpha").unwrap().data_frame,
         DataFrame::INVALID
     );
-    assert!(session.is_client_alive(BRAVO, start));
+    assert!(session.is_client_alive(BRAVO, game.current_data_frame, start));
     let later = start + crate::client_state::ALIVE_TIMEOUT + Duration::from_secs(1);
-    assert_eq!(session.sweep_expired(later), vec![BRAVO]);
+    assert_eq!(
+        session.sweep_expired(game.current_data_frame, later),
+        vec![BRAVO]
+    );
 }
 
 #[test]
@@ -57,12 +64,4 @@ fn the_plugin_check_of_an_unknown_client_is_no() {
         .mark_plugin_enabled(start);
     assert!(!session.needs_plugin_metadata(ALPHA, start));
     assert!(session.plugin_enabled_for(ALPHA, None, start));
-}
-
-#[test]
-fn a_game_end_marks_the_player_dead_and_the_frame_invalid() {
-    let mut session = session();
-    session.end_game();
-    assert!(!session.game.is_alive);
-    assert_eq!(session.game.current_data_frame, DataFrame::INVALID);
 }

@@ -6,7 +6,8 @@
 //! `processTangentPress` (`reference/tfar_1_0/ts/src/plugin.cpp:879-1020`).
 //!
 //! **Position:** a module of the crate's `session`; called by the plugin app's plugin-command
-//! handler with the session lock held; the reception routing comes in as a closure, which
+//! handler with the game lock and the session lock held; the reception routing comes in as a
+//! closure, which
 //! `crate::radio_routing::apply_remote_tangent` supplies.
 //!
 //! **Signals and state:** changes the sender's tangent, frequency, range, subtype, radio
@@ -24,6 +25,7 @@ use tfar_foundation::arma_values::StereoMode;
 use tfar_foundation::geometry::Position;
 
 use crate::client_state::client_data::ClientData;
+use crate::client_state::game_data::GameData;
 use crate::client_state::radio_volume::{radio_volume_gain, remote_radio_sound};
 use crate::client_state::reception::{HeardVia, IgnoreTangents, ReceivedOn, TangentRadio};
 use crate::client_state::session::session_state::SessionState;
@@ -113,7 +115,8 @@ pub struct TangentEffects {
 const UNDERWATER_LEVEL: f64 = -1.1;
 
 impl SessionState {
-    /// Takes a tangent broadcast from another player at `now`.
+    /// Takes a tangent broadcast from another player at `now`, with `game` the local player's
+    /// game data.
     ///
     /// `route` lists how the local player hears a sender: it gets the session, the sender and
     /// the ignore flags, and is called once (before the reset for a release, after the update
@@ -121,6 +124,7 @@ impl SessionState {
     /// broadcast is the local player's own.
     pub fn apply_remote_tangent<R>(
         &mut self,
+        game: &GameData,
         tangent: &TangentBroadcast,
         now: Instant,
         route: R,
@@ -150,7 +154,7 @@ impl SessionState {
             let sender = self.clients.get(&tangent.nickname)?;
             heard = route(self, sender, ignore_flags(sender));
         }
-        let placements = self.sound_placements(&heard);
+        let placements = self.sound_placements(game, &heard);
         let is_receiving_changed = self.count_reception(
             transition,
             client_id,
@@ -181,9 +185,9 @@ impl SessionState {
     }
 
     /// The placements of the remote radio sound for `heard`: one per carried or speaker radio,
-    /// none while the local player is dead.
-    fn sound_placements(&self, heard: &[HeardVia]) -> Vec<RemoteSoundPlacement> {
-        if !self.game.is_alive {
+    /// none while the local player is dead in `game`.
+    fn sound_placements(&self, game: &GameData, heard: &[HeardVia]) -> Vec<RemoteSoundPlacement> {
+        if !game.is_alive {
             return Vec::new();
         }
         let Some(own) = self.clients.own() else {
@@ -204,7 +208,7 @@ impl SessionState {
                     (0.0, true)
                 };
                 RemoteSoundPlacement {
-                    gain: radio_volume_gain(via.volume) * self.game.global_volume,
+                    gain: radio_volume_gain(via.volume) * game.global_volume,
                     position: via.position,
                     is_on_ground,
                     volume: via.volume,

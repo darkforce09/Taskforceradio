@@ -15,8 +15,8 @@
 //!
 //! **Signals and state:** a [`VoiceProcessor`] per server connection with its scratch buffers;
 //! the DSP objects live in the senders' client state. Called on the TeamSpeak audio threads
-//! with the server lock held; [`ensure_sender_dsp`] and [`render_remote_tangent_sound`] run off
-//! them.
+//! with the game lock and the server lock held; [`ensure_sender_dsp`] and
+//! [`render_remote_tangent_sound`] run off them.
 //!
 //! **Invariants:** each compressor runs once per frame; nothing pans twice; the audio path
 //! allocates nothing once its scratch fits the frame.

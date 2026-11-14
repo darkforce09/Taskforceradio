@@ -6,8 +6,9 @@
 //!
 //! **Position:** used by the chat commands, the dump and the debug window snapshot.
 //!
-//! **Signals and state:** reads the runtime; holds one server lock at a time and calls no
-//! TeamSpeak function while it does.
+//! **Signals and state:** reads the runtime; copies what it needs out of the game state under the
+//! game lock and releases it before it takes one server lock, and calls no TeamSpeak function
+//! while either is held.
 //!
 //! **Invariants:** a report never changes plugin state.
 
@@ -86,18 +87,27 @@ pub fn diagnostics_report(runtime: &PluginRuntime) -> String {
         "radio sounds playing: {}",
         runtime.sounds.mixer.active_playback_count()
     );
+    let (is_alive, data_frame, is_tangent_pressed, tower_count, speaker_count) = {
+        let game = runtime.game.lock();
+        (
+            game.game.is_alive,
+            game.game.current_data_frame.number(),
+            game.game.is_tangent_pressed,
+            game.antennas.len(),
+            game.game.speakers.len(),
+        )
+    };
     if let Some((server, state)) = runtime.current_server() {
         let state = state.lock();
-        let game = &state.session.game;
         let _ = writeln!(report, "server: {}", server.0);
         let _ = writeln!(report, "serious mode: {}", state.is_serious_mode);
-        let _ = writeln!(report, "alive: {}", game.is_alive);
-        let _ = writeln!(report, "data frame: {:?}", game.current_data_frame.number());
-        let _ = writeln!(report, "tangent pressed: {}", game.is_tangent_pressed);
+        let _ = writeln!(report, "alive: {is_alive}");
+        let _ = writeln!(report, "data frame: {data_frame:?}");
+        let _ = writeln!(report, "tangent pressed: {is_tangent_pressed}");
         let _ = writeln!(report, "clients: {}", state.session.clients.len());
         let _ = writeln!(report, "muted by TFAR: {}", state.mutes.muted().count());
-        let _ = writeln!(report, "radio towers: {}", state.antennas.len());
-        let _ = writeln!(report, "speakers: {}", game.speakers.len());
+        let _ = writeln!(report, "radio towers: {tower_count}");
+        let _ = writeln!(report, "speakers: {speaker_count}");
     }
     report
 }
@@ -109,8 +119,8 @@ pub fn positions_report(runtime: &PluginRuntime) -> String {
         return report;
     };
     let now = Instant::now();
+    let frame = runtime.game.lock().game.current_data_frame;
     let state = state.lock();
-    let frame = state.session.game.current_data_frame;
     for client in state.session.clients.iter() {
         let position = client.client_position(now);
         let _ = writeln!(

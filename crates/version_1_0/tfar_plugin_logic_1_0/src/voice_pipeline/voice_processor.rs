@@ -8,10 +8,11 @@
 //!
 //! **Position:** a module of `tfar_plugin_logic_1_0::voice_pipeline`; owned by the plugin app, one per server
 //! connection beside its `SessionState`, and called from the post-process and captured-voice
-//! callbacks with the session already locked.
+//! callbacks with the game data and the session already locked.
 //!
 //! **Signals and state:** the [`VoiceScratch`] buffers; every DSP object belongs to the sender's
-//! `ClientEffects` in the session. Runs on the TeamSpeak audio threads under the server lock.
+//! `ClientEffects` in the session. Runs on the TeamSpeak audio threads under the game lock and
+//! the server lock.
 //!
 //! **Invariants:** no allocation on the audio path once the scratch fits the frame, the
 //! reception list included; direct speech and radio each run their own compressor once per
@@ -56,9 +57,9 @@ impl VoiceProcessor {
     }
 
     /// Processes the stereo frame `samples` of `sender` in place, as `processVoiceData` does
-    /// for the post-process callback. The caller holds the server lock over `session` and
-    /// copies TeamSpeak's channels in and out with `tfar_audio::sample_buffer::copy_to_stereo` and
-    /// `write_back_from_stereo`.
+    /// for the post-process callback. The caller holds the game lock over `context.game` and the
+    /// server lock over `session`, and copies TeamSpeak's channels in and out with
+    /// `tfar_audio::sample_buffer::copy_to_stereo` and `write_back_from_stereo`.
     pub fn process_sender(
         &mut self,
         session: &mut SessionState,
@@ -82,7 +83,7 @@ impl VoiceProcessor {
         context: &VoiceFrameContext<'_>,
         captured: &StereoBuffer,
     ) -> Option<&StereoBuffer> {
-        if !context.is_in_game || !session.game.is_alive || session.game.speakers.is_empty() {
+        if !context.is_in_game || !context.game.is_alive || context.game.speakers.is_empty() {
             return None;
         }
         let own = session.clients.own()?.client_id();
@@ -134,6 +135,7 @@ impl VoiceProcessor {
             GateVerdict::Process(view) => view,
         };
         let inputs = PlanInputs {
+            game: context.game,
             settings: context.settings,
             antennas: context.antennas,
             sender,

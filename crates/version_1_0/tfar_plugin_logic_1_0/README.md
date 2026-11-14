@@ -348,14 +348,18 @@ state, and the apply function of each game and plugin message. Used by `tfar_plu
 
 ### How it works
 
-A `SessionState` holds a `GameData` (what the game says about the local player: radios by
-frequency, voice range, liveness, environment values, loudspeakers, the data frame, the local
-push-to-talk state) and a `ClientDirectory` (one `ClientData` per TeamSpeak client, keyed by its
-real nickname with the client id beside it). Each game or plugin message has an apply function on
-`SessionState` (`apply_position`, `apply_frequencies`, `apply_killed`, `apply_speakers`,
-`next_data_frame`, `apply_local_tangent`, `apply_local_release_all_tangents`,
+A `GameData` holds what the game says about the local player: radios by frequency, voice range,
+liveness, environment values, loudspeakers, the data frame and the local tangent state; it has
+`start_game`, `end_game` and `next_data_frame` (`DFRAME`). A `SessionState` holds a
+`ClientDirectory` (one `ClientData` per TeamSpeak client, keyed by its real nickname with the
+client id beside it). The plugin app keeps one `GameData` for the plugin and one `SessionState`
+per server connection, as the original keeps one `m_gameData`. Each game or plugin message has an
+apply function on `SessionState` (`apply_position`, `apply_frequencies`, `apply_killed`,
+`apply_speakers`, `apply_local_tangent`, `apply_local_release_all_tangents`,
 `apply_remote_tangent`, `apply_remote_volume`, `apply_release_all_tangents`) that changes the
-state and returns what the plugin app must do in TeamSpeak afterwards.
+state and returns what the plugin app must do in TeamSpeak afterwards; those that read or write
+the game data take it as `&GameData` or `&mut GameData`, and `is_client_alive` and
+`sweep_expired` take the game's current data frame.
 
 The local tangent (`TANGENT`, `TANGENT_LR`, `TANGENT_DD` from the game) acts only on a change of
 the tangent flag: it writes the local player's transmit state (`prev_` + frequency after a
@@ -371,13 +375,15 @@ replaces a client's vehicle only when it changed.
 
 #### Lock and ownership contract
 
-- The plugin app keeps one `SessionState` per server connection behind one `parking_lot` mutex.
-  Nothing here locks, spawns or calls TeamSpeak; time comes in as `now: Instant`.
+- The plugin app keeps one `GameData` for the plugin behind one `parking_lot` mutex (the game
+  lock) and one `SessionState` per server connection behind its own (a server lock); it takes the
+  game lock before a server lock, never the other way. Nothing here locks, spawns or calls
+  TeamSpeak; time comes in as `now: Instant` and the game data as an argument.
 - Every apply function returns owned values (`PositionApplied`, `RenameRequest`, `TangentEffects`,
-  …). The app collects them under the lock, releases it, then makes the TeamSpeak calls. No
+  …). The app collects them under the locks, releases them, then makes the TeamSpeak calls. No
   reference into the state outlives the guard.
 - The plugin-enabled check reads TeamSpeak metadata only when `needs_plugin_metadata` says the
-  10 s cache has expired; the app reads it with the lock released and passes it to
+  10 s cache has expired; the app reads it with the locks released and passes it to
   `plugin_enabled_for`.
 - DSP objects belong to their sender's `ClientData::effects`. `ClientEffects::ensure_dsp` creates
   them off the audio thread (it allocates and designs filters); the audio thread borrows them by
@@ -404,7 +410,8 @@ replaces a client's vehicle only when it changed.
 | proposed: `rstflt` forgets the airborne effects | `resetting_radio_effects_drops_the_airborne_effects_too` |
 | `RELEASE_ALL_TANGENTS` leaves the tangent pressed | `release_all_tangents_clears_the_tangent_so_the_next_press_acts` |
 
-`SessionState` (in `session/`) owns a `GameData` and a `ClientDirectory`. The directory maps a
+`SessionState` (in `session/`) owns a `ClientDirectory`; `GameData` stands beside it, one per
+plugin. The directory maps a
 nickname to its `ClientData` in a `BTreeMap` and a client id to its nickname in a `HashMap`, and
 every change goes through it so the two always agree; the local player is the entry whose id the
 directory marks as own. A `ClientData` keeps its position as reported and extrapolates it by the
@@ -412,7 +419,8 @@ vehicle velocity for the time since the last `POS` (`client_position(now)`); liv
 separate activity clock, which tangents also refresh. Each `ClientData` owns a `ClientEffects`
 (in `effects/`) and shares its vehicle descriptor (`Arc`). `reception.rs` holds `HeardVia`,
 which the routing crate produces and the tangent handling and voice pipeline read; a `HeardVia`
-shares its radio id and vehicle with the session, so making one copies no text. `GameLinkState` stands apart: one per plugin.
+shares its radio id and vehicle with the session or the game data, so making one copies no text.
+`GameLinkState` stands apart: one per plugin.
 
 ### Modules
 
@@ -435,13 +443,13 @@ when it changes; a cutoff `2000 − min(count, 5) · strength` at or below 0 Hz 
 #### `src/session/`
 
 Each apply function takes a parsed message (from `tfar_plugin_logic_1_0::game_commands` or
-`tfar_plugin_logic_1_0::plugin_commands`) and `now`, writes it into the session, and returns what the app does
-next in TeamSpeak. `apply_remote_tangent` takes the reception routing as a closure so this crate
+`tfar_plugin_logic_1_0::plugin_commands`) and `now`, writes it into the session and the game data
+passed in, and returns what the app does next in TeamSpeak. `apply_remote_tangent` takes the reception routing as a closure so this crate
 stays below the routing crate: for a release the closure runs before the sender's state is reset,
 with the sender's abilities as the ignore flags; for a press after. Only a real press or release
 plays a remote sound, and the local player's received transmissions count each sender once.
 `apply_local_tangent` takes the game's own tangent: only a change of the tangent flag acts, and it
-returns the local sound and the broadcast for the app to play and send once the lock is released;
+returns the local sound and the broadcast for the app to play and send once the locks are released;
 `apply_local_release_all_tangents` clears the flag, so the next press acts again.
 
 ### Configuration
@@ -452,7 +460,8 @@ returns the local sound and the broadcast for the app to play and send once the 
 
 ### Public surface
 
-- `SessionState` and its apply functions; `GameData`, `Speaker`; `ClientDirectory`, `ClientData`.
+- `SessionState` and its apply functions; `GameData` (`start_game`, `end_game`,
+  `next_data_frame`), `Speaker`; `ClientDirectory`, `ClientData`.
 - The reception vocabulary the routing crate fills: `HeardVia`, `SendingRadio`, `ReceivedOn`,
   `TangentRadio`, `IgnoreTangents`, `LOCAL_RADIO_ID`, `INTERCOM_RADIO_ID`, `local_radio_id`,
   `intercom_radio_id`.
@@ -489,8 +498,8 @@ serious channel lookup. Used by `tfar_plugin_1_0`, `tfar_plugin_logic_1_0::voice
 
 ### How it works
 
-Every rule reads a `RoutingContext` (the session, the settings, the antenna manager and `now`)
-built under the session lock, and never changes state.
+Every rule reads a `RoutingContext` (the session, the game data, the settings, the antenna
+manager and `now`) built under the game lock and the session lock, and never changes state.
 
 `is_over_radio(context, sender, ignore)` lists every `HeardVia` of the sender for the local player,
 in the order of `isOverRadio` (`reference/tfar_1_0/ts/src/clientData.cpp:267-364`):
@@ -511,7 +520,7 @@ in the order of `isOverRadio` (`reference/tfar_1_0/ts/src/clientData.cpp:267-364
    unknown (on an unknown owner), or it is under water (height below 0).
 
 `is_over_radio_into(context, sender, ignore, out)` does the same into a list the caller reuses,
-which it clears first; every `HeardVia` shares its radio id and vehicle with the session (`Arc`),
+which it clears first; every `HeardVia` shares its radio id and vehicle with the session or the game data (`Arc`),
 so a list with room for every reception routes a frame without allocating. `is_over_radio` wraps
 it.
 
@@ -543,7 +552,7 @@ plugin muted; a client that leaves is forgotten with `client_left`.
 `AntennaManager::find_connection` (not for the listener itself), adds the carried-radio reception,
 stops when the sender is beyond range without a tower, and adds the speakers with the tower's loss.
 Each `HeardVia` carries the tower's loss when one connects the two, and shares its radio id and
-vehicle with the session; `is_over_radio_into` fills a reused list, so routing a frame allocates
+vehicle with the session or the game data; `is_over_radio_into` fills a reused list, so routing a frame allocates
 nothing once the list holds every reception.
 
 ### Configuration
@@ -659,7 +668,7 @@ effects, compressor, HRTF and mixing. Used by `tfar_plugin_1_0`.
 ### How it works
 
 The crate is `processVoiceData` of `reference/tfar_1_0/ts/src/plugin.cpp:455-743` for a frame the
-plugin app has already copied to stereo, with the session locked. Step by step:
+plugin app has already copied to stereo, with the game data and the session locked. Step by step:
 
 1. **Gates.** Outside a game, for an unknown sender, or for a sender (or listener) without TFAR the
    frame passes through untouched; the local player's own voice without TFAR is silence;
@@ -672,9 +681,9 @@ plugin app has already copied to stereo, with the session locked. Step by step:
    direct-speech compressor. A sender not heard directly is silenced unless both spectate.
 4. **Radios.** The radio compressor (its own instance) runs once over the original; each
    reception of `is_over_radio_into` (refilled into the scratch reception list, each reception
-   sharing its radio id and vehicle with the session) gets a copy through its path (carried radio
+   sharing its radio id and vehicle with the session or the game data) gets a copy through its path (carried radio
    by subtype, speaker radio, intercom) and is mixed in, saturating. The reception and route plan
-   lists are emptied at the end of the frame, under the lock, so the audio thread never drops the
+   lists are emptied at the end of the frame, under the locks, so the audio thread never drops the
    last handle on a shared id.
 5. **Global volume.**
 
@@ -732,8 +741,8 @@ the sender is within direct-speech range.
 | a speaker's muffling skipped when the sender shares the listener's vehicle | `a_speaker_outside_the_listeners_vehicle_is_muffled_even_when_the_sender_sits_inside` |
 | the intercom never ducks | `the_intercom_is_ducked_while_a_long_range_transmission_is_received` |
 
-`VoiceProcessor::process_sender` runs in two phases. With the session borrowed immutably,
-`sender_gate` decides pass-through, silence or processing, and `FramePlan::build` reads a `Scene`,
+`VoiceProcessor::process_sender` runs in two phases. With the session and the game data
+borrowed immutably, `sender_gate` decides pass-through, silence or processing, and `FramePlan::build` reads a `Scene`,
 plans direct speech (`direct_speech/`), lists the receptions with `is_over_radio_into` and plans
 each (`radio_paths/`). Then, with the sender's `ClientEffects` borrowed mutably, the frame gets the voice
 multiplier, is copied as the radio original, goes through direct speech (or is silenced when the
@@ -790,7 +799,7 @@ Read from `tfar_plugin_logic_1_0::plugin_settings::PluginSettings` through `Voic
 - `VoiceProcessor`: `new(max_frames)`, `process_sender`, `process_own_voice_for_speakers`,
   `append_own_voice_for_speakers`, `scratch_capacities`; `VoiceScratchCapacities`;
   `OWN_RADIO_VOICE_STREAM`.
-- `VoiceFrameContext` (settings, antennas, in game, serious mode, sender metadata, now) and
+- `VoiceFrameContext` (game data, settings, antennas, in game, serious mode, sender metadata, now) and
   `VoiceOutcome` (`Processed`, `Silenced`, `PassThrough`).
 - `ensure_sender_dsp`, `ensure_every_sender_dsp`.
 - `render_remote_tangent_sound`, `RemoteSoundPlan`, `RemoteSoundListener`,

@@ -60,11 +60,7 @@ fn speaker(
 }
 
 fn with_speakers(world: &mut World, frequency: &str, speakers: Vec<Speaker>) {
-    world
-        .session
-        .game
-        .speakers
-        .insert(frequency.to_owned(), speakers);
+    world.game.speakers.insert(frequency.to_owned(), speakers);
 }
 
 #[test]
@@ -337,7 +333,7 @@ fn a_reception_shares_its_radio_id_and_vehicle_with_the_session() {
         IgnoreTangents::NONE,
     );
     let own = world.session.clients.own().unwrap();
-    let speaker = &world.session.game.speakers_on(SW_FREQUENCY)[0];
+    let speaker = &world.game.speakers_on(SW_FREQUENCY)[0];
     assert_eq!(via.len(), 3);
     assert!(Arc::ptr_eq(
         &via[0].radio_id,

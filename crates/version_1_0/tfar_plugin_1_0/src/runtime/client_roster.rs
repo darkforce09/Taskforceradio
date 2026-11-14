@@ -23,9 +23,10 @@ use crate::runtime::plugin_runtime::PluginRuntime;
 use crate::runtime::server_state::state_client_id;
 
 impl PluginRuntime {
-    /// The connection to `server` is established: TeamSpeak's own 3D goes neutral, the state is
-    /// reset, the channel cache and the client list of the own channel are read; a game in
-    /// progress moves back into the serious channel.
+    /// The connection to `server` is established: TeamSpeak's own 3D goes neutral, the
+    /// connection's state is reset (the game state, kept once for the plugin, stays), the channel
+    /// cache and the client list of the own channel are read; a game in progress moves back into
+    /// the serious channel.
     pub fn server_established(&self, server: ServerConnectionHandlerId) {
         let ts = self.ts();
         ts.neutralise_3d_settings(server);

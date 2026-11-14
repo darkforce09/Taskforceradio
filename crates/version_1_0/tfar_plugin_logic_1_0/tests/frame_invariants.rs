@@ -108,7 +108,7 @@ fn a_thousand_frames_leave_every_scratch_capacity_unchanged() {
     let before = world.processor.scratch_capacities();
     assert!(before.stereo_frames.iter().all(|&frames| frames >= FRAMES));
     assert!(before.routes >= 3 && before.route_plans >= 3);
-    let speaker = &world.session.game.speakers_on(SW_FREQUENCY)[0];
+    let speaker = &world.game.speakers_on(SW_FREQUENCY)[0];
     let (speaker_id, speaker_vehicle) =
         (Arc::clone(&speaker.radio_id), Arc::clone(&speaker.vehicle));
     let handles = || {
@@ -198,6 +198,7 @@ fn ensuring_every_sender_covers_the_local_players_speaker_voice() {
     };
     let created = ensure_every_sender_dsp(
         &mut world.session,
+        &world.game,
         &world.settings,
         &world.antennas,
         &dsp,

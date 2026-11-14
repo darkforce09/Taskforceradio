@@ -5,9 +5,10 @@
 //! two can speak to each other (`plugin.cpp:528-545`).
 //!
 //! **Position:** a module of `tfar_plugin_logic_1_0::voice_pipeline`; built by the frame plan and the DSP
-//! needs while the session is borrowed immutably.
+//! needs while the session and the game data are borrowed immutably.
 //!
-//! **Signals and state:** none; borrows the session for the planning phase only.
+//! **Signals and state:** none; borrows the session and the game data for the planning phase
+//! only.
 //!
 //! **Invariants:** a scene exists only when both the sender and the local player are known.
 
@@ -43,9 +44,11 @@ pub(crate) struct Scene<'a> {
 }
 
 impl<'a> Scene<'a> {
-    /// The scene of `sender` in `session` at `now`; `None` when either client is unknown.
+    /// The scene of `sender` in `session` with the local player's `game` data at `now`; `None`
+    /// when either client is unknown.
     pub(crate) fn of(
         session: &'a SessionState,
+        game: &'a GameData,
         settings: &'a PluginSettings,
         sender: TeamspeakClientId,
         now: Instant,
@@ -55,7 +58,7 @@ impl<'a> Scene<'a> {
         Some(Self {
             listener,
             sender: sender_data,
-            game: &session.game,
+            game,
             settings,
             listener_position: listener.client_position(now),
             listener_view: listener.view_direction,

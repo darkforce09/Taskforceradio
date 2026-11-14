@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use crate::antennas::{Antenna, AntennaManager, NetId};
 use crate::client_state::prelude::{
-    ClientData, DataFrame, FrequencyEntry, SessionState, StereoMode, TangentRadio,
+    ClientData, DataFrame, FrequencyEntry, GameData, SessionState, StereoMode, TangentRadio,
     TeamspeakClientId,
 };
 use crate::plugin_settings::{PluginSettings, TypeTag};
@@ -41,9 +41,10 @@ fn entry(frequency: &str, volume: f64, classname: &str) -> (String, FrequencyEnt
     )
 }
 
-/// The session, settings and towers a test routes in.
+/// The session, game data, settings and towers a test routes in.
 pub(crate) struct World {
     pub(crate) session: SessionState,
+    pub(crate) game: GameData,
     pub(crate) settings: PluginSettings,
     pub(crate) antennas: AntennaManager,
     pub(crate) now: Instant,
@@ -58,16 +59,17 @@ impl World {
         session.clients.set_own_client(OWN, "me");
         session.clients.client_joined(ALPHA, "alpha");
         session.clients.client_joined(BRAVO, "bravo");
-        session.start_game();
-        session.game.is_alive = true;
-        session.game.waves_level = 0.0;
-        session.game.sw_frequencies = [
+        let mut game = GameData::default();
+        game.start_game();
+        game.is_alive = true;
+        game.waves_level = 0.0;
+        game.sw_frequencies = [
             entry(SW_FREQUENCY, 7.0, SW_CLASSNAME),
             entry(SHARED_FREQUENCY, 6.0, SW_CLASSNAME),
         ]
         .into_iter()
         .collect();
-        session.game.lr_frequencies = [
+        game.lr_frequencies = [
             entry(LR_FREQUENCY, 5.0, "tf_rt1523g"),
             entry(SHARED_FREQUENCY, 4.0, "tf_rt1523g"),
         ]
@@ -83,6 +85,7 @@ impl World {
         own.can_use_lr_radio = true;
         Self {
             session,
+            game,
             settings: PluginSettings::default(),
             antennas: AntennaManager::new(),
             now,
@@ -92,6 +95,7 @@ impl World {
     pub(crate) fn context(&self) -> RoutingContext<'_> {
         RoutingContext {
             session: &self.session,
+            game: &self.game,
             settings: &self.settings,
             antennas: &self.antennas,
             now: self.now,

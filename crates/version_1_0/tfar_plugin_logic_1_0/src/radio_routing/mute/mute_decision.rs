@@ -53,8 +53,7 @@ pub fn mute_decision(
     is_serious_mode: bool,
     heard_over_radio: Option<bool>,
 ) -> Option<MuteDecision> {
-    let session = context.session;
-    let listener = session.clients.own();
+    let listener = context.session.clients.own();
     let is_listener = matches!(
         (target, listener),
         (Some(target), Some(listener)) if target.client_id() == listener.client_id()
@@ -71,8 +70,8 @@ pub fn mute_decision(
     }
     let mute = match (target, listener) {
         (Some(target), Some(listener))
-            if (session.game.is_alive
-                && target.is_alive(context.now, session.game.current_data_frame))
+            if (context.game.is_alive
+                && target.is_alive(context.now, context.game.current_data_frame))
                 || listener.is_spectating =>
         {
             let distance = listener
