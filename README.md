@@ -42,7 +42,7 @@ TeamSpeak; installing is a manual step
 
 ## Status
 
-All code is written and released as `v0.1.1`. The licence is not decided yet; the upstream mods are
+All code is written and released as `v0.1.2`. The licence is not decided yet; the upstream mods are
 under APL-SA.
 
 ## Open work

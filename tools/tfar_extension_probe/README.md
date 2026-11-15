@@ -16,7 +16,7 @@ buffer, the size Arma passes, and prints the reply up to its NUL. Built for
 ```text
 $ tfar_extension_probe target/debug/libtfar_extension_1_0.so 'DFRAME~'
 library: target/debug/libtfar_extension_1_0.so
-version: tfar_extension_1_0 0.1.1
+version: tfar_extension_1_0 0.1.2
 call:  DFRAME~
 reply: Not connected to TeamSpeak
 ```

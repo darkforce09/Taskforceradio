@@ -1556,9 +1556,9 @@ dependencies = [
 
 [[package]]
 name = "libsqlite3-sys"
-version = "0.38.2"
+version = "0.40.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1d20bef17f513b9b3004532233187769cd072d790971f4e4da0e346eb6401e8"
+checksum = "b06e69070b7e12262b0cd90832f0a7396f142a2b330181255562decf9f0c6215"
 dependencies = [
  "cc",
  "pkg-config",
@@ -2529,9 +2529,9 @@ dependencies = [
 
 [[package]]
 name = "rusqlite"
-version = "0.40.2"
+version = "0.43.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23f2a97da3e3873c73cb2a2e71b35c40ff95e0b1eefa8d72d8499a6928c3b5b3"
+checksum = "f172c4812a19b26d1c23cdb0070e69db335503dfa378b910eb857386e5b8beba"
 dependencies = [
  "bitflags 2.13.2",
  "fallible-iterator",
@@ -2603,9 +2603,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.45"
+version = "0.23.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d41d731c7d2f962d1ccc364cec258de3c0e93b38c2fb3ba97ac74513048d634"
+checksum = "48e13bd8c0e9365c43cfa5c9e8f9ad49d3c8444926c9aac819e0e4dc503c8fdf"
 dependencies = [
  "log",
  "once_cell",
@@ -2627,9 +2627,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.15"
+version = "0.103.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2"
+checksum = "e3a0760a887c14823fca5a1c970b01d47c328c696c0c64829d1df50e8f853fd5"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -2934,7 +2934,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_arma_extension_abi"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "thiserror 2.0.21",
  "windows-sys 0.61.2",
@@ -2942,7 +2942,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_audio"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "biquad",
  "glam",
@@ -2957,7 +2957,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_debug_window"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "arc-swap",
  "eframe",
@@ -2969,7 +2969,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_extension_0_9"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "tfar_arma_extension_abi",
  "tfar_game_link",
@@ -2978,7 +2978,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_extension_1_0"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "tfar_arma_extension_abi",
  "tfar_game_link",
@@ -2988,7 +2988,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_extension_probe"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "libloading 0.9.0",
@@ -2996,7 +2996,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_foundation"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "glam",
  "thiserror 2.0.21",
@@ -3004,7 +3004,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_game_link"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "crossbeam-channel",
  "parking_lot",
@@ -3016,7 +3016,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_golden_vectors"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "cc",
  "tfar_audio",
@@ -3026,7 +3026,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_plugin_0_9"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "crossbeam-channel",
  "parking_lot",
@@ -3044,7 +3044,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_plugin_1_0"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "arc-swap",
  "crossbeam-channel",
@@ -3066,7 +3066,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_plugin_logic_0_9"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "fastrand",
  "tfar_audio",
@@ -3077,7 +3077,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_plugin_logic_1_0"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "fastrand",
  "tfar_audio",
@@ -3088,7 +3088,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_ts3_host"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "arc-swap",
  "crossbeam-channel",
@@ -3101,7 +3101,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_ts3_mock"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "libc",
  "libloading 0.9.0",
@@ -3114,7 +3114,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_ts3_settings_db"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "rusqlite",
  "thiserror 2.0.21",
@@ -3122,7 +3122,7 @@ dependencies = [
 
 [[package]]
 name = "tfar_web_requests"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "thiserror 2.0.21",
  "tracing",
@@ -3754,9 +3754,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "1.0.9"
+version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dcd9d09a39985f5344844e66b0c530a33843579125f23e21e9f0f220850f22a"
+checksum = "7265c9301c16a8711c992c2d8da90ee77ef54b1ed51482d6dfeb00dc756b1297"
 dependencies = [
  "rustls-pki-types",
 ]
@@ -4140,7 +4140,7 @@ checksum = "32ac00cd3f8ec9c1d33fb3e7958a82df6989c42d747bd326c822b1d625283547"
 
 [[package]]
 name = "xtask"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "cargo_metadata",

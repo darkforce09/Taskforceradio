@@ -5,7 +5,7 @@ A Rust rewrite of the native parts of Task Force Arrowhead Radio (TFAR), the Arm
 TeamSpeak through Win32 named objects a native plugin cannot reach, so each mod (1.0 and 0.9.12) gets an
 Arma extension (Windows x64 DLL, still named `task_force_radio_pipe`) and a TeamSpeak plugin (Linux
 `.so`) that talk over localhost TCP, plus the library crates they share. The original mods sit
-byte-identical and read-only in `reference/` as the specification; no SQF changes. Released as `v0.1.1`.
+byte-identical and read-only in `reference/` as the specification; no SQF changes. Released as `v0.1.2`.
 
 ---
 

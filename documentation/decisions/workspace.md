@@ -185,7 +185,7 @@ test oracle (D9). The library map, checked on crates.io on 2026-10-02:
 | Compressor | none usable | `tfar_audio::dynamics` | a feed-forward compressor |
 | Distance curve, cone | none | `tfar_audio::spatial_audio` | the piecewise curve and the cone gain |
 | WAV | `hound` 3.5.1 | `tfar_audio::playback_mixer` | 48 kHz, 16-bit, stereo validation and cache |
-| SQLite | `rusqlite` 0.40.2 (`bundled`) | `tfar_ts3_settings_db` | — |
+| SQLite | `rusqlite` 0.43.0 (`bundled`) | `tfar_ts3_settings_db` | — |
 | HTTP | `ureq` 3.4.2 (rustls) | `tfar_web_requests` | the update check and Piwik calls |
 | Version compare | `version-compare` | `tfar_web_requests`, the 1.0 settings | — |
 | Link framing | `postcard` 1.1.3 + `serde` 1.0.229 | `tfar_game_link::protocol` | the u32 length prefix |
